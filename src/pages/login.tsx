@@ -1,65 +1,150 @@
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Eye, EyeOff, Mail, Lock, Shield, ArrowRight, Zap, Activity, Users } from 'lucide-react';
-import { baseUrl, setAuthToken } from '../config';
-import axios from 'axios';
+import { Shield, ArrowRight, Activity, Phone, Edit2, RefreshCw } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 
+// Redux
+import { useAppDispatch, useAppSelector } from '@/redux/hooks';
+import { resetOtpState, setAuthTokenRedux } from '@/redux/slices/authSlice';
+
+// React Query Hooks
+import { useSendLoginOtp, useVerifyLoginOtp } from '@/hooks/useAuthOtp';
+
+// Config
+import { setAuthToken } from '@/config';
+
+// Components
+import OtpBoxInput from '@/components/OtpBoxInput';
+
 export default function LoginPage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const dispatch = useAppDispatch();
 
-  // Formik validation schema
-  const validationSchema = Yup.object({
-    email: Yup.string()
-      .email('Invalid email address')
-      .required('Email is required'),
-    password: Yup.string()
-      .required('Password is required'),
-  });
+  // Redux state
+  const { otpPhoneNumber, isOtpSent } = useAppSelector((state) => state.auth);
 
-  // Formik form handling
-  const formik = useFormik({
+  // React Query Mutations
+  const sendOtpMutation = useSendLoginOtp();
+  const verifyOtpMutation = useVerifyLoginOtp();
+
+  // Formik for Mobile Number Step (Step 1)
+  const sendOtpFormik = useFormik({
     initialValues: {
-      email: '',
-      password: '',
+      number: otpPhoneNumber || '',
     },
-    validationSchema,
-    onSubmit: async (values) => {
-      setLoading(true);
-      try {
-        const { data: result } = await axios.post(`${baseUrl.userLogin}`, {
-          email: values.email,
-          password: values.password,
-        });
+    validationSchema: Yup.object({
+      number: Yup.string()
+        .matches(/^[0-9]{10}$/, 'Must be a valid 10-digit mobile number')
+        .required('Mobile number is required'),
+    }),
+    onSubmit: (values) => {
+      sendOtpMutation.mutate(
+        { number: values.number },
+        {
+          onSuccess: (res) => {
+            const isError =
+              !res ||
+              res.status === 404 ||
+              res.status === 400 ||
+              res.status === 401 ||
+              res.status === 422 ||
+              res.status === 'Failed' ||
+              res.status === 'error' ||
+              res.status === false;
 
-        if (result.status === 'Success') {
-          setAuthToken(result.token);
-          toast.success(result.message || 'Login successful');
-          window.location.href = '/';
-        } else {
-          toast.error(result.message || 'Login failed');
+            if (isError) {
+              toast.error(res?.message || 'Number not registered');
+              return;
+            }
+
+            if (res?.message) {
+              toast.success(res.message);
+            }
+          },
+          onError: (err: any) => {
+            if (err?.response?.data?.message || err?.message) {
+              toast.error(err?.response?.data?.message || err?.message);
+            } else {
+              toast.error('Number not registered');
+            }
+          },
         }
-      } catch (error: any) {
-        console.error(error);
-        toast.error(
-          error?.response?.data?.message ||
-          error?.message ||
-          'Something went wrong'
-        );
-      } finally {
-        setLoading(false);
-      }
+      );
     },
   });
+
+  // Formik for OTP Verification Step (Step 2)
+  const verifyOtpFormik = useFormik({
+    initialValues: {
+      otp: '',
+    },
+    validationSchema: Yup.object({
+      otp: Yup.string()
+        .matches(/^[0-9]{4,6}$/, 'OTP must be 4 to 6 digits')
+        .required('OTP is required'),
+    }),
+    onSubmit: (values) => {
+      if (!otpPhoneNumber && !sendOtpFormik.values.number) {
+        toast.error('Mobile number missing. Please request OTP again.');
+        return;
+      }
+      const activeNumber = otpPhoneNumber || sendOtpFormik.values.number;
+
+      verifyOtpMutation.mutate(
+        { number: activeNumber, otp: values.otp },
+        {
+          onSuccess: (res) => {
+            if (res?.message) {
+              toast.success(res.message);
+            }
+            window.location.href = '/';
+          },
+          onError: (err: any) => {
+            if (err?.response?.data?.message || err?.message) {
+              toast.error(err?.response?.data?.message || err?.message);
+            }
+          },
+        }
+      );
+    },
+  });
+
+  const handleEditPhoneNumber = () => {
+    dispatch(resetOtpState());
+  };
+
+  const handleResendOtp = () => {
+    const activeNumber = otpPhoneNumber || sendOtpFormik.values.number;
+    if (activeNumber) {
+      sendOtpMutation.mutate(
+        { number: activeNumber },
+        {
+          onSuccess: (res) => {
+            if (res?.message) {
+              toast.info(res.message);
+            }
+          },
+          onError: (err: any) => {
+            if (err?.response?.data?.message || err?.message) {
+              toast.error(err?.response?.data?.message || err?.message);
+            }
+          },
+        }
+      );
+    }
+  };
+
+  // Helper function to check validation errors
+  const hasError = (formikObj: any, fieldName: string) => {
+    return Boolean(
+      (formikObj.touched[fieldName] || formikObj.submitCount > 0) && formikObj.errors[fieldName]
+    );
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#F4F7FE] p-4 md:p-8 font-sans overflow-hidden relative">
-
       {/* Background Decorators */}
       <div className="absolute top-[-10%] left-[-10%] w-[40vw] h-[40vw] rounded-full bg-[#2E3192]/10 blur-[120px] pointer-events-none"></div>
       <div className="absolute bottom-[-10%] right-[-5%] w-[35vw] h-[35vw] rounded-full bg-[#2BBF8C]/10 blur-[100px] pointer-events-none"></div>
@@ -68,11 +153,9 @@ export default function LoginPage() {
 
         {/* Left Section - Hero/Brand */}
         <div className="hidden lg:flex flex-col w-[45%] bg-[#2E3192] p-12 relative overflow-hidden text-white justify-between">
-          {/* Internal Gradients */}
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-bl from-[#2BBF8C]/40 to-transparent rounded-full blur-[80px] -translate-y-1/3 translate-x-1/4"></div>
 
           <div className="relative z-10">
-            {/* Logo area */}
             <div className="flex items-center gap-3 mb-16">
               <img src="/white_logo.png" alt="Insuraa Logo" className="h-10" />
             </div>
@@ -110,108 +193,138 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Right Section - Login Form */}
+        {/* Right Section - OTP Login Form */}
         <div className="flex flex-col w-full lg:w-[55%] p-8 sm:p-12 md:p-16 justify-center bg-white">
           <div className="w-full max-w-[420px] mx-auto">
 
             {/* Mobile Logo */}
-            <div className="lg:hidden mb-10">
+            <div className="lg:hidden mb-8">
               <img src="/logo.png" alt="Insuraa Logo" className="h-10" />
             </div>
 
-            <div className="mb-10">
-              <h2 className="text-3xl font-bold text-[#111827] mb-2 tracking-tight">Welcome back</h2>
-              <p className="text-gray-500 text-sm">
-                Enter your credentials to access your dashboard.
-              </p>
-            </div>
-
-            <form onSubmit={formik.handleSubmit} className="space-y-5">
-
-              {/* Email Field */}
-              <div className="space-y-1.5">
-                <label className="text-[13px] font-semibold text-gray-700 ml-1">Email Address</label>
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none transition-colors group-focus-within:text-[#2E3192]">
-                    <Mail className="h-[18px] w-[18px] text-gray-400 group-focus-within:text-[#2E3192] transition-colors" />
-                  </div>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formik.values.email}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    className={`w-full rounded-2xl border py-3.5 pl-12 pr-4 text-sm text-gray-900 placeholder-gray-400 outline-none transition-all bg-gray-50/50 hover:bg-gray-50 focus:bg-white
-                      ${formik.touched.email && formik.errors.email
-                        ? 'border-red-500 focus:border-red-500 focus:ring-4 focus:ring-red-500/10'
-                        : 'border-gray-200 focus:border-[#2D3591] focus:ring-4 focus:ring-[#2D3591]/10'
-                      }`}
-                    placeholder="Enter your email"
-                  />
+            {!isOtpSent ? (
+              /* STEP 1: SEND OTP FORM */
+              <div>
+                <div className="mb-20">
+                  <h2 className="text-2xl font-bold text-[#111827] mb-1.5 tracking-tight text-center">Login via Mobile OTP</h2>
+                  <p className="text-gray-500 text-xs text-center">
+                    Enter your mobile number to receive a verification code.
+                  </p>
                 </div>
-                {formik.touched.email && formik.errors.email && (
-                  <p className="text-[12px] text-red-500 ml-1 mt-1 font-medium">{formik.errors.email}</p>
-                )}
-              </div>
 
-              {/* Password Field */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between ml-1">
-                  <label className="text-[13px] font-semibold text-gray-700">Password</label>
-                  <Link href="#" className="text-[12px] font-semibold text-[#2E3192] hover:text-[#2BBF8C] transition-colors">
-                    Forgot password?
-                  </Link>
-                </div>
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
-                    <Lock className="h-[18px] w-[18px] text-gray-400 group-focus-within:text-[#2E3192] transition-colors" />
+                <form onSubmit={sendOtpFormik.handleSubmit} className="space-y-5">
+                  <div className="space-y-1.5">
+                    <label className="text-[13px] font-semibold text-gray-700 ml-1">
+                      Mobile Number <span className="text-red-500 font-bold">*</span>
+                    </label>
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                        <Phone className={`h-[18px] w-[18px] transition-colors ${hasError(sendOtpFormik, 'number') ? 'text-red-500' : 'text-gray-400 group-focus-within:text-[#2E3192]'}`} />
+                      </div>
+                      <input
+                        type="text"
+                        name="number"
+                        maxLength={10}
+                        value={sendOtpFormik.values.number}
+                        onChange={sendOtpFormik.handleChange}
+                        onBlur={sendOtpFormik.handleBlur}
+                        placeholder="Enter 10-digit mobile number"
+                        className={`w-full rounded-2xl border py-3.5 pl-12 pr-4 text-sm outline-none transition-all ${hasError(sendOtpFormik, 'number')
+                          ? '!border-red-500 text-red-900 bg-red-50/30 focus:!border-red-500 focus:ring-4 focus:ring-red-500/20'
+                          : 'border-gray-200 text-gray-900 bg-gray-50/50 hover:bg-gray-50 focus:bg-white focus:border-[#2D3591] focus:ring-4 focus:ring-[#2D3591]/10'
+                          }`}
+                      />
+                    </div>
+                    {hasError(sendOtpFormik, 'number') && (
+                      <p className="text-[12px] text-red-500 ml-1 mt-1 font-medium">{sendOtpFormik.errors.number}</p>
+                    )}
                   </div>
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    name="password"
-                    value={formik.values.password}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    placeholder="Enter your password"
-                    className={`w-full rounded-2xl border py-3.5 pl-12 pr-12 text-sm text-gray-900 placeholder-gray-400 outline-none transition-all bg-gray-50/50 hover:bg-gray-50 focus:bg-white
-                      ${formik.touched.password && formik.errors.password
-                        ? 'border-red-500 focus:border-red-500 focus:ring-4 focus:ring-red-500/10'
-                        : 'border-gray-200 focus:border-[#2D3591] focus:ring-4 focus:ring-[#2D3591]/10'
-                      }`}
-                  />
+
                   <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none"
+                    type="submit"
+                    disabled={sendOtpMutation.isPending}
+                    className="w-full relative flex items-center justify-center gap-2 rounded-2xl bg-[#2E3192] py-4 text-[14px] font-bold text-white transition-all hover:bg-[#232569] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed mt-6 group overflow-hidden"
                   >
-                    {showPassword ? <EyeOff className="h-[18px] w-[18px]" /> : <Eye className="h-[18px] w-[18px]" />}
+                    {sendOtpMutation.isPending ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white/80 border-t-transparent rounded-full animate-spin"></div>
+                        <span>Sending OTP...</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <span>Send OTP</span>
+                        <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                      </div>
+                    )}
                   </button>
-                </div>
-                {formik.touched.password && formik.errors.password && (
-                  <p className="text-[12px] text-red-500 ml-1 mt-1 font-medium">{formik.errors.password}</p>
-                )}
+                </form>
               </div>
+            ) : (
+              /* STEP 2: VERIFY OTP FORM */
+              <div>
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold text-[#111827] mb-10 tracking-tight text-center">Verify OTP</h2>
+                  <div className="flex items-center gap-2 mt-1 bg-blue-50/80 p-2.5 rounded-xl border border-blue-100">
+                    <span className="text-sm text-gray-600"><strong className="text-gray-900 font-bold">{otpPhoneNumber || sendOtpFormik.values.number}</strong></span>
+                    <button
+                      type="button"
+                      onClick={handleEditPhoneNumber}
+                      className="ml-auto text-xs text-[#2E3192] hover:underline flex items-center gap-1 font-semibold"
+                    >
+                      <Edit2 className="w-3 h-3" /> Edit Number
+                    </button>
+                  </div>
+                </div>
 
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full relative flex items-center justify-center gap-2 rounded-2xl bg-[#2E3192] py-4 text-[14px] font-bold text-white transition-all hover:bg-[#232569] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed mt-8 group overflow-hidden"
-              >
-                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-in-out"></div>
-                {loading ? (
-                  <div className="flex items-center gap-2 relative z-10">
-                    <div className="w-4 h-4 border-2 border-white/80 border-t-transparent rounded-full animate-spin"></div>
-                    <span>Signing in...</span>
+                <form onSubmit={verifyOtpFormik.handleSubmit} className="space-y-5">
+                  <div className="space-y-2">
+                    <label className="text-[13px] font-semibold text-gray-700 ml-1">
+                      Enter 4-Digit OTP Code <span className="text-red-500 font-bold">*</span>
+                    </label>
+                    <OtpBoxInput
+                      length={4}
+                      value={verifyOtpFormik.values.otp}
+                      onChange={(val) => verifyOtpFormik.setFieldValue('otp', val)}
+                      error={hasError(verifyOtpFormik, 'otp')}
+                    />
+                    {hasError(verifyOtpFormik, 'otp') && (
+                      <p className="text-[12px] text-red-500 ml-1 font-medium">{verifyOtpFormik.errors.otp}</p>
+                    )}
                   </div>
-                ) : (
-                  <div className="flex items-center gap-2 relative z-10">
-                    <span>Sign In</span>
-                    <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+
+                  <div className="flex items-center justify-between text-xs px-1">
+                    <span className="text-gray-500">Didn't receive code?</span>
+                    <button
+                      type="button"
+                      onClick={handleResendOtp}
+                      disabled={sendOtpMutation.isPending}
+                      className="font-bold text-[#2E3192] hover:text-[#2BBF8C] transition-colors flex items-center gap-1 disabled:opacity-50"
+                    >
+                      <RefreshCw className={`w-3 h-3 ${sendOtpMutation.isPending ? 'animate-spin' : ''}`} />
+                      Resend OTP
+                    </button>
                   </div>
-                )}
-              </button>
-            </form>
+
+                  <button
+                    type="submit"
+                    disabled={verifyOtpMutation.isPending}
+                    className="w-full relative flex items-center justify-center gap-2 rounded-2xl bg-[#2E3192] py-4 text-[14px] font-bold text-white transition-all hover:bg-[#232569] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed mt-4 group overflow-hidden"
+                  >
+                    {verifyOtpMutation.isPending ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white/80 border-t-transparent rounded-full animate-spin"></div>
+                        <span>Verifying OTP...</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <span>Verify & Login</span>
+                        <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                      </div>
+                    )}
+                  </button>
+                </form>
+              </div>
+            )}
 
             <div className="mt-8 text-center">
               <p className="text-[13px] text-gray-600">

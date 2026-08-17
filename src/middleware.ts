@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login"];
+const PUBLIC_PATHS = ["/login", "/register"];
 const TOKEN_COOKIE_NAME = "crm_token";
 
 function isPublicPath(pathname: string) {
@@ -13,10 +13,21 @@ function isPublicPath(pathname: string) {
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // 1. Bypass public paths (/login, /register)
   if (isPublicPath(pathname)) {
     return NextResponse.next();
   }
 
+  // 2. Bypass API requests (/admin_api, /api) & static files (.png, .svg, etc.)
+  if (
+    pathname.startsWith("/admin_api") ||
+    pathname.startsWith("/api") ||
+    pathname.includes(".")
+  ) {
+    return NextResponse.next();
+  }
+
+  // 3. Authenticated route check
   const token = request.cookies.get(TOKEN_COOKIE_NAME)?.value;
 
   if (!token) {
@@ -30,5 +41,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|api).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|admin_api|api|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)"],
 };

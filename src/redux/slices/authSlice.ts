@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import axios from 'axios';
 import { baseUrl, getAuthToken } from '@/config';
 
@@ -7,17 +7,24 @@ export interface User {
   _id?: string;
   name: string;
   email?: string;
+  number?: string;
   role?: string;
 }
 
 export interface AuthState {
   currentStaff: User | null;
+  otpPhoneNumber: string | null;
+  isOtpSent: boolean;
+  token: string | null;
   status: 'idle' | 'loading' | 'succeeded' | 'failed';
   error: string | null;
 }
 
 const initialState: AuthState = {
   currentStaff: null,
+  otpPhoneNumber: null,
+  isOtpSent: false,
+  token: null,
   status: 'idle',
   error: null,
 };
@@ -29,7 +36,7 @@ export const fetchCurrentStaff = createAsyncThunk(
       const token = getAuthToken();
       if (!token) return rejectWithValue('No token found');
       
-      const response = await axios.get(baseUrl.currentStaff, {
+      const response = await axios.get('/admin_api/staff/me', {
         headers: { Authorization: `Bearer ${token}` },
       });
       return response.data?.data || response.data; 
@@ -43,8 +50,24 @@ const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
+    setOtpPhoneNumber: (state, action: PayloadAction<string>) => {
+      state.otpPhoneNumber = action.payload;
+    },
+    setOtpSent: (state, action: PayloadAction<boolean>) => {
+      state.isOtpSent = action.payload;
+    },
+    setAuthTokenRedux: (state, action: PayloadAction<string>) => {
+      state.token = action.payload;
+    },
+    resetOtpState: (state) => {
+      state.otpPhoneNumber = null;
+      state.isOtpSent = false;
+    },
     clearCurrentStaff: (state) => {
       state.currentStaff = null;
+      state.otpPhoneNumber = null;
+      state.isOtpSent = false;
+      state.token = null;
       state.status = 'idle';
     }
   },
@@ -64,6 +87,13 @@ const authSlice = createSlice({
   },
 });
 
-export const { clearCurrentStaff } = authSlice.actions;
+export const { 
+  setOtpPhoneNumber, 
+  setOtpSent, 
+  setAuthTokenRedux, 
+  resetOtpState, 
+  clearCurrentStaff 
+} = authSlice.actions;
 
 export default authSlice.reducer;
+

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -10,6 +10,7 @@ import {
   BarChart2,
   PhoneCall,
   CheckSquare,
+  User,
   UserCog,
   Briefcase,
   Settings,
@@ -27,7 +28,9 @@ import {
   Bell,
   FileSpreadsheet,
   UserPlus,
-  LogOut
+  LogOut,
+  ShieldCheck,
+  ExternalLink
 } from 'lucide-react';
 
 const NAV_LINKS = [
@@ -74,6 +77,18 @@ export default function Header() {
   const [mobileExpandedMenu, setMobileExpandedMenu] = useState<number | null>(null);
   const [activeDropdown, setActiveDropdown] = useState<number | null>(null);
   const [dropdownRect, setDropdownRect] = useState({ left: 0, top: 0 });
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+        setIsProfileOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   return (
     <header className="sticky top-0 z-50 w-full flex flex-col bg-white/95 backdrop-blur-md border-b border-gray-200/80 shadow-[0_4px_30px_rgba(0,0,0,0.04)]">
@@ -116,14 +131,117 @@ export default function Header() {
             <span className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white text-[10px] font-bold h-5 w-5 flex items-center justify-center rounded-full shadow-md animate-pulse group-hover:animate-none">59</span>
           </div>
 
-          <div className="flex items-center gap-3 pl-5 border-l border-gray-200/80 cursor-pointer group">
-            <div className="hidden sm:flex flex-col items-end leading-tight">
-              <p className="text-[14px] font-bold text-gray-900 group-hover:text-[#2F439D] transition-colors">INSURAA</p>
-              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">ADMIN</p>
-            </div>
-            <div className="w-10 h-10 rounded-full border-2 border-white shadow-[0_0_0_2px_#2F439D20] flex items-center justify-center overflow-hidden transition-transform group-hover:scale-105">
-              <img src="https://ui-avatars.com/api/?name=INSURAA+ADMIN&background=2F439D&color=fff&bold=true" alt="Admin" className="w-full h-full object-cover" />
-            </div>
+          {/* Profile Dropdown Section */}
+          <div className="relative" ref={profileRef}>
+            <button
+              onClick={() => setIsProfileOpen(!isProfileOpen)}
+              className="flex items-center gap-3 pl-4 sm:pl-5 border-l border-gray-200/80 cursor-pointer group focus:outline-none py-1"
+            >
+              <div className="hidden sm:flex flex-col items-end leading-tight">
+                <p className="text-[14px] font-bold text-gray-900 group-hover:text-[#2F439D] transition-colors flex items-center gap-1">
+                  INSURAA
+                  <ChevronDown size={14} className={`text-gray-400 transition-transform duration-200 ${isProfileOpen ? 'rotate-180 text-[#2F439D]' : 'group-hover:text-[#2F439D]'}`} />
+                </p>
+                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">ADMIN</p>
+              </div>
+              <div className="relative">
+                <div className="w-10 h-10 rounded-full border-2 border-white shadow-[0_0_0_2px_#2F439D20] flex items-center justify-center overflow-hidden transition-transform group-hover:scale-105 bg-[#2F439D]/10">
+                  <img src="https://ui-avatars.com/api/?name=INSURAA+ADMIN&background=2F439D&color=fff&bold=true" alt="Admin" className="w-full h-full object-cover" />
+                </div>
+                <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full"></span>
+              </div>
+            </button>
+
+            {/* Unique & Attractive Profile Dropdown Menu */}
+            {isProfileOpen && (
+              <div className="absolute right-0 mt-3 w-80 bg-white rounded-2xl shadow-[0_20px_50px_rgba(46,49,146,0.18)] border border-gray-100/90 z-50 overflow-hidden animate-in fade-in slide-in-from-top-3 duration-200">
+
+                {/* Profile Header Card */}
+                <div className="p-5 bg-gradient-to-br from-[#2E3192]/10 via-blue-50/60 to-emerald-50/40 border-b border-gray-100 flex items-center gap-4 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-28 h-28 bg-[#2E3192]/5 rounded-full blur-2xl pointer-events-none"></div>
+
+                  <div className="relative shrink-0">
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#2E3192] to-[#2BBF8C] p-0.5 shadow-md">
+                      <div className="w-full h-full bg-white rounded-[14px] flex items-center justify-center overflow-hidden">
+                        <img src="https://ui-avatars.com/api/?name=INSURAA+ADMIN&background=2F439D&color=fff&bold=true" alt="Admin" className="w-full h-full object-cover" />
+                      </div>
+                    </div>
+                    <span className="absolute -bottom-1 -right-1 bg-emerald-500 text-white p-0.5 rounded-full border-2 border-white shadow-sm">
+                      <ShieldCheck size={12} />
+                    </span>
+                  </div>
+
+                  <div className="overflow-hidden">
+                    <h4 className="font-bold text-gray-900 text-base truncate tracking-tight">Insuraa Admin</h4>
+                    <p className="text-xs font-semibold text-gray-500 truncate mt-0.5">+91-01234567890</p>
+                    <span className="inline-flex items-center gap-1 mt-1.5 px-2.5 py-0.5 rounded-full bg-[#2E3192]/10 text-[#2E3192] text-[10px] font-bold uppercase tracking-wider">
+                      Admin Account
+                    </span>
+                  </div>
+                </div>
+
+                {/* Action Items List */}
+                <div className="p-2 space-y-1">
+                  {/* Profile Item */}
+                  <Link
+                    href="/profile"
+                    onClick={() => setIsProfileOpen(false)}
+                    className="flex items-center gap-3.5 px-3.5 py-3 rounded-xl hover:bg-blue-50/70 transition-all duration-200 group/item"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-blue-100/60 text-[#2E3192] flex items-center justify-center shrink-0 group-hover/item:bg-[#2E3192] group-hover/item:text-white transition-colors shadow-sm">
+                      <User size={19} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-gray-800 group-hover/item:text-[#2E3192] transition-colors">Profile</p>
+                      <p className="text-xs text-gray-400 font-medium truncate">Edit Details & Settings</p>
+                    </div>
+                  </Link>
+
+                  {/* Website Item */}
+                  <a
+                    href="https://insuraa.in"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setIsProfileOpen(false)}
+                    className="flex items-center gap-3.5 px-3.5 py-3 rounded-xl hover:bg-emerald-50/70 transition-all duration-200 group/item"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-emerald-100/60 text-[#00A389] flex items-center justify-center shrink-0 group-hover/item:bg-[#00A389] group-hover/item:text-white transition-colors shadow-sm">
+                      <Globe size={19} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-gray-800 group-hover/item:text-[#00A389] transition-colors flex items-center justify-between">
+                        Website
+                        <ExternalLink size={13} className="opacity-0 group-hover/item:opacity-100 transition-opacity text-gray-400" />
+                      </p>
+                      <p className="text-xs text-gray-400 font-medium truncate">Visit & Explore Our Website</p>
+                    </div>
+                  </a>
+
+                  {/* Divider */}
+                  <div className="my-1 border-t border-gray-100"></div>
+
+                  {/* Log Out Item */}
+                  <button
+                    onClick={() => {
+                      setIsProfileOpen(false);
+                      if (typeof window !== 'undefined') {
+                        localStorage.clear();
+                        window.location.href = '/login';
+                      }
+                    }}
+                    className="w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl hover:bg-rose-50/80 text-left transition-all duration-200 group/item"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-rose-100/60 text-rose-600 flex items-center justify-center shrink-0 group-hover/item:bg-rose-600 group-hover/item:text-white transition-colors shadow-sm">
+                      <LogOut size={19} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-rose-600 group-hover/item:text-rose-700 transition-colors">Log Out</p>
+                      <p className="text-xs text-rose-400 font-medium truncate">Sign Out Of Your Account</p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

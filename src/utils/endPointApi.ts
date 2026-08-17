@@ -1,26 +1,19 @@
 export interface EndPointApi {
-    login: string;
-    // register: string;
-    // logout: string;
-    // forgotPassword: string;
-    // resetPassword: string;
-    // getProfile: string;
-    // updateProfile: string;
-
+    send_login_otp: string;
+    verify_login_otp: string;
+    send_sign_up_otp: string;
+    verify_sign_up_otp: string;
     // Add new dynamic API endpoints here as needed
 }
 
 // Define and export the standard API endpoint object
 const endPointApi: EndPointApi = {
-    login: 'auth/login',
-    // register: 'auth/register',
-    // logout: 'auth/logout',
-    // forgotPassword: 'auth/forgot-password',
-    // resetPassword: 'auth/reset-password',
-    // getProfile: 'auth/profile',
-    // updateProfile: 'auth/profile',
-
+    send_login_otp: 'send_login_otp',
+    verify_login_otp: 'verify_login_otp',
+    send_sign_up_otp: 'send_sign_up_otp',
+    verify_sign_up_otp: 'verify_sign_up_otp',
     // Add your module-specific endpoints below as the project scales
 };
 
 export default endPointApi;
+

@@ -15,6 +15,7 @@ import { fetchCurrentStaff } from "@/redux/slices/authSlice";
 import { fetchLeadStatuses } from "@/redux/slices/leadStatusSlice";
 import PremiumLoader from "@/components/ui/PremiumLoader";
 import Loader from "@/components/Loader";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -22,8 +23,26 @@ const poppins = Poppins({
   display: "swap",
 });
 
-function AppContent({ Component, pageProps }: AppProps) {
+export default function App({ Component, pageProps, router }: AppProps) {
+  const [queryClient] = useState(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        refetchOnWindowFocus: false,
+        retry: 1,
+      },
+    },
+  }));
 
+  return (
+    <QueryClientProvider client={queryClient}>
+      <Provider store={store}>
+        <AppContent Component={Component} pageProps={pageProps} router={router} />
+      </Provider>
+    </QueryClientProvider>
+  );
+}
+
+function AppContent({ Component, pageProps }: AppProps) {
   const globalLoading = useAppSelector((state) => state.app.globalLoading);
   const dispatch = useAppDispatch();
   const router = useRouter();
@@ -114,10 +133,3 @@ function AppContent({ Component, pageProps }: AppProps) {
   );
 }
 
-export default function App({ Component, pageProps, router }: AppProps) {
-  return (
-    <Provider store={store}>
-      <AppContent Component={Component} pageProps={pageProps} router={router} />
-    </Provider>
-  );
-}

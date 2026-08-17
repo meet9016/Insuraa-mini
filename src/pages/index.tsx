@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import {
   BarChart,
@@ -123,12 +123,23 @@ const renderActiveShape = (props: any) => {
   );
 };
 
+import { getAuthToken } from '@/config';
+
 export default function Dashboard() {
   const [activeTaskFilter, setActiveTaskFilter] = useState('Today');
   const [companyChartMode, setCompanyChartMode] = useState('Bar');
   const [typeChartMode, setTypeChartMode] = useState('Bar');
   const [activeCompanyIndex, setActiveCompanyIndex] = useState(0);
   const [activeTypeIndex, setActiveTypeIndex] = useState(0);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const token = getAuthToken();
+      if (!token) {
+        window.location.href = "/login";
+      }
+    }
+  }, []);
 
   return (
     <div className="bg-[#f8fafc] min-h-screen">

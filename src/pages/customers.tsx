@@ -25,12 +25,12 @@ export default function Customers() {
       </Head>
 
       <div className="max-w-[1600px] mx-auto space-y-6">
-        
+
         {/* Header Actions */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="flex items-center gap-2 text-xl font-bold text-gray-800">
             <UsersIcon size={24} className="text-gray-800" />
-            Customer Management
+            Customer Management 
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button className="bg-[#2F439D] hover:bg-blue-800 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors">
@@ -47,12 +47,12 @@ export default function Customers() {
 
         {/* Main Content Area */}
         <div className="bg-white rounded-2xl shadow-[0_2px_15px_-3px_rgba(0,0,0,0.03)] border border-gray-100">
-          
+
           {/* Table Controls */}
           <div className="p-5 flex justify-between items-center border-b border-gray-100">
             <div className="flex items-center gap-2 text-sm text-gray-600">
-              Show 
-              <select 
+              Show
+              <select
                 className="border border-gray-300 rounded px-2 py-1 w-16 focus:outline-none focus:border-[#2D3591]"
                 value={entries}
                 onChange={(e) => setEntries(e.target.value)}
@@ -61,11 +61,11 @@ export default function Customers() {
                 <option value="25">25</option>
                 <option value="50">50</option>
                 <option value="100">100</option>
-              </select> 
+              </select>
               Entries
             </div>
             <div className="flex items-center gap-2 text-sm">
-              Search: 
+              Search:
               <input type="text" className="border border-gray-300 rounded px-3 py-1 focus:outline-none focus:border-[#2D3591] w-[200px]" />
             </div>
           </div>
@@ -89,13 +89,13 @@ export default function Customers() {
                   <tr key={customer.id} className="hover:bg-gray-50/50">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                         <ChevronRight size={14} className="text-gray-400" />
-                         <div>
-                            <div className="font-semibold text-gray-800">{customer.name}</div>
-                            <div className={`text-[10px] px-1.5 py-0.5 rounded inline-block mt-0.5 font-medium ${customer.familyColor || 'bg-gray-100 text-gray-500'}`}>
-                                <UsersIcon size={10} className="inline mr-1" />{customer.family}
-                            </div>
-                         </div>
+                        <ChevronRight size={14} className="text-gray-400" />
+                        <div>
+                          <div className="font-semibold text-gray-800">{customer.name}</div>
+                          <div className={`text-[10px] px-1.5 py-0.5 rounded inline-block mt-0.5 font-medium ${customer.familyColor || 'bg-gray-100 text-gray-500'}`}>
+                            <UsersIcon size={10} className="inline mr-1" />{customer.family}
+                          </div>
+                        </div>
                       </div>
                     </td>
                     <td className="px-4 py-3 text-gray-600">{customer.groupCode}</td>
@@ -144,19 +144,19 @@ export default function Customers() {
 
           {/* Pagination */}
           <div className="p-4 border-t border-gray-100 flex justify-between items-center bg-gray-50/30">
-             <div className="text-sm text-gray-600">
-               Showing 1 To 10 Of 53 Entries
-             </div>
-             <div className="flex items-center gap-1">
-               <button className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-100 bg-white"><ChevronLeft size={16} /></button>
-               <button className="w-8 h-8 rounded-full bg-[#2F439D] text-white flex items-center justify-center text-sm font-medium">1</button>
-               <button className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 bg-white text-sm">2</button>
-               <button className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 bg-white text-sm">3</button>
-               <button className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 bg-white text-sm">4</button>
-               <button className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 bg-white text-sm">5</button>
-               <button className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 bg-white text-sm">6</button>
-               <button className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-100 bg-white"><ChevronRight size={16} /></button>
-             </div>
+            <div className="text-sm text-gray-600">
+              Showing 1 To 10 Of 53 Entries
+            </div>
+            <div className="flex items-center gap-1">
+              <button className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-100 bg-white"><ChevronLeft size={16} /></button>
+              <button className="w-8 h-8 rounded-full bg-[#2F439D] text-white flex items-center justify-center text-sm font-medium">1</button>
+              <button className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 bg-white text-sm">2</button>
+              <button className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 bg-white text-sm">3</button>
+              <button className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 bg-white text-sm">4</button>
+              <button className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 bg-white text-sm">5</button>
+              <button className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 bg-white text-sm">6</button>
+              <button className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-100 bg-white"><ChevronRight size={16} /></button>
+            </div>
           </div>
         </div>
 

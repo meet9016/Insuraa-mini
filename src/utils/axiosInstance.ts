@@ -1,8 +1,10 @@
 "use client";
 import axios from "axios";
 
-// Default base URL from environment or a fallback
-const baseURL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000/api/v1/";
+// Default base URL from environment or fallback with proxy support for browser CORS
+const baseURL = typeof window !== 'undefined'
+  ? '/admin_api/'
+  : (process.env.NEXT_PUBLIC_APP_URL || 'https://api.insuraa.in/admin_api/');
 
 const apiAdminInstance = axios.create({
   baseURL: baseURL,
@@ -14,11 +16,11 @@ export const api = apiAdminInstance;
 apiAdminInstance.interceptors.request.use(
   async (config) => {
     const token = typeof window !== 'undefined' ? localStorage.getItem("auth_token") : null;
-    
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    
+
     return config;
   },
   (error) => Promise.reject(error)

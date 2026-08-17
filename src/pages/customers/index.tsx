@@ -179,7 +179,7 @@ export default function CustomerList() {
 
       <div className="w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
         <DataTable
-          title="Customer Management"
+          title="Customer Management "
           columns={columns}
           data={mockData}
           addLabel="Add Customer"
