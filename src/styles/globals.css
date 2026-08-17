@@ -1,6 +1,9 @@
 @import "tailwindcss";
 @import "react-toastify/dist/ReactToastify.css";
 @import "react-datepicker/dist/react-datepicker.css";
+@import "ag-grid-community/styles/ag-grid.css";
+@import "ag-grid-community/styles/ag-theme-alpine.css";
+@import "ag-grid-community/styles/ag-theme-quartz.css";
 
 :root {
   --background: #ffffff;
@@ -422,4 +425,203 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .recharts-surface:focus-visible {
   outline: none !important;
   border: none !important;
+}
+
+/* Insuraa AG Grid Custom Header Styling - Dark Blue (#2B4399) as per Second Reference Image */
+.ag-theme-alpine,
+.ag-theme-quartz {
+  --ag-header-background-color: #2B4399 !important;
+  --ag-header-foreground-color: #ffffff !important;
+  --ag-header-cell-hover-background-color: #23377d !important;
+  --ag-header-cell-moving-background-color: #23377d !important;
+  --ag-font-family: var(--font-poppins), 'Poppins', sans-serif !important;
+  --ag-font-size: 13.5px;
+  --ag-row-hover-color: #f8fafc;
+  --ag-selected-row-background-color: #F2F7FF !important;
+  --ag-checkbox-checked-color: #2B4399;
+  --ag-border-color: #e2e8f0;
+  --ag-secondary-border-color: #f1f5f9;
+  border-radius: 0.75rem;
+  border: 1px solid #e2e8f0;
+  font-family: var(--font-poppins), 'Poppins', sans-serif !important;
+}
+
+.ag-theme-alpine *,
+.ag-theme-quartz * {
+  font-family: var(--font-poppins), 'Poppins', sans-serif !important;
+}
+
+.ag-theme-alpine .ag-header,
+.ag-theme-quartz .ag-header,
+.ag-theme-alpine .ag-header-row,
+.ag-theme-quartz .ag-header-row,
+.ag-theme-alpine .ag-header-cell,
+.ag-theme-quartz .ag-header-cell {
+  background-color: #2B4399 !important;
+  background: #2B4399 !important;
+  color: #ffffff !important;
+}
+
+.ag-theme-alpine .ag-header-cell,
+.ag-theme-quartz .ag-header-cell {
+  border-right: 1px solid rgba(255, 255, 255, 0.15) !important;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.ag-theme-alpine .ag-header-cell-label,
+.ag-theme-quartz .ag-header-cell-label {
+  font-weight: 600;
+  color: #ffffff !important;
+  font-size: 16px;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.ag-header-cell .ag-header-cell-menu-button,
+.ag-header-cell .ag-header-icon,
+.ag-header-cell .ag-icon,
+.ag-header-cell .ag-header-cell-menu-button .ag-icon,
+.ag-header-cell .ag-icon-menu,
+.ag-header-cell .ag-icon-filter {
+  color: #ffffff !important;
+  fill: #ffffff !important;
+
+}
+
+.ag-icon:before {
+  font-size: 18px;
+}
+
+/* AG Grid Selection Checkboxes - Enlarge Size & Custom Styling */
+.ag-checkbox-input-wrapper,
+.ag-theme-alpine .ag-checkbox-input-wrapper,
+.ag-theme-quartz .ag-checkbox-input-wrapper {
+  width: 18px !important;
+  height: 18px !important;
+  border-radius: 4px !important;
+  border: 1.5px solid #94a3b8 !important;
+  transition: all 0.15s ease !important;
+}
+
+.ag-checkbox-input-wrapper:hover,
+.ag-theme-alpine .ag-checkbox-input-wrapper:hover,
+.ag-theme-quartz .ag-checkbox-input-wrapper:hover {
+  border-color: #2B4399 !important;
+}
+
+.ag-checkbox-input-wrapper.ag-checked,
+.ag-theme-alpine .ag-checkbox-input-wrapper.ag-checked,
+.ag-theme-quartz .ag-checkbox-input-wrapper.ag-checked {
+  background-color: #2B4399 !important;
+  border-color: #2B4399 !important;
+}
+
+/* Header Checkbox styling inside dark blue header */
+.ag-header-cell .ag-checkbox-input-wrapper,
+.ag-theme-alpine .ag-header-cell .ag-checkbox-input-wrapper,
+.ag-theme-quartz .ag-header-cell .ag-checkbox-input-wrapper {
+  border-color: rgba(255, 255, 255, 0.8) !important;
+  background-color: transparent !important;
+  width: 18px !important;
+  height: 18px !important;
+}
+
+.ag-header-cell .ag-checkbox-input-wrapper.ag-checked,
+.ag-theme-alpine .ag-header-cell .ag-checkbox-input-wrapper.ag-checked,
+.ag-theme-quartz .ag-header-cell .ag-checkbox-input-wrapper.ag-checked {
+  background-color: #ffffff !important;
+  border-color: #ffffff !important;
+}
+
+.ag-header-cell .ag-checkbox-input-wrapper.ag-checked::after {
+  color: #2B4399 !important;
+}
+
+.ag-checkbox-input-wrapper:after {
+  display: none;
+}
+
+.ag-grid-pinned-left-cells:before,
+.ag-grid-pinned-right-cells:before,
+.ag-grid-scrolling-cells:before {
+  background-color: #F2F7FF !important;
+}
+
+
+
+
+
+.ag-checkbox-input-wrapper.ag-checked:after {
+  color: white !important
+}
+
+.ag-theme-alpine .ag-row-selected,
+.ag-theme-quartz .ag-row-selected,
+.ag-theme-alpine .ag-row-selected.ag-row-hover,
+.ag-theme-quartz .ag-row-selected.ag-row-hover {
+  background-color: #F2F7FF !important;
+}
+
+.ag-theme-alpine .ag-cell,
+.ag-theme-quartz .ag-cell {
+  display: flex;
+  align-items: center;
+  padding-left: 16px;
+  padding-right: 16px;
+  color: #334155;
+  font-size: 13.5px;
+}
+
+.ag-theme-alpine .ag-row,
+.ag-theme-quartz .ag-row {
+  border-bottom: 1px solid #f1f5f9;
+  transition: background-color 0.15s ease;
+}
+
+.ag-theme-alpine .ag-paging-panel,
+.ag-theme-quartz .ag-paging-panel {
+  border-top: 1px solid #e2e8f0;
+  padding: 12px 16px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.ag-popup,
+.ag-popup-child,
+.ag-menu,
+.ag-menu-column-select,
+.ag-filter,
+.ag-panel {
+  background-color: #ffffff !important;
+  box-shadow: 0 12px 32px -4px rgba(0, 0, 0, 0.15), 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+  border-radius: 10px !important;
+  border: 1px solid #e2e8f0 !important;
+  z-index: 99999 !important;
+}
+
+.ag-menu-list {
+  padding: 4px 0 !important;
+  background-color: #ffffff !important;
+}
+
+.ag-menu-option {
+  padding: 10px 18px !important;
+  min-height: 40px !important;
+  font-size: 13.5px !important;
+  font-weight: 500 !important;
+  color: #1e293b !important;
+  cursor: pointer !important;
+}
+
+.ag-menu-option:hover,
+.ag-menu-option-active {
+  background-color: #f1f5f9 !important;
+  color: #2B4399 !important;
+}
+
+.ag-menu-separator {
+  border-bottom: 1px solid #f1f5f9 !important;
+  margin: 4px 0 !important;
+  height: 1px !important;
 }
