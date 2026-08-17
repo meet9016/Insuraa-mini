@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/admin_api/:path*",
-        destination: "https://api.insuraa.in/admin_api/:path*",
+        destination: "https://api.insuraa.in/:path*",
       },
     ];
   },

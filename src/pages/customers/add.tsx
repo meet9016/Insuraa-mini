@@ -92,10 +92,10 @@ export default function AddCustomer() {
                 <input type="text" placeholder="Enter Phone Number" className={inputClass} />
               </div>
 
-              <div>
+              {/* <div>
                 <label className={labelClass}>Agent</label>
                 <Select className={inputClass}><option>Select Agent</option></Select>
-              </div>
+              </div> */}
               <div>
                 <label className={labelClass}>Customer Image</label>
                 <input type="file" className="border border-gray-300 rounded-lg text-sm px-4 py-1.5 w-full file:mr-4 file:py-1.5 file:px-4 file:rounded file:border-0 file:text-sm file:font-bold file:bg-gray-100 hover:file:bg-gray-200 cursor-pointer shadow-sm bg-white" />
@@ -104,10 +104,10 @@ export default function AddCustomer() {
                 <label className={labelClass}>Email</label>
                 <input type="email" placeholder="Enter Email" className={inputClass} />
               </div>
-              <div>
+              {/* <div>
                 <label className={labelClass}>Password</label>
                 <input type="password" placeholder="Strong Password" className={inputClass} />
-              </div>
+              </div> */}
 
               <div>
                 <label className={labelClass}>Reference By</label>
@@ -119,7 +119,7 @@ export default function AddCustomer() {
               </div>
               <div>
                 <label className={labelClass}>Date Of Birth</label>
-                <DatePicker className={inputClass}  />
+                <DatePicker className={inputClass} />
               </div>
               <div>
                 <label className={labelClass}>Year ( Age )</label>
@@ -216,7 +216,7 @@ export default function AddCustomer() {
                   <button
                     type="button"
                     onClick={() => removeDocument(doc.id)}
-                    className="bg-[#ff0000b3] text-white p-2.5 rounded-lg hover:bg-[#E01E49] transition-colors mt-1 md:mt-0 shadow-sm shrink-0 flex items-center justify-center"
+                    className="bg-[#ff0000b3] text-white p-1.5 rounded-md hover:bg-[#E01E49] transition-colors mt-1 md:mt-0 shadow-sm shrink-0 flex items-center justify-center"
                     title="Remove"
                   >
                     <Minus size={20} strokeWidth={3} />

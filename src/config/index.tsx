@@ -2,7 +2,7 @@ import axios from "axios";
 
 const API = typeof window !== "undefined"
   ? "/admin_api/"
-  : (process.env.NEXT_PUBLIC_API_URL || "https://api.insuraa.in/admin_api/");
+  : (process.env.NEXT_PUBLIC_API_URL || "https://api.insuraa.in/");
 
 export const baseUrl: { sendLoginOtp: string; verifyLoginOtp: string; sendSignUpOtp: string; verifySignUpOtp: string; [key: string]: any } = {
   sendLoginOtp: `${API}send_login_otp`,

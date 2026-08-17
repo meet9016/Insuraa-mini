@@ -78,25 +78,25 @@ export default function ClaimList() {
       label: "Client Name",
       render: (row) => <span className="font-bold text-gray-900">{row.clientName}</span>
     },
-    { 
-      key: "insuranceType", 
-      label: "Insurance Type", 
-      render: (row) => <span className="text-gray-700 font-medium">{row.insuranceType}</span> 
+    {
+      key: "insuranceType",
+      label: "Insurance Type",
+      render: (row) => <span className="text-gray-700 font-medium">{row.insuranceType}</span>
     },
-    { 
-      key: "admittedDate", 
-      label: "Admitted Date", 
-      render: (row) => <span className="text-gray-700 font-semibold">{row.admittedDate}</span> 
+    {
+      key: "admittedDate",
+      label: "Admitted Date",
+      render: (row) => <span className="text-gray-700 font-semibold">{row.admittedDate}</span>
     },
-    { 
-      key: "claimAmount", 
-      label: "Claim Amount", 
-      render: (row) => <span className="font-bold text-gray-900">{row.claimAmount}</span> 
+    {
+      key: "claimAmount",
+      label: "Claim Amount",
+      render: (row) => <span className="font-bold text-gray-900">{row.claimAmount}</span>
     },
-    { 
-      key: "deductedAmount", 
-      label: "Deducted Amount", 
-      render: (row) => <span className="font-bold text-gray-900">{row.deductedAmount}</span> 
+    {
+      key: "deductedAmount",
+      label: "Deducted Amount",
+      render: (row) => <span className="font-bold text-gray-900">{row.deductedAmount}</span>
     },
     {
       key: "claimStatus",

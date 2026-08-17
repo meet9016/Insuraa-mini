@@ -30,7 +30,7 @@ export default function Customers() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="flex items-center gap-2 text-xl font-bold text-gray-800">
             <UsersIcon size={24} className="text-gray-800" />
-            Customer Management 
+            Customer Management
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button className="bg-[#2F439D] hover:bg-blue-800 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors">
