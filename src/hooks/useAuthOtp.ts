@@ -3,7 +3,7 @@ import { api } from '@/utils/axiosInstance';
 import endPointApi from '@/utils/endPointApi';
 import { useAppDispatch } from '@/redux/hooks';
 import { setAuthTokenRedux, setOtpPhoneNumber, setOtpSent } from '@/redux/slices/authSlice';
-import { baseUrl, setAuthToken } from '@/config';
+import { setAuthToken } from '@/config';
 
 export interface SendOtpPayload {
   number: string;
@@ -45,7 +45,7 @@ export const useSendLoginOtp = () => {
     const formData = new FormData();
     formData.append('number', payload.number);
 
-    const response = await api.post(baseUrl.AUTH.SEND_LOGIN_OTP, formData);
+    const response = await api.post(endPointApi.AUTH.SEND_LOGIN_OTP, formData);
     return response.data;
   }, []);
 
@@ -71,7 +71,7 @@ export const useVerifyLoginOtp = () => {
     formData.append('number', payload.number);
     formData.append('otp', payload.otp);
 
-    const response = await api.post(baseUrl.AUTH.VERIFY_LOGIN_OTP, formData);
+    const response = await api.post(endPointApi.AUTH.VERIFY_LOGIN_OTP, formData);
     const resData = response.data;
 
     if (resData && (resData.status === 401 || resData.status === 400 || resData.status === 429 || resData.status === 'Failed' || resData.status === false)) {
@@ -105,7 +105,7 @@ export const useSendSignUpOtp = () => {
     const formData = new FormData();
     formData.append('number', payload.number);
 
-    const response = await api.post(baseUrl.AUTH.SEND_SIGN_UP_OTP, formData);
+    const response = await api.post(endPointApi.AUTH.SEND_SIGN_UP_OTP, formData);
     return response.data;
   }, []);
 
@@ -131,7 +131,7 @@ export const useVerifySignUpOtp = () => {
     formData.append('city', payload.city);
     formData.append('address', payload.address);
 
-    const response = await api.post(baseUrl.AUTH.VERIFY_SIGN_UP_OTP, formData);
+    const response = await api.post(endPointApi.AUTH.VERIFY_SIGN_UP_OTP, formData);
     const resData = response.data;
 
     if (resData && (resData.status === 401 || resData.status === 400 || resData.status === 429 || resData.status === 'Failed' || resData.status === false)) {
@@ -152,7 +152,7 @@ export const useVerifySignUpOtp = () => {
 export const useGetLoginStatusQuery = (number?: string | null) => {
   const queryFn = useCallback(async () => {
     if (!number) return null;
-    const response = await api.get(`${baseUrl.AUTH.SEND_LOGIN_OTP}?number=${number}`);
+    const response = await api.get(`${endPointApi.AUTH.SEND_LOGIN_OTP}?number=${number}`);
     return response.data;
   }, [number]);
 

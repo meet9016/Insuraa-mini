@@ -36,7 +36,7 @@ export const fetchCurrentStaff = createAsyncThunk(
       const token = getAuthToken();
       if (!token) return rejectWithValue('No token found');
       
-      const response = await axios.get('/admin_api/staff/me', {
+      const response = await axios.get('/staff/me', {
         headers: { Authorization: `Bearer ${token}` },
       });
       return response.data?.data || response.data; 

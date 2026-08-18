@@ -18,11 +18,12 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 2. Bypass API requests (/admin_api, /api) & static files (.png, .svg, etc.)
+  // 2. Bypass API requests (non-HTML requests) & static files (.png, .svg, etc.)
+  const acceptHeader = request.headers.get("accept") || "";
   if (
-    pathname.startsWith("/admin_api") ||
     pathname.startsWith("/api") ||
-    pathname.includes(".")
+    pathname.includes(".") ||
+    !acceptHeader.includes("text/html")
   ) {
     return NextResponse.next();
   }
@@ -41,5 +42,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|admin_api|api|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|api|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)"],
 };

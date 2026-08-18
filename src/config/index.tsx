@@ -2,7 +2,7 @@ import axios from "axios";
 import endPointApi from "@/utils/endPointApi";
 
 const API = typeof window !== "undefined"
-  ? "/admin_api/"
+  ? "/"
   : (process.env.NEXT_PUBLIC_API_URL || "https://api.insuraa.in/");
 
 export const baseUrl: {

@@ -8,7 +8,7 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
-        source: "/admin_api/:path*",
+        source: "/:path*",
         destination: "https://api.insuraa.in/:path*",
       },
     ];
