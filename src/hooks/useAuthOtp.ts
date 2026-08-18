@@ -44,7 +44,7 @@ export const useSendLoginOtp = () => {
       const formData = new FormData();
       formData.append('number', payload.number);
 
-      const response = await api.post(endPointApi.send_login_otp, formData);
+      const response = await api.post(endPointApi.AUTH.SEND_LOGIN_OTP, formData);
       const resData = response.data;
 
       const isFailed =
@@ -89,7 +89,7 @@ export const useVerifyLoginOtp = () => {
       formData.append('number', payload.number);
       formData.append('otp', payload.otp);
 
-      const response = await api.post(endPointApi.verify_login_otp, formData);
+      const response = await api.post(endPointApi.AUTH.VERIFY_LOGIN_OTP, formData);
       const resData = response.data;
 
       if (resData && (resData.status === 401 || resData.status === 400 || resData.status === 429 || resData.status === 'Failed' || resData.status === false)) {
@@ -117,7 +117,7 @@ export const useSendSignUpOtp = () => {
       const formData = new FormData();
       formData.append('number', payload.number);
 
-      const response = await api.post(endPointApi.send_sign_up_otp, formData);
+      const response = await api.post(endPointApi.AUTH.SEND_SIGN_UP_OTP, formData);
       const resData = response.data;
 
       const isFailed =
@@ -164,7 +164,7 @@ export const useVerifySignUpOtp = () => {
       formData.append('city', payload.city);
       formData.append('address', payload.address);
 
-      const response = await api.post(endPointApi.verify_sign_up_otp, formData);
+      const response = await api.post(endPointApi.AUTH.VERIFY_SIGN_UP_OTP, formData);
       const resData = response.data;
 
       if (resData && (resData.status === 401 || resData.status === 400 || resData.status === 429 || resData.status === 'Failed' || resData.status === false)) {
@@ -182,7 +182,7 @@ export const useGetLoginStatusQuery = (number?: string | null) => {
     queryKey: ['loginOtpStatus', number],
     queryFn: async () => {
       if (!number) return null;
-      const response = await api.get(`${endPointApi.send_login_otp}?number=${number}`);
+      const response = await api.get(`${endPointApi.AUTH.SEND_LOGIN_OTP}?number=${number}`);
       return response.data;
     },
     enabled: Boolean(number),

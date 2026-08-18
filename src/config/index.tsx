@@ -1,14 +1,25 @@
 import axios from "axios";
+import endPointApi from "@/utils/endPointApi";
 
 const API = typeof window !== "undefined"
   ? "/admin_api/"
   : (process.env.NEXT_PUBLIC_API_URL || "https://api.insuraa.in/");
 
-export const baseUrl: { sendLoginOtp: string; verifyLoginOtp: string; sendSignUpOtp: string; verifySignUpOtp: string; [key: string]: any } = {
-  sendLoginOtp: `${API}send_login_otp`,
-  verifyLoginOtp: `${API}verify_login_otp`,
-  sendSignUpOtp: `${API}send_sign_up_otp`,
-  verifySignUpOtp: `${API}verify_sign_up_otp`,
+export const baseUrl: {
+  AUTH: {
+    SEND_LOGIN_OTP: string;
+    VERIFY_LOGIN_OTP: string;
+    SEND_SIGN_UP_OTP: string;
+    VERIFY_SIGN_UP_OTP: string;
+  };
+  [key: string]: any;
+} = {
+  AUTH: {
+    SEND_LOGIN_OTP: `${API}${endPointApi.AUTH.SEND_LOGIN_OTP}`,
+    VERIFY_LOGIN_OTP: `${API}${endPointApi.AUTH.VERIFY_LOGIN_OTP}`,
+    SEND_SIGN_UP_OTP: `${API}${endPointApi.AUTH.SEND_SIGN_UP_OTP}`,
+    VERIFY_SIGN_UP_OTP: `${API}${endPointApi.AUTH.VERIFY_SIGN_UP_OTP}`,
+  },
 };
 
 const TOKEN_COOKIE_NAME = "crm_token";
