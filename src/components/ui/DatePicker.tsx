@@ -15,17 +15,39 @@ const MONTHS = [
 
 const DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
+const parseDateString = (val?: string): Date | null => {
+  if (!val) return null;
+  const str = String(val).trim();
+  if (!str || str === 'null' || str === 'undefined') return null;
+
+  const cleanVal = str.split(' ')[0].split('T')[0];
+
+  // Format: YYYY-MM-DD or YYYY/MM/DD
+  if (/^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/.test(cleanVal)) {
+    const parts = cleanVal.split(/[-/]/).map(Number);
+    return new Date(parts[0], parts[1] - 1, parts[2]);
+  }
+  // Format: DD-MM-YYYY or DD/MM/YYYY
+  if (/^\d{1,2}[-/]\d{1,2}[-/]\d{4}$/.test(cleanVal)) {
+    const parts = cleanVal.split(/[-/]/).map(Number);
+    return new Date(parts[2], parts[1] - 1, parts[0]);
+  }
+  const parsed = new Date(cleanVal);
+  return isNaN(parsed.getTime()) ? null : parsed;
+};
+
 export default function DatePicker({ value, onChange, className, placeholder = "Select Date" }: DatePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState<Date | null>(value ? new Date(value) : null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(parseDateString(value));
+  const [currentDate, setCurrentDate] = useState<Date>(parseDateString(value) || new Date());
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Sync external value
   useEffect(() => {
-    if (value) {
-      setSelectedDate(new Date(value));
-      setCurrentDate(new Date(value));
+    const parsed = parseDateString(value);
+    setSelectedDate(parsed);
+    if (parsed) {
+      setCurrentDate(parsed);
     }
   }, [value]);
 

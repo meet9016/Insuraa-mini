@@ -1,17 +1,172 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { Plus, Minus, ArrowLeft } from 'lucide-react';
-import Link from 'next/link';
 import { useRouter } from 'next/router';
 import Select from '@/components/ui/Select';
 import DatePicker from '@/components/ui/DatePicker';
+import { useCustomerDropdowns } from '@/hooks/useCustomerDropdowns';
+import { api } from '@/utils/axiosInstance';
+import endPointApi from '@/utils/endPointApi';
+import { toast } from 'react-toastify';
 
 export default function AddCustomer() {
   const router = useRouter();
-  const [documents, setDocuments] = useState([{ id: 1 }]);
+  const { id } = router.query;
+  const { data: dropdownData } = useCustomerDropdowns();
+
+  const [formValues, setFormValues] = useState({
+    customerId: id ? String(id) : '',
+    customerType: '',
+    firstName: '',
+    middleName: '',
+    lastName: '',
+    customerNumber: '',
+    email: '',
+    dob: '',
+    age: '',
+    gender: '',
+    height: '',
+    weight: '',
+    education: '',
+    maritalStatus: '',
+    anniversaryDate: '',
+    adharCardNo: '',
+    pancardNo: '',
+    referenceBy: '',
+    pincode: '',
+    nationality: 'India',
+    state: '',
+    city: '',
+    address: '',
+  });
+
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [customerImage, setCustomerImage] = useState<File | null>(null);
+
+  const [documents, setDocuments] = useState<{ id: number; documentId: string; file: File | null }[]>([
+    { id: 1, documentId: '', file: null }
+  ]);
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!router.isReady) return;
+    const queryId = router.query.id ? String(router.query.id) : '';
+    if (!queryId) return;
+
+    setFormValues(prev => ({ ...prev, customerId: queryId }));
+
+    const fetchCustomerDetails = async () => {
+      try {
+        let resData;
+        try {
+          const response = await api.get(endPointApi.CUSTOMER.CUSTOMER_LIST, {
+            params: { customer_id: queryId, id: queryId, search: queryId, limit: 100, page: 1 }
+          });
+          resData = response.data;
+        } catch (e) {
+          const formData = new FormData();
+          formData.append('customer_id', queryId);
+          formData.append('id', queryId);
+          formData.append('search', queryId);
+          formData.append('limit', '100');
+          formData.append('page', '1');
+          const response = await api.post(endPointApi.CUSTOMER.CUSTOMER_LIST, formData);
+          resData = response.data;
+        }
+
+        const list = resData?.data?.customer_list || resData?.data?.list || resData?.data || resData?.customer_list || [];
+        const item = Array.isArray(list)
+          ? list.find((c: any) => String(c.id || c.customer_id) === queryId) || list[0]
+          : (resData?.data?.customer_details || resData?.data || null);
+
+        if (item) {
+          const rawDob = item.dob || item.date_of_birth || item.customer_dob || item.birth_date || '';
+          const rawAnniversary = item.anniversary_date || item.anniversary || item.anniversary_dob || item.marriage_date || '';
+
+          setFormValues({
+            customerId: String(item.id || item.customer_id || queryId),
+            customerType: String(item.customer_type || item.customer_type_id || ''),
+            firstName: item.first_name || item.name?.split(' ')[0] || '',
+            middleName: item.middle_name || '',
+            lastName: item.last_name || item.name?.split(' ').slice(1).join(' ') || '',
+            customerNumber: item.customer_number || item.number || item.phone || '',
+            email: item.email || '',
+            dob: rawDob,
+            age: String(item.age || ''),
+            gender: String(item.gender || item.gender_id || ''),
+            height: String(item.height ?? item.customer_height ?? item.height_id ?? item.height_val ?? ''),
+            weight: String(item.weight ?? item.customer_weight ?? item.weight_id ?? item.weight_val ?? ''),
+            education: String(item.education || item.education_id || ''),
+            maritalStatus: String(item.marital_status || item.marital_status_id || ''),
+            anniversaryDate: rawAnniversary,
+            adharCardNo: item.adhar_card_no || item.adhar_no || '',
+            pancardNo: item.pancard_no || item.pan_no || '',
+            referenceBy: item.reference_by || '',
+            pincode: item.pincode || '',
+            nationality: item.nationality || 'India',
+            state: item.state || '',
+            city: item.city || '',
+            address: item.address || '',
+          });
+
+          if (item.documents && Array.isArray(item.documents) && item.documents.length > 0) {
+            setDocuments(item.documents.map((d: any, idx: number) => ({
+              id: idx + 1,
+              documentId: String(d.document_id || d.id || ''),
+              file: null
+            })));
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching customer details for edit:', err);
+      }
+    };
+
+    fetchCustomerDetails();
+  }, [router.isReady, router.query.id]);
+
+  const handleChange = (field: string, value: string) => {
+    let sanitizedValue = value;
+    if (field === 'customerNumber' || field === 'pincode') {
+      sanitizedValue = value.replace(/\D/g, '');
+    }
+
+    setFormValues(prev => ({ ...prev, [field]: sanitizedValue }));
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors: { [key: string]: string } = {};
+
+    if (!formValues.customerType.trim()) {
+      newErrors.customerType = 'Customer Type is required';
+    }
+    if (!formValues.firstName.trim()) {
+      newErrors.firstName = 'First Name is required';
+    }
+    if (!formValues.lastName.trim()) {
+      newErrors.lastName = 'Last Name is required';
+    }
+    if (!formValues.customerNumber.trim()) {
+      newErrors.customerNumber = 'Phone Number is required';
+    } else if (!/^\d{10}$/.test(formValues.customerNumber.trim())) {
+      newErrors.customerNumber = 'Please enter a valid 10-digit phone number';
+    }
+    if (!formValues.pincode.trim()) {
+      newErrors.pincode = 'Pincode is required';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const addDocument = () => {
-    setDocuments([...documents, { id: Date.now() }]);
+    if (documents.length < 5) {
+      setDocuments([...documents, { id: Date.now(), documentId: '', file: null }]);
+    }
   };
 
   const removeDocument = (id: number) => {
@@ -20,14 +175,92 @@ export default function AddCustomer() {
     }
   };
 
+  const handleDocumentChange = (id: number, documentId: string) => {
+    setDocuments(docs => docs.map(doc => doc.id === id ? { ...doc, documentId } : doc));
+  };
+
+  const handleDocumentFileChange = (id: number, file: File | null) => {
+    setDocuments(docs => docs.map(doc => doc.id === id ? { ...doc, file } : doc));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const activeCustomerId = formValues.customerId || (router.query.id ? String(router.query.id) : '');
+      const payload = new FormData();
+      payload.append('customer_id', activeCustomerId);
+      payload.append('customer_type', formValues.customerType);
+      payload.append('first_name', formValues.firstName);
+      payload.append('middle_name', formValues.middleName);
+      payload.append('last_name', formValues.lastName);
+      payload.append('customer_number', formValues.customerNumber);
+      payload.append('email', formValues.email);
+      payload.append('dob', formValues.dob);
+      payload.append('age', formValues.age);
+      payload.append('gender', formValues.gender);
+      payload.append('height', formValues.height);
+      payload.append('weight', formValues.weight);
+      payload.append('education', formValues.education);
+      payload.append('marital_status', formValues.maritalStatus);
+      payload.append('anniversary_date', formValues.anniversaryDate);
+      payload.append('adhar_card_no', formValues.adharCardNo);
+      payload.append('pancard_no', formValues.pancardNo);
+      payload.append('reference_by', formValues.referenceBy);
+      payload.append('pincode', formValues.pincode);
+      payload.append('nationality', formValues.nationality);
+      payload.append('state', formValues.state);
+      payload.append('city', formValues.city);
+      payload.append('address', formValues.address);
+
+      if (customerImage) {
+        payload.append('customer_image', customerImage);
+      }
+
+      documents.forEach((doc, index) => {
+        if (doc.documentId) {
+          payload.append(`document_id[${index}]`, doc.documentId);
+        }
+        if (doc.file) {
+          payload.append(`document_image[${index}]`, doc.file);
+        }
+      });
+
+      const response = await api.post(endPointApi.CUSTOMER.INSERT_CUSTOMER, payload);
+      const resData = response.data;
+
+      if (resData?.status === 200 || resData?.status === 'success' || resData?.status === true) {
+        toast.success(resData?.message || 'Customer saved successfully!');
+        setTimeout(() => {
+          router.push('/customers');
+        }, 1500);
+      } else {
+        toast.error(resData?.message || 'Failed to save customer');
+      }
+    } catch (err: any) {
+      const errMsg = err.response?.data?.message || err.message || 'Error occurred while saving customer';
+      toast.error(errMsg);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const sectionHeaderClass = "bg-[#EEF1FA] text-[#2B4399] px-5 py-3 text-[15px] font-bold rounded-lg flex justify-between items-center mb-5";
   const labelClass = "text-[13px] font-bold text-gray-700 mb-1.5 block";
   const inputClass = "w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#2D3591]/20 focus:border-[#2D3591] transition-all bg-white shadow-sm placeholder:text-gray-400";
+  const getInputClass = (fieldName: string) =>
+    `${inputClass} ${errors[fieldName] ? '!border-red-500 ring-2 ring-red-500/20' : ''}`;
 
   return (
     <div className="bg-[#f8fafc] min-h-[calc(100vh-72px-56px)] p-6">
       <Head>
-        <title>Add Customer - Insuraa</title>
+        <title>{id ? 'Edit Customer' : 'Add Customer'} - Insuraa</title>
         <style>{`
           body {
             -ms-overflow-style: none;
@@ -47,20 +280,25 @@ export default function AddCustomer() {
             <button onClick={() => router.back()} type="button" className="p-2 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors" title="Go Back">
               <ArrowLeft size={18} />
             </button>
-            <h1 className="text-xl">Add Customer</h1>
+            <h1 className="text-xl">{id ? 'Edit Customer' : 'Add Customer'}</h1>
           </div>
           <div className="flex items-center gap-3 w-full sm:w-auto">
             <button type="button" onClick={() => router.back()} className="flex-1 sm:flex-none px-5 py-2.5 border border-gray-300 rounded-lg text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors">
               Cancel
             </button>
-            <button type="button" className="flex-1 sm:flex-none bg-[#2B4399] text-white px-6 py-2.5 rounded-lg text-sm font-bold hover:bg-[#203378] transition-colors shadow-sm">
-              Save Customer
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+              className="flex-1 sm:flex-none bg-[#2B4399] text-white px-6 py-2.5 rounded-lg text-sm font-bold hover:bg-[#203378] transition-colors shadow-sm disabled:opacity-50"
+            >
+              {isSubmitting ? 'Saving...' : (id ? 'Update Customer' : 'Save Customer')}
             </button>
           </div>
         </div>
 
         {/* Form Content */}
-        <form className="space-y-8 bg-white">
+        <form onSubmit={handleSubmit} className="space-y-8 bg-white">
 
           {/* Customer Information */}
           <div>
@@ -71,89 +309,219 @@ export default function AddCustomer() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-5">
               <div>
                 <label className={labelClass}>Customer Type <span className="text-red-500">*</span></label>
-                <input type="text" defaultValue="Individual" className={inputClass} />
+                <Select
+                  className={getInputClass('customerType')}
+                  value={formValues.customerType}
+                  onChange={(e: any) => handleChange('customerType', e.target.value)}
+                >
+                  <option value="">Select Customer Type</option>
+                  {dropdownData?.customer_type?.map((item) => (
+                    <option key={item.id} value={String(item.id)}>
+                      {item.name}
+                    </option>
+                  ))}
+                </Select>
+                {errors.customerType && (
+                  <p className="text-xs text-red-500 mt-1 font-medium">{errors.customerType}</p>
+                )}
               </div>
-              <div className="hidden md:block md:col-span-2"></div> {/* Spacer to match layout */}
+              <div className="hidden md:block md:col-span-2"></div>
 
               <div>
                 <label className={labelClass}>First Name <span className="text-red-500">*</span></label>
-                <input type="text" placeholder="Enter First Name" className={inputClass} />
+                <input
+                  type="text"
+                  placeholder="Enter First Name"
+                  className={getInputClass('firstName')}
+                  value={formValues.firstName}
+                  onChange={(e) => handleChange('firstName', e.target.value)}
+                />
+                {errors.firstName && (
+                  <p className="text-xs text-red-500 mt-1 font-medium">{errors.firstName}</p>
+                )}
               </div>
               <div>
                 <label className={labelClass}>Middle Name</label>
-                <input type="text" placeholder="Enter Middle Name" className={inputClass} />
+                <input
+                  type="text"
+                  placeholder="Enter Middle Name"
+                  className={inputClass}
+                  value={formValues.middleName}
+                  onChange={(e) => handleChange('middleName', e.target.value)}
+                />
               </div>
               <div>
                 <label className={labelClass}>Last Name <span className="text-red-500">*</span></label>
-                <input type="text" placeholder="Enter Last Name" className={inputClass} />
+                <input
+                  type="text"
+                  placeholder="Enter Last Name"
+                  className={getInputClass('lastName')}
+                  value={formValues.lastName}
+                  onChange={(e) => handleChange('lastName', e.target.value)}
+                />
+                {errors.lastName && (
+                  <p className="text-xs text-red-500 mt-1 font-medium">{errors.lastName}</p>
+                )}
               </div>
               <div>
                 <label className={labelClass}>Phone Number <span className="text-red-500">*</span></label>
-                <input type="text" placeholder="Enter Phone Number" className={inputClass} />
+                <input
+                  type="text"
+                  placeholder="Enter Phone Number"
+                  className={getInputClass('customerNumber')}
+                  value={formValues.customerNumber}
+                  onChange={(e) => handleChange('customerNumber', e.target.value)}
+                />
+                {errors.customerNumber && (
+                  <p className="text-xs text-red-500 mt-1 font-medium">{errors.customerNumber}</p>
+                )}
               </div>
 
-              {/* <div>
-                <label className={labelClass}>Agent</label>
-                <Select className={inputClass}><option>Select Agent</option></Select>
-              </div> */}
               <div>
                 <label className={labelClass}>Customer Image</label>
-                <input type="file" className="border border-gray-300 rounded-lg text-sm px-4 py-1.5 w-full file:mr-4 file:py-1.5 file:px-4 file:rounded file:border-0 file:text-sm file:font-bold file:bg-gray-100 hover:file:bg-gray-200 cursor-pointer shadow-sm bg-white" />
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setCustomerImage(e.target.files?.[0] || null)}
+                  className="border border-gray-300 rounded-lg text-sm px-4 py-1.5 w-full file:mr-4 file:py-1.5 file:px-4 file:rounded file:border-0 file:text-sm file:font-bold file:bg-gray-100 hover:file:bg-gray-200 cursor-pointer shadow-sm bg-white"
+                />
               </div>
               <div>
                 <label className={labelClass}>Email</label>
-                <input type="email" placeholder="Enter Email" className={inputClass} />
+                <input
+                  type="email"
+                  placeholder="Enter Email"
+                  className={inputClass}
+                  value={formValues.email}
+                  onChange={(e) => handleChange('email', e.target.value)}
+                />
               </div>
-              {/* <div>
-                <label className={labelClass}>Password</label>
-                <input type="password" placeholder="Strong Password" className={inputClass} />
-              </div> */}
 
               <div>
                 <label className={labelClass}>Reference By</label>
-                <Select className={inputClass}><option>Select Reference By</option></Select>
-              </div>
-              <div>
-                <label className={labelClass}>Source Of Customer</label>
-                <Select className={inputClass}><option>Select Source Of Customer By</option></Select>
+                <input
+                  type="text"
+                  placeholder="Reference By"
+                  className={inputClass}
+                  value={formValues.referenceBy}
+                  onChange={(e) => handleChange('referenceBy', e.target.value)}
+                />
               </div>
               <div>
                 <label className={labelClass}>Date Of Birth</label>
-                <DatePicker className={inputClass} />
+                <DatePicker
+                  className={inputClass}
+                  value={formValues.dob}
+                  onChange={(dateStr: string) => handleChange('dob', dateStr)}
+                  placeholder="Select Date Of Birth"
+                />
               </div>
               <div>
                 <label className={labelClass}>Year ( Age )</label>
-                <input type="text" placeholder="Enter Year ( Age )" className={inputClass} />
+                <input
+                  type="text"
+                  placeholder="Enter Year ( Age )"
+                  className={inputClass}
+                  value={formValues.age}
+                  onChange={(e) => handleChange('age', e.target.value)}
+                />
               </div>
 
               <div>
                 <label className={labelClass}>Gender</label>
-                <Select className={inputClass}><option>Select Gender</option></Select>
+                <Select
+                  className={inputClass}
+                  value={formValues.gender}
+                  onChange={(e: any) => handleChange('gender', e.target.value)}
+                >
+                  <option value="">Select Gender</option>
+                  {dropdownData?.gender?.map((item) => (
+                    <option key={item.id} value={String(item.id)}>
+                      {item.name}
+                    </option>
+                  ))}
+                </Select>
               </div>
               <div>
                 <label className={labelClass}>Height</label>
-                <Select className={inputClass}><option>Select Height</option></Select>
+                <input
+                  type="text"
+                  placeholder="Enter Height"
+                  className={inputClass}
+                  value={formValues.height}
+                  onChange={(e) => handleChange('height', e.target.value)}
+                />
               </div>
               <div>
                 <label className={labelClass}>Weight</label>
-                <input type="text" placeholder="Enter Weight" className={inputClass} />
+                <input
+                  type="text"
+                  placeholder="Enter Weight"
+                  className={inputClass}
+                  value={formValues.weight}
+                  onChange={(e) => handleChange('weight', e.target.value)}
+                />
               </div>
               <div>
                 <label className={labelClass}>Marital Status</label>
-                <Select className={inputClass}><option>Select Marital Status</option></Select>
+                <Select
+                  className={inputClass}
+                  value={formValues.maritalStatus}
+                  onChange={(e: any) => handleChange('maritalStatus', e.target.value)}
+                >
+                  <option value="">Select Marital Status</option>
+                  {dropdownData?.marital_status?.map((item) => (
+                    <option key={item.id} value={String(item.id)}>
+                      {item.name}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+
+              <div>
+                <label className={labelClass}>Anniversary Date</label>
+                <DatePicker
+                  className={inputClass}
+                  value={formValues.anniversaryDate}
+                  onChange={(dateStr: string) => handleChange('anniversaryDate', dateStr)}
+                  placeholder="Select Anniversary Date"
+                />
               </div>
 
               <div>
                 <label className={labelClass}>Education</label>
-                <Select className={inputClass}><option>Select Education</option></Select>
+                <Select
+                  className={inputClass}
+                  value={formValues.education}
+                  onChange={(e: any) => handleChange('education', e.target.value)}
+                >
+                  <option value="">Select Education</option>
+                  {dropdownData?.education?.map((item) => (
+                    <option key={item.id} value={String(item.id)}>
+                      {item.name}
+                    </option>
+                  ))}
+                </Select>
               </div>
               <div>
                 <label className={labelClass}>Adhar Card Number</label>
-                <input type="text" placeholder="Enter Adhar Card Number" className={inputClass} />
+                <input
+                  type="text"
+                  placeholder="Enter Adhar Card Number"
+                  className={inputClass}
+                  value={formValues.adharCardNo}
+                  onChange={(e) => handleChange('adharCardNo', e.target.value)}
+                />
               </div>
               <div>
                 <label className={labelClass}>Pancard Number</label>
-                <input type="text" placeholder="Enter Pancard Number" className={inputClass} />
+                <input
+                  type="text"
+                  placeholder="Enter Pancard Number"
+                  className={inputClass}
+                  value={formValues.pancardNo}
+                  onChange={(e) => handleChange('pancardNo', e.target.value)}
+                />
               </div>
             </div>
           </div>
@@ -167,24 +535,57 @@ export default function AddCustomer() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-5">
               <div>
                 <label className={labelClass}>Pincode <span className="text-red-500">*</span></label>
-                <input type="text" placeholder="Enter Pincode" className={inputClass} />
+                <input
+                  type="text"
+                  placeholder="Enter Pincode"
+                  className={getInputClass('pincode')}
+                  value={formValues.pincode}
+                  onChange={(e) => handleChange('pincode', e.target.value)}
+                />
+                {errors.pincode && (
+                  <p className="text-xs text-red-500 mt-1 font-medium">{errors.pincode}</p>
+                )}
               </div>
               <div>
                 <label className={labelClass}>Nationality</label>
-                <input type="text" placeholder="Auto Fetch via Pincode" className={inputClass} readOnly />
+                <input
+                  type="text"
+                  placeholder="Nationality"
+                  className={inputClass}
+                  value={formValues.nationality}
+                  onChange={(e) => handleChange('nationality', e.target.value)}
+                />
               </div>
               <div>
                 <label className={labelClass}>State</label>
-                <input type="text" placeholder="Auto Fetch via Pincode" className={inputClass} readOnly />
+                <input
+                  type="text"
+                  placeholder="State"
+                  className={inputClass}
+                  value={formValues.state}
+                  onChange={(e) => handleChange('state', e.target.value)}
+                />
               </div>
 
               <div>
                 <label className={labelClass}>City</label>
-                <input type="text" placeholder="Auto Fetch via Pincode" className={inputClass} readOnly />
+                <input
+                  type="text"
+                  placeholder="City"
+                  className={inputClass}
+                  value={formValues.city}
+                  onChange={(e) => handleChange('city', e.target.value)}
+                />
               </div>
               <div>
                 <label className={labelClass}>Home Address</label>
-                <input type="text" placeholder="Enter Home Address" className={inputClass} />
+                <input
+                  type="text"
+                  placeholder="Enter Home Address"
+                  className={inputClass}
+                  value={formValues.address}
+                  onChange={(e) => handleChange('address', e.target.value)}
+                />
               </div>
             </div>
           </div>
@@ -196,21 +597,40 @@ export default function AddCustomer() {
               <button
                 type="button"
                 onClick={addDocument}
-                className="bg-[#2B4399] text-white p-1.5 rounded hover:bg-[#203378] transition-colors"
-                title="Add Document"
+                disabled={documents.length >= 5}
+                className={`p-1.5 rounded transition-colors flex items-center gap-1 text-xs font-semibold ${documents.length >= 5
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-[#2B4399] text-white hover:bg-[#203378]'
+                  }`}
+                title={documents.length >= 5 ? 'Maximum 5 documents allowed' : 'Add Document'}
               >
                 <Plus size={16} strokeWidth={3} />
               </button>
             </div>
 
             <div className="space-y-4">
-              {documents.map((doc, index) => (
+              {documents.map((doc) => (
                 <div key={doc.id} className="flex flex-col md:flex-row items-start md:items-center gap-4">
                   <div className="flex-1 w-full">
-                    <input type="text" placeholder="Select Other Document Name" className={inputClass} />
+                    <Select
+                      className={inputClass}
+                      value={doc.documentId}
+                      onChange={(e: any) => handleDocumentChange(doc.id, e.target.value)}
+                    >
+                      <option value="">Select Document Name</option>
+                      {dropdownData?.document_name?.map((item) => (
+                        <option key={item.id} value={String(item.id)}>
+                          {item.name}
+                        </option>
+                      ))}
+                    </Select>
                   </div>
                   <div className="flex-1 w-full">
-                    <input type="file" className="border border-gray-300 rounded-lg text-sm px-4 py-2 w-full file:mr-4 file:py-1.5 file:px-4 file:rounded file:border-0 file:text-sm file:font-bold file:bg-gray-100 hover:file:bg-gray-200 cursor-pointer shadow-sm bg-white" />
+                    <input
+                      type="file"
+                      onChange={(e) => handleDocumentFileChange(doc.id, e.target.files?.[0] || null)}
+                      className="border border-gray-300 rounded-lg text-sm px-4 py-2 w-full file:mr-4 file:py-1.5 file:px-4 file:rounded file:border-0 file:text-sm file:font-bold file:bg-gray-100 hover:file:bg-gray-200 cursor-pointer shadow-sm bg-white"
+                    />
                   </div>
 
                   <button
@@ -226,8 +646,6 @@ export default function AddCustomer() {
             </div>
           </div>
 
-          {/* Footer / Save Button removed and placed at top */}
-
         </form>
       </div>
     </div>
@@ -237,9 +655,6 @@ export default function AddCustomer() {
 // Minimal Icons for section headers
 function UserIcon() {
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
-}
-function UsersIcon() {
-  return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
 }
 function MapPinIcon() {
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" /><circle cx="12" cy="10" r="3" /></svg>
