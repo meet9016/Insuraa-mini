@@ -118,6 +118,8 @@ export const useSendSignUpOtp = () => {
 
 // React Query Mutation Hook for verify_sign_up_otp
 export const useVerifySignUpOtp = () => {
+  const dispatch = useAppDispatch();
+
   const mutationFn = useCallback(async (payload: VerifySignUpPayload) => {
     const formData = new FormData();
     formData.append('number', payload.number);
@@ -141,9 +143,20 @@ export const useVerifySignUpOtp = () => {
     return resData;
   }, []);
 
+  const onSuccess = useCallback((data: OtpResponse) => {
+    const token = data?.token || data?.data?.token || (typeof data?.data === 'string' ? data.data : null) || data?.access_token || data?.auth_token;
+    if (token) {
+      setAuthToken(token);
+      dispatch(setAuthTokenRedux(token));
+    } else {
+      setAuthToken('logged_in_user_token');
+    }
+  }, [dispatch]);
+
   const options = useMemo(() => ({
     mutationFn,
-  }), [mutationFn]);
+    onSuccess,
+  }), [mutationFn, onSuccess]);
 
   return useMutation<OtpResponse, Error, VerifySignUpPayload>(options);
 };

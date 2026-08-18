@@ -122,9 +122,9 @@ export default function RegisterPage() {
           if (res?.message) {
             toast.success(res.message);
           }
-          // Redirect to Login Page after successful registration
+          // Redirect to Dashboard after successful registration
           setTimeout(() => {
-            router.push('/login');
+            router.push('/');
           }, 300);
         },
         onError: (err: any) => {
