@@ -1,9 +1,5 @@
 @import "tailwindcss";
-@import "react-toastify/dist/ReactToastify.css";
-@import "react-datepicker/dist/react-datepicker.css";
-@import "ag-grid-community/styles/ag-grid.css";
-@import "ag-grid-community/styles/ag-theme-alpine.css";
-@import "ag-grid-community/styles/ag-theme-quartz.css";
+
 
 :root {
   --background: #ffffff;
@@ -446,10 +442,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   font-family: var(--font-poppins), 'Poppins', sans-serif !important;
 }
 
-.ag-theme-alpine *,
-.ag-theme-quartz * {
-  font-family: var(--font-poppins), 'Poppins', sans-serif !important;
-}
+
 
 .ag-theme-alpine .ag-header,
 .ag-theme-quartz .ag-header,
@@ -493,15 +486,43 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   font-size: 18px;
 }
 
-/* AG Grid Selection Checkboxes - Enlarge Size & Custom Styling */
 .ag-checkbox-input-wrapper,
 .ag-theme-alpine .ag-checkbox-input-wrapper,
 .ag-theme-quartz .ag-checkbox-input-wrapper {
   width: 18px !important;
   height: 18px !important;
   border-radius: 4px !important;
-  border: 1.5px solid #94a3b8 !important;
+  border: 1px solid #94a3b8 !important;
   transition: all 0.15s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+}
+
+/* Hide AG grid native icons inside the checkbox to use our custom ones */
+.ag-checkbox-input-wrapper .ag-icon {
+  display: none !important;
+}
+
+.ag-checkbox-input-wrapper.ag-checked::after {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E") !important;
+  background-size: 11px 11px !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+}
+
+.ag-checkbox-input-wrapper.ag-indeterminate::after {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='4' y1='12' x2='20' y2='12'%3E%3C/line%3E%3C/svg%3E") !important;
+  background-size: 11px 11px !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
 }
 
 .ag-checkbox-input-wrapper:hover,
@@ -512,7 +533,10 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 
 .ag-checkbox-input-wrapper.ag-checked,
 .ag-theme-alpine .ag-checkbox-input-wrapper.ag-checked,
-.ag-theme-quartz .ag-checkbox-input-wrapper.ag-checked {
+.ag-theme-quartz .ag-checkbox-input-wrapper.ag-checked,
+.ag-checkbox-input-wrapper.ag-indeterminate,
+.ag-theme-alpine .ag-checkbox-input-wrapper.ag-indeterminate,
+.ag-theme-quartz .ag-checkbox-input-wrapper.ag-indeterminate {
   background-color: #2B4399 !important;
   border-color: #2B4399 !important;
 }
@@ -529,17 +553,20 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 
 .ag-header-cell .ag-checkbox-input-wrapper.ag-checked,
 .ag-theme-alpine .ag-header-cell .ag-checkbox-input-wrapper.ag-checked,
-.ag-theme-quartz .ag-header-cell .ag-checkbox-input-wrapper.ag-checked {
+.ag-theme-quartz .ag-header-cell .ag-checkbox-input-wrapper.ag-checked,
+.ag-header-cell .ag-checkbox-input-wrapper.ag-indeterminate,
+.ag-theme-alpine .ag-header-cell .ag-checkbox-input-wrapper.ag-indeterminate,
+.ag-theme-quartz .ag-header-cell .ag-checkbox-input-wrapper.ag-indeterminate {
   background-color: #ffffff !important;
   border-color: #ffffff !important;
 }
 
 .ag-header-cell .ag-checkbox-input-wrapper.ag-checked::after {
-  color: #2B4399 !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232B4399' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E") !important;
 }
 
-.ag-checkbox-input-wrapper:after {
-  display: none;
+.ag-header-cell .ag-checkbox-input-wrapper.ag-indeterminate::after {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232B4399' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='4' y1='12' x2='20' y2='12'%3E%3C/line%3E%3C/svg%3E") !important;
 }
 
 .ag-grid-pinned-left-cells:before,
@@ -552,9 +579,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 
 
 
-.ag-checkbox-input-wrapper.ag-checked:after {
-  color: white !important
-}
+
 
 .ag-theme-alpine .ag-row-selected,
 .ag-theme-quartz .ag-row-selected,
@@ -587,8 +612,6 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   color: #64748b;
 }
 
-.ag-popup,
-.ag-popup-child,
 .ag-menu,
 .ag-menu-column-select,
 .ag-filter,
@@ -598,6 +621,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   border-radius: 10px !important;
   border: 1px solid #e2e8f0 !important;
   z-index: 99999 !important;
+  overflow: hidden !important;
 }
 
 .ag-menu-list {
@@ -625,3 +649,4 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   margin: 4px 0 !important;
   height: 1px !important;
 }
+

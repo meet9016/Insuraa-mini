@@ -1,10 +1,8 @@
 import React, { useMemo } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
+import { FileEdit, Trash2, Eye, Plus } from 'lucide-react';
 import AgGridTable from '@/components/ui/AgGridTable';
-import { ColDef } from 'ag-grid-community';
-import { FileEdit, Trash2, Eye } from 'lucide-react';
-
 
 interface ClaimRecord {
   id: string;
@@ -67,20 +65,7 @@ const mockData: ClaimRecord[] = [
 export default function ClaimList() {
   const router = useRouter();
 
-  const columnDefs = useMemo<ColDef<ClaimRecord>[]>(() => [
-    {
-      headerName: "",
-      checkboxSelection: true,
-      headerCheckboxSelection: true,
-      width: 48,
-      minWidth: 48,
-      maxWidth: 48,
-      pinned: "left",
-      resizable: false,
-      filter: false,
-      sortable: false,
-      valueGetter: () => "",
-    },
+  const columnDefs = useMemo(() => [
     {
       headerName: "Client Name",
       field: "clientName",
@@ -158,22 +143,32 @@ export default function ClaimList() {
   ], []);
 
   return (
-    <div className="bg-[#f8fafc] min-h-[calc(100vh-72px-56px)] p-4 sm:p-6">
+    <div className="bg-[#f8fafc] min-h-[calc(100vh-72px-56px)]">
       <Head>
         <title>Claim Management - Insuraa</title>
       </Head>
 
-      <div className="w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <AgGridTable<ClaimRecord>
-          title="Claim Management"
-          subtitle="Manage and view your claim records with AG Grid Enterprise"
-          columnDefs={columnDefs}
-          rowData={mockData}
-          addLabel="Add Claim"
-          onAdd={() => router.push('/claim/add')}
-          enableExport={true}
-          enableSearch={true}
-        />
+      <div className="w-full bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-gray-200 overflow-hidden flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-5 sm:p-6 border-b border-gray-200 bg-[#F2F7FF]">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Claim Management</h2>
+            <p className="text-sm text-gray-500 mt-0.5">
+              Manage and view your claim records
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => router.push('/claim/add')}
+            className="px-5 py-2.5 bg-primary text-white text-sm font-bold rounded-xl shadow-md shadow-blue-900/20 transition-all hover:-translate-y-0.5 flex items-center gap-1.5 whitespace-nowrap"
+          >
+            <Plus size={16} />
+            <span>Add Claim</span>
+          </button>
+        </div>
+
+        <div className="w-full">
+          <AgGridTable rowData={mockData} columnDefs={columnDefs as any} />
+        </div>
       </div>
     </div>
   );

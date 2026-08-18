@@ -1,3 +1,7 @@
+import "react-toastify/dist/ReactToastify.css";
+import "react-datepicker/dist/react-datepicker.css";
+import "ag-grid-community/styles/ag-grid.css";
+import "ag-grid-community/styles/ag-theme-alpine.css";
 import "@/styles/globals.css";
 import type { AppProps } from "next/app";
 import { Poppins } from "next/font/google";
@@ -21,6 +25,7 @@ const poppins = Poppins({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700", "800"],
   display: "swap",
+  variable: "--font-poppins",
 });
 
 export default function App({ Component, pageProps, router }: AppProps) {
@@ -102,7 +107,7 @@ function AppContent({ Component, pageProps }: AppProps) {
   };
 
   return (
-    <div className={poppins.className}>
+    <div className={`${poppins.variable} ${poppins.className}`}>
       {showInitialLoader && <Loader />}
       <div className="flex flex-col min-h-screen bg-white">
         <div className={`flex-1 min-w-0 ${mounted ? 'transition-all duration-300 ease-in-out' : ''}`}>
