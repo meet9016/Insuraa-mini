@@ -15,7 +15,6 @@ import { usePathname } from "next/navigation";
 import Layout from "@/components/Layout";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
-import { fetchCurrentStaff } from "@/redux/slices/authSlice";
 import { fetchLeadStatuses } from "@/redux/slices/leadStatusSlice";
 import PremiumLoader from "@/components/ui/PremiumLoader";
 import Loader from "@/components/Loader";
@@ -55,17 +54,15 @@ function AppContent({ Component, pageProps }: AppProps) {
   const isLoginPage = pathName === "/login" || pathName === "/register";
   const is404Page = router.pathname === "/404";
   const hideLayout = isLoginPage || is404Page;
-  const authStatus = useAppSelector((state) => state.auth.status);
   const leadStatusStatus = useAppSelector((state) => state.leadStatus.status);
   const hasDispatched = useRef(false);
 
   useEffect(() => {
     if (!isLoginPage && !hasDispatched.current) {
       hasDispatched.current = true;
-      if (authStatus === 'idle') dispatch(fetchCurrentStaff());
       if (leadStatusStatus === 'idle') dispatch(fetchLeadStatuses());
     }
-  }, [authStatus, leadStatusStatus, dispatch, isLoginPage]);
+  }, [leadStatusStatus, dispatch, isLoginPage]);
 
   const [mounted, setMounted] = useState(false);
   const [showInitialLoader, setShowInitialLoader] = useState(true);

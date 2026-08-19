@@ -636,7 +636,7 @@ export default function AddCustomer() {
                   <button
                     type="button"
                     onClick={() => removeDocument(doc.id)}
-                    className="bg-[#ff0000b3] text-white p-1.5 rounded-md hover:bg-[#E01E49] transition-colors mt-1 md:mt-0 shadow-sm shrink-0 flex items-center justify-center"
+                    className="bg-[#ff0000b3] text-white p-1 rounded-sm transition-colors mt-1 md:mt-0 shadow-sm shrink-0 flex items-center justify-center"
                     title="Remove"
                   >
                     <Minus size={20} strokeWidth={3} />

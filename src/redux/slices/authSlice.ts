@@ -1,6 +1,4 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import axios from 'axios';
-import { baseUrl, getAuthToken } from '@/config';
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export interface User {
   id?: string;
@@ -29,23 +27,6 @@ const initialState: AuthState = {
   error: null,
 };
 
-export const fetchCurrentStaff = createAsyncThunk(
-  'auth/fetchCurrentStaff',
-  async (_, { rejectWithValue }) => {
-    try {
-      const token = getAuthToken();
-      if (!token) return rejectWithValue('No token found');
-      
-      const response = await axios.get('/staff/me', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      return response.data?.data || response.data; 
-    } catch (err: any) {
-      return rejectWithValue(err.response?.data?.message || err.message);
-    }
-  }
-);
-
 const authSlice = createSlice({
   name: 'auth',
   initialState,
@@ -70,20 +51,6 @@ const authSlice = createSlice({
       state.token = null;
       state.status = 'idle';
     }
-  },
-  extraReducers: (builder) => {
-    builder
-      .addCase(fetchCurrentStaff.pending, (state) => {
-        state.status = 'loading';
-      })
-      .addCase(fetchCurrentStaff.fulfilled, (state, action) => {
-        state.status = 'succeeded';
-        state.currentStaff = action.payload;
-      })
-      .addCase(fetchCurrentStaff.rejected, (state, action) => {
-        state.status = 'failed';
-        state.error = action.payload as string;
-      });
   },
 });
 
