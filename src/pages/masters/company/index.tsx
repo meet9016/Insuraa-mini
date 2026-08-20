@@ -11,6 +11,9 @@ import {
 } from 'lucide-react';
 import AgGridTable from '@/components/ui/AgGridTable';
 import DeleteConfirmationModal from '@/components/ui/DeleteConfirmationModal';
+import CompanyModal from '@/components/company/CompanyModal';
+import PlansModal from '@/components/company/PlansModal';
+import PlanFormModal from '@/components/company/PlanFormModal';
 import { useCompanyList, useCompanyPlans, useCompanyActions } from '@/hooks/useCompanyApi';
 
 export default function AddCompanies() {
@@ -327,139 +330,44 @@ export default function AddCompanies() {
         isDeleting={deleteModalState.isDeleting}
       />
 
-      {/* 1. Add / Edit Company Modal */}
-      {isAddCompanyOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsAddCompanyOpen(false)}></div>
-          <div className="relative bg-white w-full max-w-lg rounded-xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="bg-[#2B4399] px-5 py-3.5 flex justify-between items-center text-white">
-              <h2 className="font-bold text-base">{editingCompanyId ? 'Edit Company' : 'Add Company'}</h2>
-              <button onClick={() => setIsAddCompanyOpen(false)} className="hover:text-gray-200 transition-colors">
-                <X size={20} strokeWidth={2.5} />
-              </button>
-            </div>
-            <div className="p-6">
-              <label className="block text-[13px] font-semibold text-gray-700 mb-1.5">Company Name <span className="text-red-500">*</span></label>
-              <input
-                type="text"
-                placeholder="Enter Company Name"
-                value={companyName}
-                onChange={(e) => {
-                  setCompanyName(e.target.value);
-                  if (companyNameError) setCompanyNameError('');
-                }}
-                className={`w-full border rounded-md px-3.5 py-2.5 text-sm focus:outline-none transition-all placeholder:text-gray-400 ${companyNameError
-                  ? '!border-red-500 ring-2 ring-red-500/20'
-                  : 'border-gray-300 focus:ring-1 focus:ring-[#2D3591] focus:border-[#2D3591]'
-                  }`}
-              />
-              {companyNameError && (
-                <p className="text-xs text-red-500 mt-1 font-medium">{companyNameError}</p>
-              )}
-            </div>
-            <div className="border-t border-gray-100 px-6 py-4 bg-gray-50 flex justify-end gap-3">
-              <button
-                onClick={() => setIsAddCompanyOpen(false)}
-                className="bg-gray-400 hover:bg-gray-500 text-white px-5 py-2 rounded-md font-bold text-sm transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAddCompany}
-                disabled={isSubmitting}
-                className="bg-[#2B4399] hover:bg-[#203378] text-white px-6 py-2 rounded-md font-bold text-sm transition-colors disabled:opacity-50"
-              >
-                {isSubmitting ? 'Saving...' : (editingCompanyId ? 'Update' : 'Save')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <CompanyModal
+        isOpen={isAddCompanyOpen}
+        onClose={() => setIsAddCompanyOpen(false)}
+        companyName={companyName}
+        setCompanyName={setCompanyName}
+        companyNameError={companyNameError}
+        setCompanyNameError={setCompanyNameError}
+        editingCompanyId={editingCompanyId}
+        isSubmitting={isSubmitting}
+        onSubmit={handleAddCompany}
+      />
 
-      {/* 2. View Plans Modal */}
-      {activePlansCompany && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !isAddPlanOpen && setActivePlansCompany(null)}></div>
-          <div className="relative bg-white w-full max-w-4xl max-h-[90vh] rounded-xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="bg-[#2B4399] px-5 py-3.5 flex justify-between items-center text-white shrink-0">
-              <h2 className="font-bold text-base">{activePlansCompany.name || activePlansCompany.company_name} — Plans</h2>
-              <button onClick={() => !isAddPlanOpen && setActivePlansCompany(null)} className="hover:text-gray-200 transition-colors">
-                <X size={20} strokeWidth={2.5} />
-              </button>
-            </div>
+      <PlansModal
+        isOpen={!!activePlansCompany}
+        onClose={() => !isAddPlanOpen && setActivePlansCompany(null)}
+        activePlansCompany={activePlansCompany}
+        planList={planList}
+        isLoadingPlans={isLoadingPlans}
+        planColumnDefs={planColumnDefs}
+        onAddPlanClick={() => {
+          setEditingPlanId(null);
+          setPlanName('');
+          setPlanNameError('');
+          setIsAddPlanOpen(true);
+        }}
+      />
 
-            <div className="flex justify-between items-center p-4 border-b border-gray-200 bg-[#F2F7FF] shrink-0">
-              <h3 className="font-semibold text-gray-900 text-sm">Company Plans</h3>
-              <button
-                type="button"
-                onClick={() => {
-                  setEditingPlanId(null);
-                  setPlanName('');
-                  setPlanNameError('');
-                  setIsAddPlanOpen(true);
-                }}
-                className="px-4 py-2 bg-[#2B4399] text-white text-xs font-bold rounded-lg shadow transition-all hover:bg-[#203378] flex items-center gap-1.5"
-              >
-                <Plus size={14} />
-                <span>Add Plan</span>
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-auto bg-white p-4">
-              <AgGridTable rowData={planList} columnDefs={planColumnDefs as any} loading={isLoadingPlans} />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 3. Add / Edit Plan Modal (Nested on top of View Plans) */}
-      {isAddPlanOpen && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsAddPlanOpen(false)}></div>
-          <div className="relative bg-white w-full max-w-lg rounded-xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="bg-[#2B4399] px-5 py-3.5 flex justify-between items-center text-white">
-              <h2 className="font-bold text-base">{editingPlanId ? 'Edit Plan' : 'Add Plan'}</h2>
-              <button onClick={() => setIsAddPlanOpen(false)} className="hover:text-gray-200 transition-colors">
-                <X size={20} strokeWidth={2.5} />
-              </button>
-            </div>
-            <div className="p-6">
-              <label className="block text-[13px] font-semibold text-gray-700 mb-1.5">Plan Name <span className="text-red-500">*</span></label>
-              <input
-                type="text"
-                placeholder="e.g. Term Life Gold"
-                value={planName}
-                onChange={(e) => {
-                  setPlanName(e.target.value);
-                  if (planNameError) setPlanNameError('');
-                }}
-                className={`w-full border rounded-md px-3.5 py-2.5 text-sm focus:outline-none transition-all placeholder:text-gray-400 ${planNameError
-                  ? '!border-red-500 ring-2 ring-red-500/20'
-                  : 'border-gray-300 focus:ring-1 focus:ring-[#2D3591] focus:border-[#2D3591]'
-                  }`}
-              />
-              {planNameError && (
-                <p className="text-xs text-red-500 mt-1 font-medium">{planNameError}</p>
-              )}
-            </div>
-            <div className="border-t border-gray-100 px-6 py-4 bg-gray-50 flex justify-end gap-3">
-              <button
-                onClick={() => setIsAddPlanOpen(false)}
-                className="bg-gray-400 hover:bg-gray-500 text-white px-5 py-2 rounded-md font-bold text-sm transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAddPlan}
-                disabled={isSubmittingPlan}
-                className="bg-[#2B4399] hover:bg-[#203378] text-white px-6 py-2 rounded-md font-bold text-sm transition-colors disabled:opacity-50"
-              >
-                {isSubmittingPlan ? 'Saving...' : (editingPlanId ? 'Update' : 'Save Plan')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <PlanFormModal
+        isOpen={isAddPlanOpen}
+        onClose={() => setIsAddPlanOpen(false)}
+        planName={planName}
+        setPlanName={setPlanName}
+        planNameError={planNameError}
+        setPlanNameError={setPlanNameError}
+        editingPlanId={editingPlanId}
+        isSubmittingPlan={isSubmittingPlan}
+        onSubmit={handleAddPlan}
+      />
 
     </div>
   );
