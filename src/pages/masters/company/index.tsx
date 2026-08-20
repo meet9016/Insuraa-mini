@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import AgGridTable from '@/components/ui/AgGridTable';
 import DeleteConfirmationModal from '@/components/ui/DeleteConfirmationModal';
+import TableHeader from '@/components/ui/TableHeader';
 import CompanyModal from '@/components/company/CompanyModal';
 import PlansModal from '@/components/company/PlansModal';
 import PlanFormModal from '@/components/company/PlanFormModal';
@@ -282,38 +283,20 @@ export default function AddCompanies() {
       </Head>
 
       <div className="w-full bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-gray-200 overflow-hidden flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-5 sm:p-6 border-b border-gray-200 bg-[#F2F7FF]">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900">Companies</h2>
-            <p className="text-sm text-gray-500 mt-0.5">Manage and view insurance companies and plans</p>
-          </div>
-
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <div className="relative flex-1 sm:flex-none">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search companies..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full sm:w-[240px] pl-9 pr-4 py-2 bg-white border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2D3591]/20 focus:border-[#2D3591] transition-all"
-              />
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                setEditingCompanyId(null);
-                setCompanyName('');
-                setCompanyNameError('');
-                setIsAddCompanyOpen(true);
-              }}
-              className="px-5 py-2.5 bg-[#2B4399] text-white text-sm font-bold rounded-xl shadow-md transition-all hover:bg-[#203378] flex items-center gap-1.5 whitespace-nowrap"
-            >
-              <Plus size={16} />
-              <span>Add Company</span>
-            </button>
-          </div>
-        </div>
+        <TableHeader
+          title="Companies"
+          subtitle="Manage and view insurance companies and plans"
+          searchPlaceholder="Search companies..."
+          searchValue={search}
+          onSearchChange={setSearch}
+          buttonText="Add Company"
+          onButtonClick={() => {
+            setEditingCompanyId(null);
+            setCompanyName('');
+            setCompanyNameError('');
+            setIsAddCompanyOpen(true);
+          }}
+        />
 
         <div className="w-full">
           <AgGridTable rowData={companyList} columnDefs={columnDefs as any} loading={isLoading} />

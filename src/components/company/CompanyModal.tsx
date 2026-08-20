@@ -1,5 +1,6 @@
 import React from 'react';
 import { X } from 'lucide-react';
+import ActionButtons from '@/components/ui/ActionButtons';
 
 interface CompanyModalProps {
   isOpen: boolean;
@@ -55,21 +56,12 @@ export default function CompanyModal({
             <p className="text-xs text-red-500 mt-1 font-medium">{companyNameError}</p>
           )}
         </div>
-        <div className="border-t border-gray-100 px-6 py-4 bg-gray-50 flex justify-end gap-3">
-          <button
-            onClick={onClose}
-            className="bg-gray-400 hover:bg-gray-500 text-white px-5 py-2 rounded-md font-bold text-sm transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onSubmit}
-            disabled={isSubmitting}
-            className="bg-[#2B4399] hover:bg-[#203378] text-white px-6 py-2 rounded-md font-bold text-sm transition-colors disabled:opacity-50"
-          >
-            {isSubmitting ? 'Saving...' : (editingCompanyId ? 'Update' : 'Save')}
-          </button>
-        </div>
+        <ActionButtons 
+          onCancel={onClose}
+          onSubmit={onSubmit}
+          isSubmitting={isSubmitting}
+          submitText={editingCompanyId ? 'Update' : 'Save'}
+        />
       </div>
     </div>
   );
