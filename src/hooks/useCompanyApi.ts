@@ -13,18 +13,17 @@ export const useCompanyList = ({ page, limit, search }: UseCompanyListParams) =>
   return useQuery({
     queryKey: ['companyList', page, limit, search],
     queryFn: async () => {
-      let resData;
       try {
         const response = await api.get(endPointApi.COMPANY.COMPANY_LIST, {
           params: { page, limit, search }
         });
-        resData = response.data;
+        const resData = response.data;
+        const list = resData?.data?.company_list || resData?.data?.list || resData?.data || resData?.company_list || [];
+        return Array.isArray(list) ? list : [];
       } catch (err: any) {
-        toast.error(err?.resData?.data?.message);
-        return false;
+        toast.error(err?.response?.data?.message || 'Error fetching company list');
+        return [];
       }
-      const list = resData?.data?.company_list || resData?.data?.list || resData?.data || resData?.company_list || [];
-      return Array.isArray(list) ? list : [];
     }
   });
 };
@@ -36,19 +35,17 @@ export const useCompanyPlans = (activeCompanyId: string | number) => {
     enabled: !!activeCompanyId,
     queryFn: async () => {
       if (!activeCompanyId) return [];
-      let resData;
       try {
         const formData = new FormData();
         formData.append('company_id', String(activeCompanyId));
         const response = await api.post(endPointApi.COMPANY.FETCH_COMPANY_PLANS, formData);
-        resData = response.data;
+        const resData = response.data;
+        const list = resData?.data?.company_plans || resData?.data?.plans || resData?.data?.list || resData?.data || resData?.company_plans || [];
+        return Array.isArray(list) ? list : [];
       } catch (err: any) {
-       
-        toast.error(err?.response?.data?.message);
-        return false;
+        toast.error(err?.response?.data?.message || 'Error fetching company plans');
+        return [];
       }
-      const list = resData?.data?.company_plans || resData?.data?.plans || resData?.data?.list || resData?.data || resData?.company_plans || [];
-      return Array.isArray(list) ? list : [];
     }
   });
 };
@@ -88,10 +85,9 @@ export const useCompanyActions = () => {
       formData.append('plan_id', String(editingPlanId));
     }
 
-    let resData;
     try {
       const response = await api.post(endPointApi.COMPANY.INSERT_COMPANY_PLAN, formData);
-      resData = response.data;
+      const resData = response.data;
 
       if (resData?.status === 200) {
         toast.success(resData?.message);
@@ -100,7 +96,7 @@ export const useCompanyActions = () => {
         return true;
       }
     } catch (err: any) {
-      toast.error(err?.resData?.data?.message);
+      toast.error(err?.response?.data?.message || 'Error saving plan');
       return false;
     }
   };
@@ -111,10 +107,9 @@ export const useCompanyActions = () => {
     const formData = new FormData();
     formData.append('company_id', String(companyId));
 
-    let resData;
     try {
       const response = await api.post(endPointApi.COMPANY.DELETE_COMPANY, formData);
-      resData = response.data;
+      const resData = response.data;
 
       if (resData?.status === 200) {
         toast.success(resData?.message);
@@ -122,7 +117,7 @@ export const useCompanyActions = () => {
         return true;
       }
     } catch (err: any) {
-      toast.error(err?.resData?.data?.message);
+      toast.error(err?.response?.data?.message || 'Error deleting company');
       return false;
     }
   };
@@ -130,10 +125,9 @@ export const useCompanyActions = () => {
   const deleteCompanyPlan = async (planId: string | number) => {
     const formData = new FormData();
     formData.append('plan_id', String(planId));
-    let resData;
     try {
       const response = await api.post(endPointApi.COMPANY.DELETE_COMPANY_PLAN, formData);
-      resData = response.data;
+      const resData = response.data;
 
       if (resData?.status === 200) {
         toast.success(resData?.message);
@@ -142,7 +136,7 @@ export const useCompanyActions = () => {
         return true;
       }
     } catch (err: any) {
-      toast.error(err?.resData?.data?.message);
+      toast.error(err?.response?.data?.message || 'Error deleting company plan');
       return false;
     }
   };

@@ -39,7 +39,7 @@ apiAdminInstance.interceptors.response.use(
     if (response && response.status === 401) {
       if (typeof window !== 'undefined') {
         localStorage.removeItem("auth_token");
-        window.location.href = "/login";
+        window.location.href = "/auth/login";
       }
     }
     return Promise.reject(error);

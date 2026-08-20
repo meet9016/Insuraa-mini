@@ -10,13 +10,10 @@ import { Toaster } from "react-hot-toast";
 import { Provider } from "react-redux";
 import { store } from "@/redux/store";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
-import { toggleSidebar } from "@/redux/slices/appSlice";
-import { usePathname } from "next/navigation";
 import Layout from "@/components/Layout";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import { fetchLeadStatuses } from "@/redux/slices/leadStatusSlice";
-import PremiumLoader from "@/components/ui/PremiumLoader";
 import Loader from "@/components/Loader";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
@@ -47,11 +44,9 @@ export default function App({ Component, pageProps, router }: AppProps) {
 }
 
 function AppContent({ Component, pageProps }: AppProps) {
-  const globalLoading = useAppSelector((state) => state.app.globalLoading);
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const pathName = usePathname();
-  const isLoginPage = pathName === "/login" || pathName === "/register";
+  const isLoginPage = router.pathname === "/auth/login" || router.pathname === "/auth/register";
   const is404Page = router.pathname === "/404";
   const hideLayout = isLoginPage || is404Page;
   const leadStatusStatus = useAppSelector((state) => state.leadStatus.status);
@@ -75,33 +70,7 @@ function AppContent({ Component, pageProps }: AppProps) {
     return () => clearTimeout(timer);
   }, []);
 
-  // Page transition loader state
-  const [isNavigating, setIsNavigating] = useState(false);
 
-  useEffect(() => {
-    const handleStart = () => setIsNavigating(true);
-    const handleComplete = () => setIsNavigating(false);
-
-    router.events.on('routeChangeStart', handleStart);
-    router.events.on('routeChangeComplete', handleComplete);
-    router.events.on('routeChangeError', handleComplete);
-
-    return () => {
-      router.events.off('routeChangeStart', handleStart);
-      router.events.off('routeChangeComplete', handleComplete);
-      router.events.off('routeChangeError', handleComplete);
-    };
-  }, [router]);
-
-  const getLabel = () => {
-    if (pathName === "/") return "Dashboard";
-    if (pathName === "/leads") return "Leads";
-    if (pathName === "/leads/list") return "Leads List";
-    if (pathName === "/leads/kanban") return "Leads Kanban";
-    if (pathName === "/setup") return "Setup";
-    if (pathName === "/tasks") return "Tasks";
-    return "";
-  };
 
   return (
     <div className={`${poppins.variable} ${poppins.className}`}>

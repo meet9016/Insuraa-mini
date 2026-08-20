@@ -44,10 +44,6 @@ export default function RegisterPage() {
               !res ||
               res.status === 404 ||
               res.status === 400 ||
-              res.status === 401 ||
-              res.status === 422 ||
-              res.status === 'Failed' ||
-              res.status === 'error' ||
               res.status === false;
 
             if (isError) {
@@ -563,7 +559,7 @@ export default function RegisterPage() {
             <div className="mt-6 text-center">
               <p className="text-[13px] text-gray-600">
                 Already have an account?{' '}
-                <Link href="/login" className="font-bold text-[#2E3192] hover:text-[#2BBF8C] transition-colors">
+                <Link href="/auth/login" className="font-bold text-[#2E3192] hover:text-[#2BBF8C] transition-colors">
                   Sign In
                 </Link>
               </p>

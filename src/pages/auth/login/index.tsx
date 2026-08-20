@@ -1,4 +1,3 @@
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Shield, ArrowRight, Activity, Phone, Edit2, RefreshCw } from 'lucide-react';
 import { toast } from 'react-toastify';
@@ -7,19 +6,16 @@ import * as Yup from 'yup';
 
 // Redux
 import { useAppDispatch, useAppSelector } from '@/redux/hooks';
-import { resetOtpState, setAuthTokenRedux } from '@/redux/slices/authSlice';
+import { resetOtpState } from '@/redux/slices/authSlice';
 
 // React Query Hooks
 import { useSendLoginOtp, useVerifyLoginOtp } from '@/hooks/useAuthOtp';
 
-// Config
-import { setAuthToken } from '@/config';
 
 // Components
 import OtpBoxInput from '@/components/OtpBoxInput';
 
 export default function LoginPage() {
-  const router = useRouter();
   const dispatch = useAppDispatch();
 
   // Redux state
@@ -46,12 +42,8 @@ export default function LoginPage() {
           onSuccess: (res) => {
             const isError =
               !res ||
-              res.status === 404 ||
               res.status === 400 ||
               res.status === 401 ||
-              res.status === 422 ||
-              res.status === 'Failed' ||
-              res.status === 'error' ||
               res.status === false;
 
             if (isError) {
@@ -329,7 +321,7 @@ export default function LoginPage() {
             <div className="mt-8 text-center">
               <p className="text-[13px] text-gray-600">
                 Don't have an account?{' '}
-                <Link href="/register" className="font-bold text-[#2E3192] hover:text-[#2BBF8C] transition-colors">
+                <Link href="/auth/register" className="font-bold text-[#2E3192] hover:text-[#2BBF8C] transition-colors">
                   Create an account
                 </Link>
               </p>

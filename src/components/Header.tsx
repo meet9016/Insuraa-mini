@@ -34,7 +34,7 @@ import {
 } from 'lucide-react';
 
 const NAV_LINKS = [
-  { name: 'Dashboard', path: '/', icon: LayoutDashboard },
+  { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
   {
     name: 'Insurance', path: '#', icon: Shield, items: [
       { name: 'Life Insurance', path: '/insurance/life', icon: Shield },
@@ -67,7 +67,7 @@ const NAV_LINKS = [
   //     { name: 'Agent Commission Report', path: '/reports/agent-commission', icon: BarChart2 },
   //   ]
   // },
-  { name: 'Manage Leads', path: '/leads', icon: PhoneCall },
+  { name: 'Manage Leads', path: '/manage-leads', icon: PhoneCall },
   { name: 'Masters', path: '/masters', icon: Database },
 ];
 
@@ -105,7 +105,7 @@ export default function Header() {
             {mobileMenuOpen ? <X size={26} /> : <Menu size={26} />}
           </button>
 
-          <Link href="/" className="flex items-center">
+          <Link href="/dashboard" className="flex items-center">
             {/* Make the logo explicitly large here */}
             <img src="/logo.png" alt="Insuraa Logo" className="h-10 md:h-12 lg:h-14 object-contain transition-all duration-300" />
           </Link>
@@ -226,7 +226,7 @@ export default function Header() {
                       setIsProfileOpen(false);
                       if (typeof window !== 'undefined') {
                         localStorage.clear();
-                        window.location.href = '/login';
+                        window.location.href = '/auth/login';
                       }
                     }}
                     className="w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl hover:bg-rose-50/80 text-left transition-all duration-200 group/item"

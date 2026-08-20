@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/register"];
+const PUBLIC_PATHS = ["/auth/login", "/auth/register"];
 const TOKEN_COOKIE_NAME = "crm_token";
 
 function isPublicPath(pathname: string) {
@@ -13,7 +13,7 @@ function isPublicPath(pathname: string) {
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 1. Bypass public paths (/login, /register)
+  // 1. Bypass public paths (/auth/login, /auth/register)
   if (isPublicPath(pathname)) {
     return NextResponse.next();
   }
@@ -33,7 +33,7 @@ export function middleware(request: NextRequest) {
 
   if (!token) {
     const loginUrl = request.nextUrl.clone();
-    loginUrl.pathname = "/login";
+    loginUrl.pathname = "/auth/login";
     loginUrl.searchParams.set("from", pathname);
     return NextResponse.redirect(loginUrl);
   }

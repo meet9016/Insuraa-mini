@@ -6,7 +6,7 @@ import AgGridTable from '@/components/ui/AgGridTable';
 import { api } from '@/utils/axiosInstance';
 import endPointApi from '@/utils/endPointApi';
 
-export default function CustomerList() {
+export default function CustomersPage() {
   const router = useRouter();
   const [customers, setCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -54,6 +54,7 @@ export default function CustomerList() {
         const name = params.data?.name || params.data?.full_name || `${params.data?.first_name || ''} ${params.data?.last_name || ''}`.trim() || params.value || '-';
         return (
           <div className="font-bold text-gray-900 flex items-center gap-2">
+            <User size={16} className="text-[#2B4399]" />
             <span>{name}</span>
           </div>
         );

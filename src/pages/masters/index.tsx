@@ -18,43 +18,43 @@ export default function MasterManagement() {
       title: 'Companies List',
       description: 'Manage Companies',
       icon: <Building2 size={24} strokeWidth={2.5} />,
-      link: '/add-companies',
+      link: '/masters/company',
     },
     {
       title: 'Branch List',
       description: 'Manage Branch',
       icon: <MapPin size={24} strokeWidth={2.5} />,
-      link: '/branch-list',
+      link: '/masters/branch',
     },
     {
       title: 'Source Of Lead',
       description: 'Manage Lead Sources',
       icon: <Users size={24} strokeWidth={2.5} />,
-      link: '#',
+      link: '/masters/source-of-lead',
     },
     {
       title: 'Rider List',
       description: 'Manage Riders',
       icon: <Bike size={24} strokeWidth={2.5} />,
-      link: '/rider-list',
+      link: '/masters/rider',
     },
     {
       title: 'Document List',
       description: 'Manage Documents',
       icon: <FileText size={24} strokeWidth={2.5} />,
-      link: '/document-list',
+      link: '/masters/document',
     },
     {
       title: 'Education List',
       description: 'Manage Education Levels',
       icon: <GraduationCap size={24} strokeWidth={2.5} />,
-      link: '/education-list',
+      link: '/masters/education',
     },
     {
       title: 'Target List',
       description: 'Manage Targets',
       icon: <Target size={24} strokeWidth={2.5} />,
-      link: '/target-list',
+      link: '/masters/target',
     }
   ];
 

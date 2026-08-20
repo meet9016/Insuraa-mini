@@ -67,9 +67,9 @@ if (typeof window !== "undefined") {
   axios.interceptors.response.use(
     (response) => response,
     (error) => {
-      if (error.response && error.response.status === 401 && window.location.pathname !== "/login") {
+      if (error.response && error.response.status === 401 && window.location.pathname !== "/auth/login") {
         clearAuthToken();
-        window.location.href = "/login";
+        window.location.href = "/auth/login";
       }
       return Promise.reject(error);
     }
