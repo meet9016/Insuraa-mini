@@ -32,15 +32,23 @@ interface AgGridTableProps<T = any> {
   rowData: T[];
   columnDefs: ColDef<T>[];
   loading?: boolean;
+  height?: string | number;
 }
 
 export default function AgGridTable<T = any>({
   rowData,
   columnDefs,
   loading = false,
+  height = "650px",
 }: AgGridTableProps<T>) {
   const containerStyle = useMemo(() => ({ width: "100%", height: "100%" }), []);
-  const gridStyle = useMemo(() => ({ height: "500px", width: "100%" }), []);
+  const gridStyle = useMemo(
+    () => ({
+      height: typeof height === "number" ? `${height}px` : height,
+      width: "100%",
+    }),
+    [height]
+  );
 
   const defaultColDef = useMemo(() => {
     return {

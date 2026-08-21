@@ -27,7 +27,7 @@ const TOKEN_STORAGE_KEY = "auth_token";
 export function setAuthToken(token: string, days: number = 1) {
   if (typeof window === "undefined") return;
   localStorage.setItem(TOKEN_STORAGE_KEY, token);
-  
+
   // Keep setting the cookie as a fallback in case other parts of the app use it
   const expires = new Date();
   expires.setDate(expires.getDate() + days);
@@ -40,7 +40,7 @@ export function getAuthToken(): string | null {
   if (typeof window === "undefined") return null;
   const localToken = localStorage.getItem(TOKEN_STORAGE_KEY);
   if (localToken) return localToken;
-  
+
   // Fallback to cookie
   if (typeof document !== "undefined") {
     const cookies = document.cookie ? document.cookie.split("; ") : [];
@@ -56,7 +56,7 @@ export function getAuthToken(): string | null {
 export function clearAuthToken() {
   if (typeof window === "undefined") return;
   localStorage.removeItem(TOKEN_STORAGE_KEY);
-  
+
   // Clear cookie fallback
   if (typeof document !== "undefined") {
     document.cookie = `crm_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;

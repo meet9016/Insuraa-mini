@@ -15,16 +15,28 @@ import Link from 'next/link';
 export default function MasterManagement() {
   const masterCards = [
     {
-      title: 'Companies List',
+      title: 'General Insurance Companies List',
       description: 'Manage Companies',
       icon: <Building2 size={24} strokeWidth={2.5} />,
       link: '/masters/company',
     },
     {
-      title: 'Branch List',
-      description: 'Manage Branch',
+      title: 'Life Insurance Companies List',
+      description: 'Manage Companies',
+      icon: <Building2 size={24} strokeWidth={2.5} />,
+      link: '/masters/life-company',
+    },
+    {
+      title: 'General Insurance Agency Code',
+      description: 'Manage Agency Codes',
       icon: <MapPin size={24} strokeWidth={2.5} />,
-      link: '/masters/branch',
+      link: '/masters/general-agency-code',
+    },
+    {
+      title: 'Life Insurance Agency Code',
+      description: 'Manage Agency Codes',
+      icon: <MapPin size={24} strokeWidth={2.5} />,
+      link: '/masters/life-agency-code',
     },
     {
       title: 'Source Of Lead',
@@ -44,18 +56,18 @@ export default function MasterManagement() {
       icon: <FileText size={24} strokeWidth={2.5} />,
       link: '/masters/document',
     },
-    {
-      title: 'Education List',
-      description: 'Manage Education Levels',
-      icon: <GraduationCap size={24} strokeWidth={2.5} />,
-      link: '/masters/education',
-    },
-    {
-      title: 'Target List',
-      description: 'Manage Targets',
-      icon: <Target size={24} strokeWidth={2.5} />,
-      link: '/masters/target',
-    }
+    // {
+    //   title: 'Education List',
+    //   description: 'Manage Education Levels',
+    //   icon: <GraduationCap size={24} strokeWidth={2.5} />,
+    //   link: '/masters/education',
+    // },
+    // {
+    //   title: 'Target List',
+    //   description: 'Manage Targets',
+    //   icon: <Target size={24} strokeWidth={2.5} />,
+    //   link: '/masters/target',
+    // }
   ];
 
   return (

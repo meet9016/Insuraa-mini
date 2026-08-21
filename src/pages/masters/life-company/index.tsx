@@ -6,10 +6,10 @@ import TableHeader from '@/components/ui/TableHeader';
 import CompanyModal from '@/components/company/CompanyModal';
 import PlansModal from '@/components/company/PlansModal';
 import PlanFormModal from '@/components/company/PlanFormModal';
-import { useCompanyList, useCompanyPlans, useCompanyActions } from '@/hooks/useCompanyApi';
+import { useLifeCompanyList, useLifeCompanyPlans, useLifeCompanyActions } from '@/hooks/useLifeCompanyApi';
 import { getCompanyColumns, getCompanyPlanColumns } from '@/utils/tableColumns';
 
-export default function AddCompanies() {
+export default function AddLifeCompanies() {
   const [isAddCompanyOpen, setIsAddCompanyOpen] = useState(false);
   const [companyName, setCompanyName] = useState('');
   const [companyNameError, setCompanyNameError] = useState('');
@@ -42,15 +42,15 @@ export default function AddCompanies() {
     isDeleting: false,
   });
 
-  // Fetch company list using custom hook
-  const { data: companyList = [], isLoading } = useCompanyList({ page, limit, search });
+  // Fetch life company list using custom hook (API: company_list_life)
+  const { data: companyList = [], isLoading } = useLifeCompanyList({ page, limit, search });
 
-  // Fetch plans for active selected company using custom hook
+  // Fetch plans for active selected company using custom hook (API: fetch_company_plans_life)
   const activeCompanyId = activePlansCompany?.id || activePlansCompany?.company_id || '';
-  const { data: planList = [], isLoading: isLoadingPlans } = useCompanyPlans(activeCompanyId);
+  const { data: planList = [], isLoading: isLoadingPlans } = useLifeCompanyPlans(activeCompanyId);
 
-  // Company API actions hook
-  const { insertCompany, insertCompanyPlan, deleteCompany, deleteCompanyPlan } = useCompanyActions();
+  // Life Company API actions hook (insert_company_life, insert_company_plan_life, delete_company_life, delete_company_plan_life)
+  const { insertLifeCompany, insertLifeCompanyPlan, deleteLifeCompany, deleteLifeCompanyPlan } = useLifeCompanyActions();
 
   const handleEditCompany = (company: any) => {
     const companyId = company?.id || company?.company_id || '';
@@ -70,7 +70,7 @@ export default function AddCompanies() {
     setCompanyNameError('');
     setIsSubmitting(true);
     try {
-      const success = await insertCompany(companyName, editingCompanyId);
+      const success = await insertLifeCompany(companyName, editingCompanyId);
       if (success) {
         setCompanyName('');
         setCompanyNameError('');
@@ -102,7 +102,7 @@ export default function AddCompanies() {
 
     try {
       const companyId = activePlansCompany?.id || activePlansCompany?.company_id || '';
-      const success = await insertCompanyPlan(companyId, planName, editingPlanId);
+      const success = await insertLifeCompanyPlan(companyId, planName, editingPlanId);
       if (success) {
         setPlanName('');
         setPlanNameError('');
@@ -122,9 +122,9 @@ export default function AddCompanies() {
 
     try {
       if (type === 'company') {
-        await deleteCompany(id);
+        await deleteLifeCompany(id);
       } else if (type === 'plan') {
-        await deleteCompanyPlan(id);
+        await deleteLifeCompanyPlan(id);
       }
     } finally {
       setDeleteModalState({ isOpen: false, type: 'company', id: '', name: '', isDeleting: false });
@@ -134,7 +134,7 @@ export default function AddCompanies() {
   const columnDefs = useMemo(
     () =>
       getCompanyColumns({
-        companyNameHeader: "Company Name",
+        companyNameHeader: "Life Insurance Company Name",
         onEdit: (data: any) => handleEditCompany(data),
         onDelete: (data: any) => {
           const id = String(data?.id || data?.company_id || '');
@@ -174,17 +174,17 @@ export default function AddCompanies() {
   return (
     <div className="bg-[#f8fafc] min-h-[calc(100vh-72px)] flex flex-col">
       <Head>
-        <title>Companies - Insuraa</title>
+        <title>Life Insurance Companies - Insuraa</title>
       </Head>
 
       <div className="w-full bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-gray-200 overflow-hidden flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500">
         <TableHeader
-          title="General Insurance Companies"
-          subtitle="Manage and view insurance companies and plans"
-          searchPlaceholder="Search companies..."
+          title="Life Insurance Companies"
+          subtitle="Manage and view life insurance companies and plans"
+          searchPlaceholder="Search life insurance companies..."
           searchValue={search}
           onSearchChange={setSearch}
-          buttonText="Add General Company"
+          buttonText="Add Life Company"
           onButtonClick={() => {
             setEditingCompanyId(null);
             setCompanyName('');
@@ -203,7 +203,7 @@ export default function AddCompanies() {
         isOpen={deleteModalState.isOpen}
         onClose={() => setDeleteModalState(prev => ({ ...prev, isOpen: false }))}
         onConfirm={handleConfirmDelete}
-        title={deleteModalState.type === 'company' ? "Delete Company" : "Delete Plan"}
+        title={deleteModalState.type === 'company' ? "Delete Life Company" : "Delete Plan"}
         itemName={deleteModalState.name}
         isDeleting={deleteModalState.isDeleting}
       />

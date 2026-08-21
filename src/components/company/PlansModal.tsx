@@ -47,7 +47,7 @@ export default function PlansModal({
         </div>
 
         <div className="flex-1 overflow-auto bg-white p-4">
-          <AgGridTable rowData={planList} columnDefs={planColumnDefs as any} loading={isLoadingPlans} />
+          <AgGridTable rowData={planList} columnDefs={planColumnDefs as any} loading={isLoadingPlans} height="450px" />
         </div>
       </div>
     </div>

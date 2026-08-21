@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Head from 'next/head';
 import { Minus, Plus, Building2 } from 'lucide-react';
+import ActionButtons from '@/components/ui/ActionButtons';
 
 const INITIAL_BRANCHES = [
   { id: 1, agent: '', code: '' },
@@ -26,6 +27,10 @@ export default function BranchList() {
   const handleSave = () => {
     console.log('Saved branches:', branches);
     // Add toast or alert here in a real app
+  };
+
+  const handleCancel = () => {
+    setBranches(INITIAL_BRANCHES);
   };
 
   return (
@@ -96,18 +101,16 @@ export default function BranchList() {
                 </div>
               ))}
             </div>
-
-            {/* Save Button */}
-            <div className="mt-8">
-              <button 
-                onClick={handleSave}
-                className="bg-[#2B4399] hover:bg-[#203378] text-white px-8 py-2.5 rounded-md font-bold text-sm transition-colors shadow-sm"
-              >
-                Save
-              </button>
-            </div>
           </div>
         </div>
+
+        {/* Action Buttons (Save & Cancel) */}
+        <ActionButtons
+          onCancel={handleCancel}
+          onSubmit={handleSave}
+          submitText="Save"
+          cancelText="Cancel"
+        />
 
       </div>
     </div>
