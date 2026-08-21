@@ -1,5 +1,6 @@
 import React from 'react';
-import { FileEdit, Trash2, Eye, Edit, Building2, List } from 'lucide-react';
+import { Building2, List } from 'lucide-react';
+import { TableActions } from '../components/ui/TableActions';
 
 export const claimColumns = [
   {
@@ -63,17 +64,12 @@ export const claimColumns = [
     sortable: false,
     filter: false,
     cellRenderer: () => (
-      <div className="flex items-center gap-1.5 h-full py-1">
-        <button className="p-1.5 bg-[#0ea5e9] text-white rounded hover:bg-[#0284c7] transition-colors" title="View">
-          <Eye size={14} />
-        </button>
-        <button className="p-1.5 bg-[#10b981] text-white rounded hover:bg-[#059669] transition-colors" title="Edit">
-          <FileEdit size={14} />
-        </button>
-        <button className="p-1.5 bg-[#f43f5e] text-white rounded hover:bg-[#e11d48] transition-colors" title="Delete">
-          <Trash2 size={14} />
-        </button>
-      </div>
+      <TableActions
+        onView={() => {}}
+        onEdit={() => {}}
+        onDelete={() => {}}
+        editIcon="file-edit"
+      />
     ),
   },
 ];
@@ -104,22 +100,11 @@ export const getSourceOfLeadColumns = ({ onEdit, onDelete }: SourceOfLeadColumnP
     filter: false,
     cellRenderer: (params: any) => {
       return (
-        <div className="flex items-center gap-2 h-full py-1">
-          <button
-            onClick={() => onEdit(params.data)}
-            className="bg-emerald-500 hover:bg-emerald-600 text-white p-1.5 rounded transition-colors shadow-sm"
-            title="Edit"
-          >
-            <Edit size={14} strokeWidth={2.5} />
-          </button>
-          <button
-            onClick={() => onDelete(params.data)}
-            className="bg-rose-500 hover:bg-rose-600 text-white p-1.5 rounded transition-colors shadow-sm"
-            title="Delete"
-          >
-            <Trash2 size={14} strokeWidth={2.5} />
-          </button>
-        </div>
+        <TableActions
+          data={params.data}
+          onEdit={onEdit}
+          onDelete={onDelete}
+        />
       );
     },
   },
@@ -148,22 +133,11 @@ export const getRiderColumns = ({ onEdit, onDelete }: RiderColumnProps) => [
     filter: false,
     cellRenderer: (params: any) => {
       return (
-        <div className="flex items-center gap-2 h-full py-1">
-          <button
-            onClick={() => onEdit(params.data)}
-            className="bg-emerald-500 hover:bg-emerald-600 text-white p-1.5 rounded transition-colors shadow-sm"
-            title="Edit"
-          >
-            <Edit size={14} strokeWidth={2.5} />
-          </button>
-          <button
-            onClick={() => onDelete(params.data)}
-            className="bg-rose-500 hover:bg-rose-600 text-white p-1.5 rounded transition-colors shadow-sm"
-            title="Delete"
-          >
-            <Trash2 size={14} strokeWidth={2.5} />
-          </button>
-        </div>
+        <TableActions
+          data={params.data}
+          onEdit={onEdit}
+          onDelete={onDelete}
+        />
       );
     },
   },
@@ -192,22 +166,11 @@ export const getDocumentColumns = ({ onEdit, onDelete }: DocumentColumnProps) =>
     filter: false,
     cellRenderer: (params: any) => {
       return (
-        <div className="flex items-center gap-2 h-full py-1">
-          <button
-            onClick={() => onEdit(params.data)}
-            className="bg-emerald-500 hover:bg-emerald-600 text-white p-1.5 rounded transition-colors shadow-sm"
-            title="Edit"
-          >
-            <Edit size={14} strokeWidth={2.5} />
-          </button>
-          <button
-            onClick={() => onDelete(params.data)}
-            className="bg-rose-500 hover:bg-rose-600 text-white p-1.5 rounded transition-colors shadow-sm"
-            title="Delete"
-          >
-            <Trash2 size={14} strokeWidth={2.5} />
-          </button>
-        </div>
+        <TableActions
+          data={params.data}
+          onEdit={onEdit}
+          onDelete={onDelete}
+        />
       );
     },
   },
@@ -266,22 +229,11 @@ export const getCompanyColumns = ({ onEdit, onDelete, onViewPlans, companyNameHe
     sortable: false,
     filter: false,
     cellRenderer: (params: any) => (
-      <div className="flex items-center gap-2 h-full py-1">
-        <button
-          onClick={() => onEdit(params.data)}
-          className="bg-emerald-500 hover:bg-emerald-600 text-white p-1.5 rounded transition-colors shadow-sm"
-          title="Edit"
-        >
-          <Edit size={14} strokeWidth={2.5} />
-        </button>
-        <button
-          onClick={() => onDelete(params.data)}
-          className="bg-rose-500 hover:bg-rose-600 text-white p-1.5 rounded transition-colors shadow-sm"
-          title="Delete"
-        >
-          <Trash2 size={14} strokeWidth={2.5} />
-        </button>
-      </div>
+      <TableActions
+        data={params.data}
+        onEdit={onEdit}
+        onDelete={onDelete}
+      />
     ),
   },
 ];
@@ -324,22 +276,12 @@ export const getCompanyPlanColumns = ({ onEdit, onDelete }: CompanyPlanColumnPro
     sortable: false,
     filter: false,
     cellRenderer: (params: any) => (
-      <div className="flex items-center gap-2 h-full py-1">
-        <button
-          onClick={() => onEdit(params.data)}
-          className="bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white border border-emerald-200 hover:border-emerald-500 p-1.5 rounded transition-all"
-          title="Edit"
-        >
-          <Edit size={14} strokeWidth={2.5} />
-        </button>
-        <button
-          onClick={() => onDelete(params.data)}
-          className="bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white border border-rose-200 hover:border-rose-500 p-1.5 rounded transition-all"
-          title="Delete"
-        >
-          <Trash2 size={14} strokeWidth={2.5} />
-        </button>
-      </div>
+      <TableActions
+        data={params.data}
+        onEdit={onEdit}
+        onDelete={onDelete}
+        variant="light"
+      />
     )
   }
 ];
@@ -402,22 +344,11 @@ export const getAgencyCodeColumns = ({ onEdit, onDelete }: AgencyCodeColumnProps
     sortable: false,
     filter: false,
     cellRenderer: (params: any) => (
-      <div className="flex items-center gap-2 h-full py-1">
-        <button
-          onClick={() => onEdit(params.data)}
-          className="bg-emerald-500 hover:bg-emerald-600 text-white p-1.5 rounded transition-colors shadow-sm"
-          title="Edit"
-        >
-          <Edit size={14} strokeWidth={2.5} />
-        </button>
-        <button
-          onClick={() => onDelete(params.data)}
-          className="bg-rose-500 hover:bg-rose-600 text-white p-1.5 rounded transition-colors shadow-sm"
-          title="Delete"
-        >
-          <Trash2 size={14} strokeWidth={2.5} />
-        </button>
-      </div>
+      <TableActions
+        data={params.data}
+        onEdit={onEdit}
+        onDelete={onDelete}
+      />
     ),
   },
 ];

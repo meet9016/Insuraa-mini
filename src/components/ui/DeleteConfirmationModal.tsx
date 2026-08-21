@@ -67,7 +67,7 @@ export default function DeleteConfirmationModal({
             type="button"
             onClick={onClose}
             disabled={isDeleting}
-            className="px-5 py-2 border border-gray-300 rounded-xl font-bold text-sm text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50"
+            className="px-5 py-2 border border-gray-300 rounded-md font-semibold text-sm text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
@@ -75,7 +75,7 @@ export default function DeleteConfirmationModal({
             type="button"
             onClick={onConfirm}
             disabled={isDeleting}
-            className="px-6 py-2 bg-[#2B4399] hover:bg-[#203378] text-white rounded-xl font-bold text-sm transition-all shadow-md disabled:opacity-50 flex items-center gap-2"
+            className="px-6 py-2 bg-[#2B4399] hover:bg-[#203378] text-white rounded-md font-semibold text-sm transition-all shadow-md disabled:opacity-50 flex items-center gap-2"
           >
             {isDeleting ? 'Deleting...' : 'Delete'}
           </button>

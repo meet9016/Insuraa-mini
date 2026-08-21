@@ -40,7 +40,7 @@ export default function TableHeader({
               placeholder={searchPlaceholder}
               value={searchValue}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="w-full sm:w-[240px] pl-9 pr-4 py-2 bg-white border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#2D3591]/20 focus:border-[#2D3591] transition-all"
+              className="w-full sm:w-[240px] pl-9 pr-4 py-2 bg-white border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#2D3591]/20 focus:border-[#2D3591] transition-all"
             />
           </div>
         )}
@@ -48,7 +48,7 @@ export default function TableHeader({
           <button
             type="button"
             onClick={onButtonClick}
-            className="px-5 py-2.5 bg-[#2B4399] text-white text-sm font-semibold rounded-xl shadow-md transition-all hover:bg-[#203378] flex items-center gap-1.5 whitespace-nowrap"
+            className="px-5 py-2.5 bg-[#2B4399] text-white text-sm font-semibold rounded-md shadow-md transition-all hover:bg-[#203378] flex items-center gap-1.5 whitespace-nowrap"
           >
             <Plus size={16} />
             <span>{buttonText}</span>
