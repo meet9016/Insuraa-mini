@@ -21,11 +21,18 @@ export const useRiderList = ({ page = 1, limit = 10, search = '' }: UseRiderList
 
         const response = await api.post(endPointApi.RIDER.RIDER_LIST, formData);
         const resData = response.data;
-        const list = resData?.data || resData?.rider_list || resData?.list || [];
-        return Array.isArray(list) ? list : [];
+        const list = resData?.data?.rider_list || resData?.data?.list || resData?.data || resData?.rider_list || [];
+        const pagArr = resData?.pagination_arr || resData?.data?.pagination_arr;
+        const totalRecords = pagArr?.total_records ?? pagArr?.totalRecords ?? pagArr?.total ?? (Array.isArray(list) ? list.length : 0);
+
+        return {
+          riderList: Array.isArray(list) ? list : [],
+          totalRecords: Number(totalRecords),
+          paginationArr: pagArr
+        };
       } catch (err: any) {
         toast.error(err?.response?.data?.message || 'Error fetching rider list');
-        return [];
+        return { riderList: [], totalRecords: 0, paginationArr: null };
       }
     }
   });

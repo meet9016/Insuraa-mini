@@ -33,6 +33,10 @@ interface AgGridTableProps<T = any> {
   columnDefs: ColDef<T>[];
   loading?: boolean;
   height?: string | number;
+  pagination?: boolean;
+  paginationPageSize?: number;
+  paginationPageSizeSelector?: number[];
+  onPaginationChanged?: (event: any) => void;
 }
 
 export default function AgGridTable<T = any>({
@@ -40,6 +44,10 @@ export default function AgGridTable<T = any>({
   columnDefs,
   loading = false,
   height = "650px",
+  pagination = true,
+  paginationPageSize = 10,
+  paginationPageSizeSelector = [10, 25, 50, 100],
+  onPaginationChanged,
 }: AgGridTableProps<T>) {
   const containerStyle = useMemo(() => ({ width: "100%", height: "100%" }), []);
   const gridStyle = useMemo(
@@ -77,9 +85,10 @@ export default function AgGridTable<T = any>({
             columnDefs={columnDefs}
             defaultColDef={defaultColDef}
             rowSelection={rowSelection}
-            pagination={true}
-            paginationPageSize={10}
-            paginationPageSizeSelector={[10, 25, 50, 100]}
+            pagination={pagination}
+            paginationPageSize={paginationPageSize}
+            paginationPageSizeSelector={paginationPageSizeSelector}
+            onPaginationChanged={onPaginationChanged}
           />
         </div>
       </div>

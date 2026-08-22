@@ -21,11 +21,18 @@ export const useDocumentList = ({ page = 1, limit = 10, search = '' }: UseDocume
 
         const response = await api.post(endPointApi.DOCUMENT.DOCUMENT_LIST, formData);
         const resData = response.data;
-        const list = resData?.data || resData?.document_list || resData?.list || [];
-        return Array.isArray(list) ? list : [];
+        const list = resData?.data?.document_list || resData?.data?.list || resData?.data || resData?.document_list || [];
+        const pagArr = resData?.pagination_arr || resData?.data?.pagination_arr;
+        const totalRecords = pagArr?.total_records ?? pagArr?.totalRecords ?? pagArr?.total ?? (Array.isArray(list) ? list.length : 0);
+
+        return {
+          documentList: Array.isArray(list) ? list : [],
+          totalRecords: Number(totalRecords),
+          paginationArr: pagArr
+        };
       } catch (err: any) {
         toast.error(err?.response?.data?.message || 'Error fetching document list');
-        return [];
+        return { documentList: [], totalRecords: 0, paginationArr: null };
       }
     }
   });

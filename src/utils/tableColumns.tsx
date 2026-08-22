@@ -1,5 +1,5 @@
 import React from 'react';
-import { Building2, List } from 'lucide-react';
+import { Building2, List, User, Eye, FileEdit, Trash2 } from 'lucide-react';
 import { TableActions } from '../components/ui/TableActions';
 
 export const claimColumns = [
@@ -86,6 +86,7 @@ export const getSourceOfLeadColumns = ({ onEdit, onDelete }: SourceOfLeadColumnP
     field: "name",
     minWidth: 200,
     cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
       const name = params.data?.name || params.value || '-';
       return <span className="font-semibold text-gray-800">{name}</span>;
     },
@@ -97,6 +98,7 @@ export const getSourceOfLeadColumns = ({ onEdit, onDelete }: SourceOfLeadColumnP
     sortable: false,
     filter: false,
     cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
       return (
         <TableActions
           data={params.data}
@@ -119,6 +121,7 @@ export const getRiderColumns = ({ onEdit, onDelete }: RiderColumnProps) => [
     field: "name",
     minWidth: 200,
     cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
       const name = params.data?.name || params.value || '-';
       return <span className="font-semibold text-gray-800">{name}</span>;
     },
@@ -130,6 +133,7 @@ export const getRiderColumns = ({ onEdit, onDelete }: RiderColumnProps) => [
     sortable: false,
     filter: false,
     cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
       return (
         <TableActions
           data={params.data}
@@ -152,6 +156,7 @@ export const getDocumentColumns = ({ onEdit, onDelete }: DocumentColumnProps) =>
     field: "name",
     minWidth: 200,
     cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
       const name = params.data?.name || params.value || '-';
       return <span className="font-semibold text-gray-800">{name}</span>;
     },
@@ -163,6 +168,7 @@ export const getDocumentColumns = ({ onEdit, onDelete }: DocumentColumnProps) =>
     sortable: false,
     filter: false,
     cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
       return (
         <TableActions
           data={params.data}
@@ -187,6 +193,7 @@ export const getCompanyColumns = ({ onEdit, onDelete, onViewPlans, companyNameHe
     field: "name",
     minWidth: 250,
     cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
       const name = params.data?.name || params.data?.company_name || params.value || '-';
       return (
         <div className="font-semibold text-gray-900 flex items-center gap-2">
@@ -203,6 +210,7 @@ export const getCompanyColumns = ({ onEdit, onDelete, onViewPlans, companyNameHe
     sortable: false,
     filter: false,
     cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
       const plansCount = params.data?.plan_count ?? params.data?.plans_count ?? (Array.isArray(params.data?.plans) ? params.data.plans.length : 0);
       return (
         <div className="flex items-center h-full py-1">
@@ -226,13 +234,16 @@ export const getCompanyColumns = ({ onEdit, onDelete, onViewPlans, companyNameHe
     minWidth: 140,
     sortable: false,
     filter: false,
-    cellRenderer: (params: any) => (
-      <TableActions
-        data={params.data}
-        onEdit={onEdit}
-        onDelete={onDelete}
-      />
-    ),
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      return (
+        <TableActions
+          data={params.data}
+          onEdit={onEdit}
+          onDelete={onDelete}
+        />
+      );
+    },
   },
 ];
 
@@ -281,6 +292,7 @@ export const getAgencyCodeColumns = ({ onEdit, onDelete }: AgencyCodeColumnProps
     field: "name",
     minWidth: 160,
     cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
       const name = params.data?.name || params.value || '-';
       return <span className="font-semibold text-gray-800">{name}</span>;
     },
@@ -290,6 +302,7 @@ export const getAgencyCodeColumns = ({ onEdit, onDelete }: AgencyCodeColumnProps
     field: "code",
     minWidth: 140,
     cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
       const code = params.data?.code || params.value || '-';
       return <span className="font-bold text-[#2B4399] bg-indigo-50 px-2.5 py-1 rounded-md text-xs">{code}</span>;
     },
@@ -299,6 +312,7 @@ export const getAgencyCodeColumns = ({ onEdit, onDelete }: AgencyCodeColumnProps
     field: "mobile_number",
     minWidth: 140,
     cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
       const mobile = params.data?.mobile_number || params.value || '-';
       return <span className="text-gray-700">{mobile}</span>;
     },
@@ -308,6 +322,7 @@ export const getAgencyCodeColumns = ({ onEdit, onDelete }: AgencyCodeColumnProps
     field: "email",
     minWidth: 180,
     cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
       const email = params.data?.email || params.value || '-';
       return <span className="text-gray-700">{email}</span>;
     },
@@ -317,6 +332,7 @@ export const getAgencyCodeColumns = ({ onEdit, onDelete }: AgencyCodeColumnProps
     field: "remark",
     minWidth: 160,
     cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
       const remark = params.data?.remark || params.value || '-';
       return <span className="text-gray-500 text-xs italic">{remark}</span>;
     },
@@ -327,13 +343,126 @@ export const getAgencyCodeColumns = ({ onEdit, onDelete }: AgencyCodeColumnProps
     minWidth: 120,
     sortable: false,
     filter: false,
-    cellRenderer: (params: any) => (
-      <TableActions
-        data={params.data}
-        onEdit={onEdit}
-        onDelete={onDelete}
-      />
-    ),
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      return (
+        <TableActions
+          data={params.data}
+          onEdit={onEdit}
+          onDelete={onDelete}
+        />
+      );
+    },
+  },
+];
+
+export interface CustomerColumnProps {
+  onView: (data: any) => void;
+  onEdit: (data: any) => void;
+  onDelete: (data: any) => void;
+}
+
+export const getCustomerColumns = ({ onView, onEdit, onDelete }: CustomerColumnProps) => [
+  {
+    headerName: "Customer Name",
+    field: "name",
+    minWidth: 200,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      const name = params.data?.name || params.data?.full_name || `${params.data?.first_name || ''} ${params.data?.last_name || ''}`.trim() || params.value || '-';
+      return (
+        <div className="font-semibold text-gray-900 flex items-center gap-2">
+          <User size={16} className="text-[#2B4399]" />
+          <span>{name}</span>
+        </div>
+      );
+    },
+  },
+  {
+    headerName: "Group Code",
+    field: "group_code",
+    minWidth: 140,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      return (
+        <span className="text-gray-700 font-medium">
+          {params.data?.group_code || params.data?.groupCode || params.value || '-'}
+        </span>
+      );
+    },
+  },
+  {
+    headerName: "Mobile Number",
+    field: "customer_number",
+    minWidth: 150,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      return (
+        <span className="text-gray-700 font-medium">
+          {params.data?.customer_number || params.data?.number || params.data?.phone || params.value || '-'}
+        </span>
+      );
+    },
+  },
+  {
+    headerName: "Email",
+    field: "email",
+    minWidth: 180,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      return (
+        <span className="text-gray-700 font-medium">{params.value || '-'}</span>
+      );
+    },
+  },
+  {
+    headerName: "Type",
+    field: "customer_type",
+    minWidth: 130,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      const typeVal = params.data?.customer_type_name || params.data?.type || params.value || 'Individual';
+      return (
+        <span className="bg-[#e7f0fa] text-[#2F439D] font-medium text-xs px-2.5 py-1 rounded-full">
+          {typeVal}
+        </span>
+      );
+    },
+  },
+  {
+    headerName: "Action",
+    field: "id",
+    minWidth: 140,
+    sortable: false,
+    filter: false,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      return (
+        <div className="flex items-center gap-1.5 h-full py-1">
+          <button
+            onClick={() => onView(params.data)}
+            className="p-1.5 bg-[#0ea5e9] text-white rounded hover:bg-[#0284c7] transition-colors"
+            title="View"
+          >
+            <Eye size={14} />
+          </button>
+          <button
+            onClick={() => onEdit(params.data)}
+            className="p-1.5 bg-[#10b981] text-white rounded hover:bg-[#059669] transition-colors"
+            title="Edit"
+          >
+            <FileEdit size={14} />
+          </button>
+          <button
+            onClick={() => onDelete(params.data)}
+            className="p-1.5 bg-[#f43f5e] text-white rounded hover:bg-[#e11d48] transition-colors"
+            title="Delete"
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
+      );
+    },
   },
 ];
 

@@ -14,15 +14,25 @@ export const useLifeCompanyList = ({ page, limit, search }: UseLifeCompanyListPa
     queryKey: ['lifeCompanyList', page, limit, search],
     queryFn: async () => {
       try {
-        const response = await api.get(endPointApi.LIFE_COMPANY.COMPANY_LIFE_LIST, {
-          params: { page, limit, search }
-        });
+        const formData = new FormData();
+        formData.append('page', String(page));
+        formData.append('limit', String(limit));
+        formData.append('search', search);
+
+        const response = await api.post(endPointApi.LIFE_COMPANY.COMPANY_LIFE_LIST, formData);
         const resData = response?.data;
         const list = resData?.data?.company_list || resData?.data?.list || resData?.data || resData?.company_list || [];
-        return Array.isArray(list) ? list : [];
+        const pagArr = resData?.pagination_arr || resData?.data?.pagination_arr;
+        const totalRecords = pagArr?.total_records ?? pagArr?.totalRecords ?? pagArr?.total ?? (Array.isArray(list) ? list.length : 0);
+
+        return {
+          companyList: Array.isArray(list) ? list : [],
+          totalRecords: Number(totalRecords),
+          paginationArr: pagArr
+        };
       } catch (err: any) {
         toast.error(err?.response?.data?.message || 'Error fetching life company list');
-        return [];
+        return { companyList: [], totalRecords: 0, paginationArr: null };
       }
     }
   });

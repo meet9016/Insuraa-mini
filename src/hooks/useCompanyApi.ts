@@ -22,10 +22,17 @@ export const useCompanyList = ({ page, limit, search }: UseCompanyListParams) =>
         const response = await api.post(endPointApi.COMPANY.COMPANY_LIST, formData);
         const resData = response.data;
         const list = resData?.data?.company_list || resData?.data?.list || resData?.data || resData?.company_list || [];
-        return Array.isArray(list) ? list : [];
+        const pagArr = resData?.pagination_arr || resData?.data?.pagination_arr;
+        const totalRecords = pagArr?.total_records ?? pagArr?.totalRecords ?? pagArr?.total ?? (Array.isArray(list) ? list.length : 0);
+
+        return {
+          companyList: Array.isArray(list) ? list : [],
+          totalRecords: Number(totalRecords),
+          paginationArr: pagArr,
+        };
       } catch (err: any) {
         toast.error(err?.response?.data?.message || 'Error fetching company list');
-        return [];
+        return { companyList: [], totalRecords: 0, paginationArr: null };
       }
     }
   });

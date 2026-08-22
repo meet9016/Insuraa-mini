@@ -41,8 +41,40 @@ export default function GeneralAgencyCodeList() {
 
   // API Hooks
   const { data: companyDropdownList = [], isLoading: isLoadingCompanies } = useCompanyDropdownList();
-  const { data: agencyCodeList = [], isLoading: isLoadingList } = useAgencyCodeList({ page, limit, search });
+  const { data: agencyCodeRes, isLoading: isLoadingList } = useAgencyCodeList({ page, limit, search });
+  const agencyCodeList = agencyCodeRes?.agencyCodeList || [];
+  const totalRecords = agencyCodeRes?.totalRecords ?? agencyCodeList.length ?? 0;
   const { insertAgencyCode, deleteAgencyCode } = useAgencyCodeActions();
+
+  const handleSearchChange = (val: string) => {
+    setSearch(val);
+    setPage(1);
+  };
+
+  const handlePaginationChanged = (params: any) => {
+    if (!params || !params.api) return;
+    const newPage = params.api.paginationGetCurrentPage() + 1;
+    const newLimit = params.api.paginationGetPageSize();
+
+    if (newLimit !== limit) {
+      setLimit(newLimit);
+      setPage(1);
+    } else if (newPage !== page) {
+      setPage(newPage);
+    }
+  };
+
+  const fullRowData = useMemo(() => {
+    if (!totalRecords || totalRecords <= agencyCodeList.length) return agencyCodeList;
+    const padded = new Array(totalRecords).fill(null).map((_, idx) => ({ id: `placeholder-${idx}` }));
+    const startIndex = (page - 1) * limit;
+    agencyCodeList.forEach((item: any, i: number) => {
+      if (startIndex + i < totalRecords) {
+        padded[startIndex + i] = item;
+      }
+    });
+    return padded;
+  }, [agencyCodeList, totalRecords, page, limit]);
 
   const handleOpenAddModal = () => {
     setEditingId(null);
@@ -134,7 +166,7 @@ export default function GeneralAgencyCodeList() {
   );
 
   return (
-    <div className="bg-[#f8fafc] min-h-[calc(100vh-72px)] flex flex-col">
+    <div className="bg-[#f8fafc] flex flex-col">
       <Head>
         <title>General Insurance Agency Code - Insuraa</title>
       </Head>
@@ -145,13 +177,20 @@ export default function GeneralAgencyCodeList() {
           subtitle="Manage and view general insurance agency codes"
           searchPlaceholder="Search agency code..."
           searchValue={search}
-          onSearchChange={setSearch}
+          onSearchChange={handleSearchChange}
           buttonText="Add General Agency Code"
           onButtonClick={handleOpenAddModal}
         />
 
         <div className="w-full">
-          <AgGridTable rowData={agencyCodeList} columnDefs={columnDefs as any} loading={isLoadingList} />
+          <AgGridTable
+            rowData={fullRowData}
+            columnDefs={columnDefs as any}
+            loading={isLoadingList}
+            pagination={true}
+            paginationPageSize={limit}
+            onPaginationChanged={handlePaginationChanged}
+          />
         </div>
       </div>
 

@@ -43,7 +43,39 @@ export default function AddCompanies() {
   });
 
   // Fetch company list using custom hook
-  const { data: companyList = [], isLoading } = useCompanyList({ page, limit, search });
+  const { data: companyRes, isLoading } = useCompanyList({ page, limit, search });
+  const companyList = companyRes?.companyList || [];
+  const totalRecords = companyRes?.totalRecords ?? companyList.length ?? 0;
+
+  const handleSearchChange = (val: string) => {
+    setSearch(val);
+    setPage(1);
+  };
+
+  const handlePaginationChanged = (params: any) => {
+    if (!params || !params.api) return;
+    const newPage = params.api.paginationGetCurrentPage() + 1;
+    const newLimit = params.api.paginationGetPageSize();
+
+    if (newLimit !== limit) {
+      setLimit(newLimit);
+      setPage(1);
+    } else if (newPage !== page) {
+      setPage(newPage);
+    }
+  };
+
+  const fullRowData = useMemo(() => {
+    if (!totalRecords || totalRecords <= companyList.length) return companyList;
+    const padded = new Array(totalRecords).fill(null).map((_, idx) => ({ id: `placeholder-${idx}` }));
+    const startIndex = (page - 1) * limit;
+    companyList.forEach((comp: any, i: number) => {
+      if (startIndex + i < totalRecords) {
+        padded[startIndex + i] = comp;
+      }
+    });
+    return padded;
+  }, [companyList, totalRecords, page, limit]);
 
   // Fetch plans for active selected company using custom hook
   const activeCompanyId = activePlansCompany?.id || activePlansCompany?.company_id || '';
@@ -172,7 +204,7 @@ export default function AddCompanies() {
   );
 
   return (
-    <div className="bg-[#f8fafc] min-h-[calc(100vh-72px)] flex flex-col">
+    <div className="bg-[#f8fafc]  flex flex-col">
       <Head>
         <title>Companies - Insuraa</title>
       </Head>
@@ -183,7 +215,7 @@ export default function AddCompanies() {
           subtitle=""
           searchPlaceholder="Search companies..."
           searchValue={search}
-          onSearchChange={setSearch}
+          onSearchChange={handleSearchChange}
           buttonText="Add General Company"
           onButtonClick={() => {
             setEditingCompanyId(null);
@@ -194,7 +226,14 @@ export default function AddCompanies() {
         />
 
         <div className="w-full">
-          <AgGridTable rowData={companyList} columnDefs={columnDefs as any} loading={isLoading} />
+          <AgGridTable
+            rowData={fullRowData}
+            columnDefs={columnDefs as any}
+            loading={isLoading}
+            pagination={true}
+            paginationPageSize={limit}
+            onPaginationChanged={handlePaginationChanged}
+          />
         </div>
       </div>
 

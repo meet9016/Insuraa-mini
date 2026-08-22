@@ -32,8 +32,40 @@ export default function DocumentList() {
   });
 
   // API hooks
-  const { data: documents = [], isLoading } = useDocumentList({ page, limit, search });
+  const { data: documentRes, isLoading } = useDocumentList({ page, limit, search });
+  const documents = documentRes?.documentList || [];
+  const totalRecords = documentRes?.totalRecords ?? documents.length ?? 0;
   const { insertDocument, deleteDocument } = useDocumentActions();
+
+  const handleSearchChange = (val: string) => {
+    setSearch(val);
+    setPage(1);
+  };
+
+  const handlePaginationChanged = (params: any) => {
+    if (!params || !params.api) return;
+    const newPage = params.api.paginationGetCurrentPage() + 1;
+    const newLimit = params.api.paginationGetPageSize();
+
+    if (newLimit !== limit) {
+      setLimit(newLimit);
+      setPage(1);
+    } else if (newPage !== page) {
+      setPage(newPage);
+    }
+  };
+
+  const fullRowData = useMemo(() => {
+    if (!totalRecords || totalRecords <= documents.length) return documents;
+    const padded = new Array(totalRecords).fill(null).map((_, idx) => ({ id: `placeholder-${idx}` }));
+    const startIndex = (page - 1) * limit;
+    documents.forEach((item: any, i: number) => {
+      if (startIndex + i < totalRecords) {
+        padded[startIndex + i] = item;
+      }
+    });
+    return padded;
+  }, [documents, totalRecords, page, limit]);
 
   const handleOpenAddModal = () => {
     setEditingId(null);
@@ -80,13 +112,6 @@ export default function DocumentList() {
     }
   };
 
-  const filteredDocuments = useMemo(() => {
-    if (!search.trim()) return documents;
-    return documents.filter((item: any) =>
-      (item?.name || '').toLowerCase().includes(search.toLowerCase())
-    );
-  }, [documents, search]);
-
   const columnDefs = useMemo(
     () =>
       getDocumentColumns({
@@ -113,7 +138,7 @@ export default function DocumentList() {
   );
 
   return (
-    <div className="bg-[#f8fafc] min-h-[calc(100vh-72px)] flex flex-col">
+    <div className="bg-[#f8fafc] flex flex-col">
       <Head>
         <title>Document List - Insuraa</title>
       </Head>
@@ -124,13 +149,20 @@ export default function DocumentList() {
           subtitle="Manage and view your documents"
           searchPlaceholder="Search documents..."
           searchValue={search}
-          onSearchChange={setSearch}
+          onSearchChange={handleSearchChange}
           buttonText="Add Document"
           onButtonClick={handleOpenAddModal}
         />
 
         <div className="w-full">
-          <AgGridTable rowData={filteredDocuments} columnDefs={columnDefs as any} loading={isLoading} />
+          <AgGridTable
+            rowData={fullRowData}
+            columnDefs={columnDefs as any}
+            loading={isLoading}
+            pagination={true}
+            paginationPageSize={limit}
+            onPaginationChanged={handlePaginationChanged}
+          />
         </div>
       </div>
 
@@ -159,11 +191,10 @@ export default function DocumentList() {
                     if (nameError) setNameError('');
                   }}
                   placeholder="Enter Document Name"
-                  className={`w-full border rounded-md px-3.5 py-2.5 text-sm focus:outline-none transition-all placeholder:text-gray-400 ${
-                    nameError
-                      ? '!border-red-500 ring-2 ring-red-500/20'
-                      : 'border-gray-300 focus:ring-1 focus:ring-[#2D3591] focus:border-[#2D3591]'
-                  }`}
+                  className={`w-full border rounded-md px-3.5 py-2.5 text-sm focus:outline-none transition-all placeholder:text-gray-400 ${nameError
+                    ? '!border-red-500 ring-2 ring-red-500/20'
+                    : 'border-gray-300 focus:ring-1 focus:ring-[#2D3591] focus:border-[#2D3591]'
+                    }`}
                 />
                 {nameError && (
                   <p className="text-xs text-red-500 mt-1 font-medium">{nameError}</p>

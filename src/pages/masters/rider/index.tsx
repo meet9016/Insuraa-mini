@@ -32,8 +32,40 @@ export default function RiderList() {
   });
 
   // API hooks
-  const { data: riders = [], isLoading } = useRiderList({ page, limit, search });
+  const { data: riderRes, isLoading } = useRiderList({ page, limit, search });
+  const riders = riderRes?.riderList || [];
+  const totalRecords = riderRes?.totalRecords ?? riders.length ?? 0;
   const { insertRider, deleteRider } = useRiderActions();
+
+  const handleSearchChange = (val: string) => {
+    setSearch(val);
+    setPage(1);
+  };
+
+  const handlePaginationChanged = (params: any) => {
+    if (!params || !params.api) return;
+    const newPage = params.api.paginationGetCurrentPage() + 1;
+    const newLimit = params.api.paginationGetPageSize();
+
+    if (newLimit !== limit) {
+      setLimit(newLimit);
+      setPage(1);
+    } else if (newPage !== page) {
+      setPage(newPage);
+    }
+  };
+
+  const fullRowData = useMemo(() => {
+    if (!totalRecords || totalRecords <= riders.length) return riders;
+    const padded = new Array(totalRecords).fill(null).map((_, idx) => ({ id: `placeholder-${idx}` }));
+    const startIndex = (page - 1) * limit;
+    riders.forEach((item: any, i: number) => {
+      if (startIndex + i < totalRecords) {
+        padded[startIndex + i] = item;
+      }
+    });
+    return padded;
+  }, [riders, totalRecords, page, limit]);
 
   const handleOpenAddModal = () => {
     setEditingId(null);
@@ -80,13 +112,6 @@ export default function RiderList() {
     }
   };
 
-  const filteredRiders = useMemo(() => {
-    if (!search.trim()) return riders;
-    return riders.filter((item: any) =>
-      (item?.name || '').toLowerCase().includes(search.toLowerCase())
-    );
-  }, [riders, search]);
-
   const columnDefs = useMemo(
     () =>
       getRiderColumns({
@@ -113,7 +138,7 @@ export default function RiderList() {
   );
 
   return (
-    <div className="bg-[#f8fafc] min-h-[calc(100vh-72px)] flex flex-col">
+    <div className="bg-[#f8fafc] flex flex-col">
       <Head>
         <title>Rider List - Insuraa</title>
       </Head>
@@ -124,13 +149,20 @@ export default function RiderList() {
           subtitle="Manage and view your riders"
           searchPlaceholder="Search riders..."
           searchValue={search}
-          onSearchChange={setSearch}
+          onSearchChange={handleSearchChange}
           buttonText="Add Rider"
           onButtonClick={handleOpenAddModal}
         />
 
         <div className="w-full">
-          <AgGridTable rowData={filteredRiders} columnDefs={columnDefs as any} loading={isLoading} />
+          <AgGridTable
+            rowData={fullRowData}
+            columnDefs={columnDefs as any}
+            loading={isLoading}
+            pagination={true}
+            paginationPageSize={limit}
+            onPaginationChanged={handlePaginationChanged}
+          />
         </div>
       </div>
 
