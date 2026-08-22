@@ -21,7 +21,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       headers: headers,
     });
 
-    res.setHeader('Content-Type', response.headers['content-type'] || 'application/octet-stream');
+    res.setHeader('Content-Type', (response.headers['content-type'] as string) || 'application/octet-stream');
     const safeFilename = typeof filename === 'string' ? filename.replace(/[^a-zA-Z0-9.\-_ ]/g, '_') : 'download';
     res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}"`);
     

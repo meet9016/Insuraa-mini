@@ -180,7 +180,7 @@ export default function AddCompanies() {
       <div className="w-full bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-gray-200 overflow-hidden flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500">
         <TableHeader
           title="General Insurance Companies"
-          subtitle="Manage and view insurance companies and plans"
+          subtitle=""
           searchPlaceholder="Search companies..."
           searchValue={search}
           onSearchChange={setSearch}

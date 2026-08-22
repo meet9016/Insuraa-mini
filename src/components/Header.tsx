@@ -242,18 +242,18 @@ export default function Header() {
               >
                 <Link
                   href={link.items ? '#' : link.path}
-                  className={`relative flex items-center gap-2 whitespace-nowrap px-3.5 py-2 rounded-lg text-[13px] font-bold transition-all duration-300 ${isActive
+                  className={`relative flex items-center gap-2 whitespace-nowrap px-3.5 py-2 rounded-lg text-[13px] font-semibold transition-all duration-300 ${isActive
                     ? 'text-[#2F439D] bg-blue-50/80 shadow-sm border border-[#2F439D]/10'
                     : 'text-gray-700 hover:bg-emerald-50 hover:text-[#00A389] border border-transparent'
                     }`}
                 >
                   <Icon size={16} className={`transition-transform duration-300 group-hover:scale-110 ${isActive ? 'text-[#2F439D]' : 'text-gray-500 group-hover:text-[#00A389]'}`} />
                   {link.name}
-                  {link.badge && (
+                  {/* {link.badge && (
                     <span className="absolute top-1.5 right-1.5 bg-rose-500 text-white text-[9px] font-bold h-4 w-4 flex items-center justify-center rounded-full shadow-md z-20">
                       {link.badge}
                     </span>
-                  )}
+                  )} */}
                   {link.items && <ChevronDown size={14} className={`ml-0.5 opacity-60 group-hover:opacity-100 transition-transform ${activeDropdown === idx ? 'rotate-180 text-[#2F439D]' : 'group-hover:rotate-180 group-hover:text-[#00A389]'}`} />}
                 </Link>
 
@@ -338,11 +338,11 @@ export default function Header() {
                         </div>
                         {link.name}
                       </div>
-                      {link.badge && (
+                      {/* {link.badge && (
                         <span className="bg-rose-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full shadow-sm">
                           {link.badge}
                         </span>
-                      )}
+                      )} */}
                     </Link>
                   )}
 

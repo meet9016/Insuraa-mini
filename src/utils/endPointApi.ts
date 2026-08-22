@@ -20,7 +20,7 @@ export interface EndPointApi {
   };
   LIFE_COMPANY: {
     INSERT_COMPANY: string;
-    COMPANY_LIST: string;
+    COMPANY_LIFE_LIST: string;
     INSERT_COMPANY_PLAN: string;
     FETCH_COMPANY_PLANS: string;
     DELETE_COMPANY: string;
@@ -78,7 +78,7 @@ const endPointApi: EndPointApi = {
   },
   LIFE_COMPANY: {
     INSERT_COMPANY: 'insert_company_life',
-    COMPANY_LIST: 'company_list_life',
+    COMPANY_LIFE_LIST: 'company_list_life',
     INSERT_COMPANY_PLAN: 'insert_company_plan_life',
     FETCH_COMPANY_PLANS: 'fetch_company_plans_life',
     DELETE_COMPANY: 'delete_company_life',

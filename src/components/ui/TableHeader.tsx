@@ -23,7 +23,7 @@ export default function TableHeader({
   showSearch = true,
 }: TableHeaderProps) {
   return (
-    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-5 sm:p-6 border-b border-gray-200 bg-[#F2F7FF]">
+    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-5 border-b border-gray-200">
       <div>
         <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
         {subtitle && (

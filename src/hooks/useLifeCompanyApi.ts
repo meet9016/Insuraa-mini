@@ -14,7 +14,7 @@ export const useLifeCompanyList = ({ page, limit, search }: UseLifeCompanyListPa
     queryKey: ['lifeCompanyList', page, limit, search],
     queryFn: async () => {
       try {
-        const response = await api.get(endPointApi.LIFE_COMPANY.COMPANY_LIST, {
+        const response = await api.get(endPointApi.LIFE_COMPANY.COMPANY_LIFE_LIST, {
           params: { page, limit, search }
         });
         const resData = response?.data;

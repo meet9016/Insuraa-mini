@@ -14,9 +14,12 @@ export const useCompanyList = ({ page, limit, search }: UseCompanyListParams) =>
     queryKey: ['companyList', page, limit, search],
     queryFn: async () => {
       try {
-        const response = await api.get(endPointApi.COMPANY.COMPANY_LIST, {
-          params: { page, limit, search }
-        });
+        const formData = new FormData();
+        formData.append('page', String(page));
+        formData.append('limit', String(limit));
+        formData.append('search', search);
+
+        const response = await api.post(endPointApi.COMPANY.COMPANY_LIST, formData);
         const resData = response.data;
         const list = resData?.data?.company_list || resData?.data?.list || resData?.data || resData?.company_list || [];
         return Array.isArray(list) ? list : [];

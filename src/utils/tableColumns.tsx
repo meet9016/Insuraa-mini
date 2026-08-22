@@ -8,7 +8,7 @@ export const claimColumns = [
     field: "clientName",
     minWidth: 180,
     cellRenderer: (params: any) => (
-      <span className="font-bold text-gray-900">{params.value}</span>
+      <span className="font-semibold text-gray-900">{params.value}</span>
     ),
   },
   {
@@ -16,7 +16,7 @@ export const claimColumns = [
     field: "insuranceType",
     minWidth: 160,
     cellRenderer: (params: any) => (
-      <span className="text-gray-700 font-medium">{params.value}</span>
+      <span className="text-gray-700 font-semibold">{params.value}</span>
     ),
   },
   {
@@ -54,7 +54,7 @@ export const claimColumns = [
       if (status === 'Rejected') badgeClass = "bg-rose-100 text-rose-700";
       if (status === 'Pending' || status === 'In Process') badgeClass = "bg-amber-100 text-amber-700";
 
-      return <span className={`text-xs font-bold px-3 py-1 rounded-full ${badgeClass}`}>{status}</span>;
+      return <span className={`text-xs font-semibold px-3 py-1 rounded-full ${badgeClass}`}>{status}</span>;
     },
   },
   {
@@ -65,18 +65,16 @@ export const claimColumns = [
     filter: false,
     cellRenderer: () => (
       <TableActions
-        onView={() => {}}
-        onEdit={() => {}}
-        onDelete={() => {}}
+        onView={() => { }}
+        onEdit={() => { }}
+        onDelete={() => { }}
         editIcon="file-edit"
       />
     ),
   },
 ];
 
-
 // DYNAMIC COLUMN
-
 export interface SourceOfLeadColumnProps {
   onEdit: (data: any) => void;
   onDelete: (data: any) => void;
@@ -191,7 +189,7 @@ export const getCompanyColumns = ({ onEdit, onDelete, onViewPlans, companyNameHe
     cellRenderer: (params: any) => {
       const name = params.data?.name || params.data?.company_name || params.value || '-';
       return (
-        <div className="font-bold text-gray-900 flex items-center gap-2">
+        <div className="font-semibold text-gray-900 flex items-center gap-2">
           <Building2 size={16} className="text-[#2B4399]" />
           <span>{name}</span>
         </div>
@@ -244,20 +242,6 @@ export interface CompanyPlanColumnProps {
 }
 
 export const getCompanyPlanColumns = ({ onEdit, onDelete }: CompanyPlanColumnProps) => [
-  {
-    headerName: "#",
-    field: "id",
-    width: 80,
-    sortable: false,
-    filter: false,
-    cellRenderer: (params: any) => (
-      <div className="flex items-center justify-center h-full py-1">
-        <div className="w-6 h-6 rounded-full bg-indigo-50 text-[#2B4399] text-xs font-bold flex items-center justify-center">
-          {params.node.rowIndex + 1}
-        </div>
-      </div>
-    )
-  },
   {
     headerName: "Plan Name",
     field: "name",
