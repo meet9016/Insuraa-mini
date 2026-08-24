@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import Head from 'next/head';
 import { X } from 'lucide-react';
-import AgGridTable from '@/components/ui/AgGridTable';
+import AgGridTable from '@/components/ui/tableaggrid/AgGridTable';
 import ActionButtons from '@/components/ui/ActionButtons';
 import TableHeader from '@/components/ui/TableHeader';
 import DeleteConfirmationModal from '@/components/ui/DeleteConfirmationModal';

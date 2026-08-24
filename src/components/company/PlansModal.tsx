@@ -1,6 +1,6 @@
 import React from 'react';
 import { X } from 'lucide-react';
-import AgGridTable from '@/components/ui/AgGridTable';
+import AgGridTable from '@/components/ui/tableaggrid/AgGridTable';
 import TableHeader from '@/components/ui/TableHeader';
 
 interface PlansModalProps {

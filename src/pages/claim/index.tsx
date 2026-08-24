@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { Plus } from 'lucide-react';
-import AgGridTable from '@/components/ui/AgGridTable';
+import AgGridTable from '@/components/ui/tableaggrid/AgGridTable';
 import TableHeader from '@/components/ui/TableHeader';
 import { claimColumns } from '@/utils/tableColumns';
 

@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import AgGridTable from '@/components/ui/AgGridTable';
+import AgGridTable from '@/components/ui/tableaggrid/AgGridTable';
 import TableHeader from '@/components/ui/TableHeader';
 import { useCustomerList } from '@/hooks/useCustomerApi';
 import { getCustomerColumns } from '@/utils/tableColumns';

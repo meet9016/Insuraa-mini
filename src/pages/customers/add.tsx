@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
-import { Plus, Minus, ArrowLeft } from 'lucide-react';
+import { Plus, Minus } from 'lucide-react';
 import { useRouter } from 'next/router';
 import Select from '@/components/ui/Select';
 import DatePicker from '@/components/ui/DatePicker';
+import PageHeader from '@/components/ui/PageHeader';
 import { useCustomerDropdowns } from '@/hooks/useCustomerDropdowns';
 import { api } from '@/utils/axiosInstance';
 import endPointApi from '@/utils/endPointApi';
@@ -275,27 +276,12 @@ export default function AddCustomer() {
       <div className="w-full mx-auto animate-in fade-in duration-500 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
 
         {/* Page Header */}
-        <div className="sticky top-0 z-40 bg-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200 pb-5 mb-8 pt-6 -mt-6 -mx-6 px-6 rounded-t-xl">
-          <div className="flex items-center gap-3 font-bold text-gray-900">
-            <button onClick={() => router.back()} type="button" className="p-2 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors" title="Go Back">
-              <ArrowLeft size={18} />
-            </button>
-            <h1 className="text-xl">{id ? 'Edit Customer' : 'Add Customer'}</h1>
-          </div>
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <button type="button" onClick={() => router.back()} className="flex-1 sm:flex-none px-5 py-2.5 border border-gray-300 rounded-lg text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors">
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-              className="flex-1 sm:flex-none bg-[#2B4399] text-white px-6 py-2.5 rounded-lg text-sm font-bold hover:bg-[#203378] transition-colors shadow-sm disabled:opacity-50"
-            >
-              {isSubmitting ? 'Saving...' : (id ? 'Update Customer' : 'Save Customer')}
-            </button>
-          </div>
-        </div>
+        <PageHeader 
+          title={id ? 'Edit Customer' : 'Add Customer'}
+          onSubmit={handleSubmit}
+          isSubmitting={isSubmitting}
+          submitText={id ? 'Update Customer' : 'Save Customer'}
+        />
 
         {/* Form Content */}
         <form onSubmit={handleSubmit} className="space-y-8 bg-white">

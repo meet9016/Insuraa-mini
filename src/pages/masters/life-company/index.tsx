@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import Head from 'next/head';
-import AgGridTable from '@/components/ui/AgGridTable';
+import AgGridTable from '@/components/ui/tableaggrid/AgGridTable';
 import DeleteConfirmationModal from '@/components/ui/DeleteConfirmationModal';
 import TableHeader from '@/components/ui/TableHeader';
 import CompanyModal from '@/components/company/CompanyModal';

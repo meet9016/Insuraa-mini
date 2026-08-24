@@ -1,6 +1,6 @@
 import React from 'react';
 import { Building2, List, User, Eye, FileEdit, Trash2 } from 'lucide-react';
-import { TableActions } from '../components/ui/TableActions';
+import { TableActions } from '../components/ui/tableaggrid/TableActions';
 
 export const claimColumns = [
   {
