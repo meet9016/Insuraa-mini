@@ -1,6 +1,7 @@
 import React from 'react';
 import { X } from 'lucide-react';
 import ActionButtons from '@/components/ui/ActionButtons';
+import Input from '@/components/ui/Input';
 
 interface CompanyModalProps {
   isOpen: boolean;
@@ -38,23 +39,19 @@ export default function CompanyModal({
           </button>
         </div>
         <div className="p-6">
-          <label className="block text-[13px] font-semibold text-gray-700 mb-1.5">Company Name <span className="text-red-500">*</span></label>
-          <input
-            type="text"
+          <Input
+            label="Company Name"
+            name="companyName"
+            required
             placeholder="Enter Company Name"
             value={companyName}
-            onChange={(e) => {
+            onChange={(e: any) => {
               setCompanyName(e.target.value);
               if (companyNameError) setCompanyNameError('');
             }}
-            className={`w-full border rounded-md px-3.5 py-2.5 text-sm focus:outline-none transition-all placeholder:text-gray-400 ${companyNameError
-              ? '!border-red-500 ring-2 ring-red-500/20'
-              : 'border-gray-300 focus:ring-1 focus:ring-[#2D3591] focus:border-[#2D3591]'
-              }`}
+            error={companyNameError}
+            labelClassName="text-[13px] font-semibold text-gray-700"
           />
-          {companyNameError && (
-            <p className="text-xs text-red-500 mt-1 font-medium">{companyNameError}</p>
-          )}
         </div>
         <ActionButtons 
           onCancel={onClose}

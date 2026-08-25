@@ -5,6 +5,7 @@ import AgGridTable from '@/components/ui/tableaggrid/AgGridTable';
 import ActionButtons from '@/components/ui/ActionButtons';
 import TableHeader from '@/components/ui/TableHeader';
 import DeleteConfirmationModal from '@/components/ui/DeleteConfirmationModal';
+import Input from '@/components/ui/Input';
 import { useSourceOfLeadList, useSourceOfLeadActions } from '@/hooks/useSourceOfLeadApi';
 import { getSourceOfLeadColumns } from '@/utils/tableColumns';
 
@@ -179,27 +180,18 @@ export default function SourceOfLead() {
             </div>
 
             <div className="p-6">
-              <div className="mb-4">
-                <label className="block text-[13px] font-semibold text-gray-700 mb-1.5">
-                  Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={newName}
-                  onChange={(e) => {
-                    setNewName(e.target.value);
-                    if (nameError) setNameError('');
-                  }}
-                  placeholder="Enter Source of Lead Name"
-                  className={`w-full border rounded-md px-3.5 py-2.5 text-sm focus:outline-none transition-all placeholder:text-gray-400 ${nameError
-                      ? '!border-red-500 ring-2 ring-red-500/20'
-                      : 'border-gray-300 focus:ring-1 focus:ring-[#2D3591] focus:border-[#2D3591]'
-                    }`}
-                />
-                {nameError && (
-                  <p className="text-xs text-red-500 mt-1 font-medium">{nameError}</p>
-                )}
-              </div>
+              <Input
+                label="Name"
+                name="name"
+                required
+                placeholder="Enter Source of Lead Name"
+                value={newName}
+                onChange={(e: any) => {
+                  setNewName(e.target.value);
+                  if (nameError) setNameError('');
+                }}
+                error={nameError}
+              />
             </div>
 
             <ActionButtons
