@@ -1,5 +1,5 @@
 import React from 'react';
-import { Building2, List, User, Eye, FileEdit, Trash2 } from 'lucide-react';
+import { Building2, List, User, Eye, FileEdit, Trash2, Calendar, Clock } from 'lucide-react';
 import { TableActions } from '../components/ui/tableaggrid/TableActions';
 
 export const claimColumns = [
@@ -463,6 +463,210 @@ export const getCustomerColumns = ({ onView, onEdit, onDelete }: CustomerColumnP
         </div>
       );
     },
+  },
+];
+
+export interface LeadColumnProps {
+  onView?: (data: any) => void;
+  onNotes?: (data: any) => void;
+  onReminders?: (data: any) => void;
+  onEdit?: (data: any) => void;
+  onDelete?: (data: any) => void;
+}
+
+export const getLeadColumns = ({ onView, onNotes, onReminders, onEdit, onDelete }: LeadColumnProps = {}) => [
+  {
+    headerName: "ID",
+    field: "lead_id",
+    minWidth: 110,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      const idVal = params.data?.lead_id || params.data?.id || params.value || '-';
+      return <span className="text-gray-500 font-bold">#LEAD-{idVal}</span>;
+    },
+  },
+  {
+    headerName: "Customer Name",
+    field: "full_name",
+    minWidth: 180,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      const name = params.data?.full_name || params.data?.name || params.value || '-';
+      return <span className="font-bold text-[#2B4399]">{name}</span>;
+    },
+  },
+  {
+    headerName: "Phone",
+    field: "number",
+    minWidth: 140,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      const phone = params.data?.number || params.data?.phone || params.value || '-';
+      return <span className="font-bold text-gray-600">{phone}</span>;
+    },
+  },
+  {
+    headerName: "Whatsapp",
+    field: "whatsapp_number",
+    minWidth: 140,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      const whatsapp = params.data?.whatsapp_number || params.value || '-';
+      return <span className="text-gray-600 font-medium">{whatsapp}</span>;
+    },
+  },
+  {
+    headerName: "Product",
+    field: "product_name",
+    minWidth: 150,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      const prod = params.data?.product_name || params.data?.type || params.value || '-';
+      return <span className="font-semibold text-gray-800">{prod}</span>;
+    },
+  },
+  {
+    headerName: "Business Group",
+    field: "business_group_name",
+    minWidth: 160,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      const bg = params.data?.business_group_name || params.data?.agent || params.data?.reference || params.value || 'Direct';
+      return <span className="font-bold text-gray-600">{bg}</span>;
+    },
+  },
+  {
+    headerName: "Date",
+    field: "date",
+    minWidth: 130,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      return <span className="text-gray-500 font-bold">{params.value || '-'}</span>;
+    },
+  },
+  {
+    headerName: "Action",
+    field: "lead_id",
+    minWidth: 150,
+    sortable: false,
+    filter: false,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      return (
+        <TableActions
+          data={params.data}
+          onNotes={onNotes || onView}
+          onReminders={onReminders}
+          onEdit={onEdit}
+          onDelete={onDelete}
+        />
+      );
+    },
+  },
+];
+
+export interface NoteColumnProps {
+  onEdit: (data: any) => void;
+  onDelete: (data: any) => void;
+}
+
+export const getNoteColumns = ({ onEdit, onDelete }: NoteColumnProps) => [
+  {
+    headerName: "DATE",
+    field: "date",
+    width: 180,
+    cellRenderer: (params: any) => (
+      <div className="flex items-center h-full">
+        <span className="inline-flex items-center gap-1.5 bg-[#EEF2FF] text-[#2B4399] border border-indigo-100 text-xs font-bold px-3 py-1 rounded-full shadow-2xs">
+          <Calendar size={13} className="text-[#2B4399]" />
+          {params.value}
+        </span>
+      </div>
+    ),
+  },
+  {
+    headerName: "REMARK",
+    field: "remark",
+    flex: 1,
+    cellRenderer: (params: any) => (
+      <div className="flex items-center h-full text-sm font-medium text-gray-700">
+        {params.value}
+      </div>
+    ),
+  },
+  {
+    headerName: "ACTION",
+    field: "id",
+    width: 120,
+    sortable: false,
+    filter: false,
+    cellRenderer: (params: any) => (
+      <TableActions
+        data={params.data}
+        onEdit={onEdit}
+        onDelete={onDelete}
+        variant="light"
+      />
+    ),
+  },
+];
+
+export interface ReminderColumnProps {
+  onEdit: (data: any) => void;
+  onDelete: (data: any) => void;
+}
+
+export const getReminderColumns = ({ onEdit, onDelete }: ReminderColumnProps) => [
+  {
+    headerName: "DATE",
+    field: "date",
+    width: 160,
+    cellRenderer: (params: any) => (
+      <div className="flex items-center h-full">
+        <span className="inline-flex items-center gap-1.5 bg-[#EEF2FF] text-[#2B4399] border border-indigo-100 text-xs font-bold px-3 py-1 rounded-full">
+          <Calendar size={13} />
+          {params.value}
+        </span>
+      </div>
+    ),
+  },
+  {
+    headerName: "TIME",
+    field: "time",
+    width: 150,
+    cellRenderer: (params: any) => (
+      <div className="flex items-center h-full">
+        <span className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 border border-amber-100 text-xs font-bold px-2.5 py-1 rounded-full">
+          <Clock size={13} />
+          {params.value}
+        </span>
+      </div>
+    ),
+  },
+  {
+    headerName: "MESSAGE",
+    field: "message",
+    flex: 1,
+    cellRenderer: (params: any) => (
+      <div className="flex items-center h-full text-sm font-medium text-gray-700">
+        {params.value}
+      </div>
+    ),
+  },
+  {
+    headerName: "ACTION",
+    field: "id",
+    width: 120,
+    sortable: false,
+    filter: false,
+    cellRenderer: (params: any) => (
+      <TableActions
+        data={params.data}
+        onEdit={onEdit}
+        onDelete={onDelete}
+        variant="light"
+      />
+    ),
   },
 ];
 

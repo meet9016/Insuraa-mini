@@ -53,6 +53,21 @@ export interface EndPointApi {
     AGENCY_CODE_LIST: string;
     DELETE_AGENCY_CODE: string;
   };
+  LEAD: {
+    INSERT_LEAD: string;
+    KANBAN_LIST: string;
+    KANBAN_LOAD_MORE: string;
+    BUSINESS_GROUPS_DROPDOWN: string;
+    LEAD_PRODUCT_DROPDOWN: string;
+    LEAD_TABLE_LIST: string;
+    DELETE_LEAD: string;
+    INSERT_LEAD_NOTE: string;
+    LEAD_NOTE_LIST: string;
+    DELETE_LEAD_NOTE: string;
+    INSERT_LEAD_REMINDER: string;
+    LEAD_REMINDER_LIST: string;
+    DELETE_LEAD_REMINDER: string;
+  };
 }
 
 // Define and export the standard API endpoint object
@@ -111,7 +126,22 @@ const endPointApi: EndPointApi = {
     AGENCY_CODE_LIST: 'agency_code_list_life',
     DELETE_AGENCY_CODE: 'delete_agency_code_life',
   },
-};
+  LEAD: {
+    INSERT_LEAD: 'insert_lead',
+    KANBAN_LIST: 'lead_list_kanban_list',
+    KANBAN_LOAD_MORE: 'lead_list_kanban_load_more',
+    BUSINESS_GROUPS_DROPDOWN: 'business_groups_dropdown_list',
+    LEAD_PRODUCT_DROPDOWN: 'lead_product_dropdown_list',
+    LEAD_TABLE_LIST: 'lead_list_table_list',
+    DELETE_LEAD: 'delete_lead',
+    INSERT_LEAD_NOTE: 'insert_lead_note',
+    LEAD_NOTE_LIST: 'lead_note_list',
+    DELETE_LEAD_NOTE: 'delete_lead_note',
+    INSERT_LEAD_REMINDER: 'insert_lead_reminder',
+    LEAD_REMINDER_LIST: 'lead_reminder_list',
+    DELETE_LEAD_REMINDER: 'delete_lead_reminder',
+  },
+};  
 
 export default endPointApi;
 

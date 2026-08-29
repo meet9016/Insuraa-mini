@@ -1,9 +1,11 @@
 import React from 'react';
-import { Eye, Edit, FileEdit, Trash2 } from 'lucide-react';
+import { Eye, Edit, FileEdit, Trash2, FileText, Bell } from 'lucide-react';
 
 interface TableActionsProps {
   data?: any;
   onView?: (data: any) => void;
+  onNotes?: (data: any) => void;
+  onReminders?: (data: any) => void;
   onEdit?: (data: any) => void;
   onDelete?: (data: any) => void;
   variant?: 'default' | 'light';
@@ -13,20 +15,24 @@ interface TableActionsProps {
 export const TableActions: React.FC<TableActionsProps> = ({
   data,
   onView,
+  onNotes,
+  onReminders,
   onEdit,
   onDelete,
   variant = 'default',
   editIcon = 'edit'
 }) => {
-  const getBtnClass = (type: 'view' | 'edit' | 'delete') => {
+  const getBtnClass = (type: 'view' | 'notes' | 'reminders' | 'edit' | 'delete') => {
     if (variant === 'light') {
       if (type === 'edit') return "bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white border border-emerald-200 hover:border-emerald-500 p-1.5 rounded transition-all";
       if (type === 'delete') return "bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white border border-rose-200 hover:border-rose-500 p-1.5 rounded transition-all";
-      if (type === 'view') return "bg-sky-50 text-sky-600 hover:bg-sky-500 hover:text-white border border-sky-200 hover:border-sky-500 p-1.5 rounded transition-all";
+      if (type === 'view' || type === 'notes') return "bg-sky-50 text-sky-600 hover:bg-sky-500 hover:text-white border border-sky-200 hover:border-sky-500 p-1.5 rounded transition-all";
+      if (type === 'reminders') return "bg-amber-50 text-amber-600 hover:bg-amber-500 hover:text-white border border-amber-200 hover:border-amber-500 p-1.5 rounded transition-all";
     }
 
     // Default
-    if (type === 'view') return "p-1.5 bg-[#0ea5e9] text-white rounded hover:bg-[#0284c7] transition-colors shadow-sm";
+    if (type === 'view' || type === 'notes') return "p-1.5 bg-[#2B4399] text-white rounded hover:bg-[#203378] transition-colors shadow-sm";
+    if (type === 'reminders') return "p-1.5 bg-amber-500 text-white rounded hover:bg-amber-600 transition-colors shadow-sm";
     if (type === 'edit') return "bg-emerald-500 hover:bg-emerald-600 text-white p-1.5 rounded transition-colors shadow-sm";
     if (type === 'delete') return "bg-rose-500 hover:bg-rose-600 text-white p-1.5 rounded transition-colors shadow-sm";
 
@@ -34,7 +40,17 @@ export const TableActions: React.FC<TableActionsProps> = ({
   };
 
   return (
-    <div className="flex items-center gap-2 h-full py-1">
+    <div className="flex items-center gap-1.5 h-full py-1">
+      {onNotes !== undefined && (
+        <button onClick={() => onNotes(data)} className={getBtnClass('notes')} title="Notes & Remarks">
+          <FileText size={14} strokeWidth={2.5} />
+        </button>
+      )}
+      {onReminders !== undefined && (
+        <button onClick={() => onReminders(data)} className={getBtnClass('reminders')} title="Reminders">
+          <Bell size={14} strokeWidth={2.5} />
+        </button>
+      )}
       {onView !== undefined && (
         <button onClick={() => onView(data)} className={getBtnClass('view')} title="View">
           <Eye size={14} strokeWidth={2.5} />
@@ -53,3 +69,4 @@ export const TableActions: React.FC<TableActionsProps> = ({
     </div>
   );
 };
+
