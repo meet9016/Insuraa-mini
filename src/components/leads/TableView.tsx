@@ -1,23 +1,57 @@
 import React, { useState, useMemo } from 'react';
+import { Plus, Download, LayoutGrid, List } from 'lucide-react';
 import AgGridTable from '@/components/ui/tableaggrid/AgGridTable';
+import TableHeader from '@/components/ui/TableHeader';
 import DeleteConfirmationModal from '@/components/ui/DeleteConfirmationModal';
 import ReminderNotesModal from '@/components/leads/ReminderNotesModal';
 import { useLeadTableList, useLeadActions } from '@/hooks/useLeadApi';
 import { getLeadColumns } from '@/utils/tableColumns';
 
 interface TableViewProps {
-  search: string;
+  search?: string;
+  onSearchChange?: (val: string) => void;
   onEditLead?: (lead: any) => void;
+  onAddLead?: () => void;
+  onExport?: () => void;
+  viewMode?: 'kanban' | 'table';
+  onViewModeChange?: (mode: 'kanban' | 'table') => void;
+  title?: string;
+  subtitle?: string;
+  searchPlaceholder?: string;
+  buttonText?: string;
+  showSearch?: boolean;
 }
 
-export default function TableView({ search, onEditLead }: TableViewProps) {
+export default function TableView({
+  search = '',
+  onSearchChange,
+  onEditLead,
+  onAddLead,
+  onExport,
+  viewMode = 'table',
+  onViewModeChange,
+  title = 'Leads List',
+  subtitle,
+  searchPlaceholder = 'Search leads by name or ID...',
+  buttonText = 'Add Lead',
+  showSearch = true,
+}: TableViewProps) {
   const [page, setPage] = useState<number>(1);
   const [limit, setLimit] = useState<number>(10);
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   const { data: tableRes, isLoading: isTableLoading } = useLeadTableList({
     page,
     limit,
-    search,
+    search: debouncedSearch,
     enabled: true,
   });
   const { deleteLead } = useLeadActions();
@@ -127,6 +161,58 @@ export default function TableView({ search, onEditLead }: TableViewProps) {
 
   return (
     <div className="w-full bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-gray-200 overflow-hidden flex flex-col">
+      <TableHeader
+        title={title}
+        subtitle={subtitle}
+        searchPlaceholder={searchPlaceholder}
+        searchValue={search}
+        onSearchChange={onSearchChange}
+        showSearch={showSearch && !!onSearchChange}
+        extraActions={
+          <>
+            {onViewModeChange && (
+              <div className="bg-white border border-gray-200 p-1 rounded-md flex items-center shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => onViewModeChange('kanban')}
+                  className={`p-1.5 rounded-sm flex items-center justify-center transition-all ${
+                    viewMode === 'kanban'
+                      ? 'bg-[#2B4399] shadow-sm text-white'
+                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                  }`}
+                  title="Kanban View"
+                >
+                  <LayoutGrid size={16} strokeWidth={2.5} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onViewModeChange('table')}
+                  className={`p-1.5 rounded-sm flex items-center justify-center transition-all ${
+                    viewMode === 'table'
+                      ? 'bg-[#2B4399] shadow-sm text-white'
+                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                  }`}
+                  title="Table View"
+                >
+                  <List size={16} strokeWidth={2.5} />
+                </button>
+              </div>
+            )}
+            {onExport && (
+              <button
+                type="button"
+                onClick={onExport}
+                className="bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 px-4 py-2.5 rounded-md text-sm font-bold flex items-center gap-2 transition-all shadow-sm hover:shadow whitespace-nowrap"
+              >
+                <Download size={16} className="text-gray-500" /> Export
+              </button>
+            )}
+          </>
+        }
+        buttonText={onAddLead ? buttonText : undefined}
+        onButtonClick={onAddLead}
+      />
+
       <AgGridTable
         rowData={fullRowData}
         columnDefs={columnDefs as any}
@@ -157,4 +243,6 @@ export default function TableView({ search, onEditLead }: TableViewProps) {
     </div>
   );
 }
+
+
 

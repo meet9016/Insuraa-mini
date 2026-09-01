@@ -38,21 +38,20 @@ export const useLifeCompanyList = ({ page, limit, search }: UseLifeCompanyListPa
   });
 };
 
-export const useLifeCompanyPlans = (activeCompanyId: string | number) => {
+export const useLifeCompanyPlans = (activeCompanyId?: string | number) => {
   return useQuery({
     queryKey: ['lifeCompanyPlans', activeCompanyId],
-    enabled: !!activeCompanyId,
     queryFn: async () => {
-      if (!activeCompanyId) return [];
       try {
         const formData = new FormData();
-        formData.append('company_id', String(activeCompanyId));
+        if (activeCompanyId) {
+          formData.append('company_id', String(activeCompanyId));
+        }
         const response = await api.post(endPointApi.LIFE_COMPANY.FETCH_COMPANY_PLANS, formData);
         const resData = response?.data;
         const list = resData?.data?.company_plans || resData?.data?.plans || resData?.data?.list || resData?.data || resData?.company_plans || [];
         return Array.isArray(list) ? list : [];
       } catch (err: any) {
-        toast.error(err?.response?.data?.message || 'Error fetching life company plans');
         return [];
       }
     }

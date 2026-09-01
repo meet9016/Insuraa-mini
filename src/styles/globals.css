@@ -150,6 +150,30 @@ textarea[disabled] {
   background: var(--scrollbar-track);
 } */
 
+/* Custom Scrollbar (Ultra Thin width for Kanban & tables) */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 3px;
+  height: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #b0b0b0;
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #888888;
+}
+
 /* Global Scrollbar Styling */
 * {
   scrollbar-width: thin;
@@ -492,7 +516,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   width: 18px !important;
   height: 18px !important;
   border-radius: 4px !important;
-  border: 1px solid #94a3b8 !important;
+  /* border: 1px solid #94a3b8 !important; */
   transition: all 0.15s ease !important;
   display: inline-flex !important;
   align-items: center !important;

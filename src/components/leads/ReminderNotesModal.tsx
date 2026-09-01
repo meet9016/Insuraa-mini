@@ -84,7 +84,8 @@ export default function ReminderNotesModal({
   const notes = useMemo(() => {
     if (Array.isArray(apiNoteList) && apiNoteList.length > 0) {
       return apiNoteList.map((item: any) => ({
-        id: item.lead_note_id || item.id,
+        id: item.lead_note_id || item.id || item.note_id,
+        lead_note_id: item.lead_note_id || item.id || item.note_id,
         date: item.date || item.cdate || item.created_at || getFormattedDate(),
         remark: item.remark || '',
       }));
@@ -190,15 +191,17 @@ export default function ReminderNotesModal({
   const noteColumnDefs: any[] = useMemo(
     () =>
       getNoteColumns({
-        onEdit: (data: NoteItem) => {
-          setEditingNoteId(data.id);
+        onEdit: (data: any) => {
+          const targetId = data.lead_note_id || data.id;
+          setEditingNoteId(targetId);
           setNoteInput(data.remark || '');
         },
-        onDelete: (data: NoteItem) => {
+        onDelete: (data: any) => {
+          const targetId = data.lead_note_id || data.id;
           setDeleteModalState({
             isOpen: true,
             type: 'note',
-            id: data.id,
+            id: targetId,
             itemName: data.remark ? `"${data.remark}"` : 'this note',
             isDeleting: false,
           });

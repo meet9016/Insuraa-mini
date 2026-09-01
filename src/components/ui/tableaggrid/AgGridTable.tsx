@@ -33,6 +33,7 @@ interface AgGridTableProps<T = any> {
   columnDefs: ColDef<T>[];
   loading?: boolean;
   height?: string | number;
+  rowHeight?: number;
   pagination?: boolean;
   paginationPageSize?: number;
   paginationPageSizeSelector?: number[];
@@ -44,6 +45,7 @@ export default function AgGridTable<T = any>({
   columnDefs,
   loading = false,
   height = "650px",
+  rowHeight,
   pagination = true,
   paginationPageSize = 10,
   paginationPageSizeSelector = [10, 25, 50, 100],
@@ -85,6 +87,7 @@ export default function AgGridTable<T = any>({
             columnDefs={columnDefs}
             defaultColDef={defaultColDef}
             rowSelection={rowSelection}
+            rowHeight={rowHeight}
             pagination={pagination}
             paginationPageSize={paginationPageSize}
             paginationPageSizeSelector={paginationPageSizeSelector}

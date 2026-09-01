@@ -11,6 +11,7 @@ export default function LifeAgencyCodeList() {
   const [page, setPage] = useState<number>(1);
   const [limit, setLimit] = useState<number>(10);
   const [search, setSearch] = useState<string>('');
+  const [debouncedSearch, setDebouncedSearch] = useState<string>('');
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | number | null>(null);
@@ -39,16 +40,25 @@ export default function LifeAgencyCodeList() {
     isDeleting: false,
   });
 
-  // API Hooks for Life Insurance Agency Code
+  // Debounce search input (500ms delay) to prevent API calls on every character keypress
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // API Hooks for Life Insurance Agency Code with debounced search
   const { data: companyDropdownList = [], isLoading: isLoadingCompanies } = useLifeCompanyDropdownList();
-  const { data: agencyCodeRes, isLoading: isLoadingList } = useLifeAgencyCodeList({ page, limit, search });
+  const { data: agencyCodeRes, isLoading: isLoadingList } = useLifeAgencyCodeList({ page, limit, search: debouncedSearch });
   const agencyCodeList = agencyCodeRes?.agencyCodeList || [];
   const totalRecords = agencyCodeRes?.totalRecords ?? agencyCodeList.length ?? 0;
   const { insertAgencyCode, deleteAgencyCode } = useLifeAgencyCodeActions();
 
   const handleSearchChange = (val: string) => {
     setSearch(val);
-    setPage(1);
   };
 
   const handlePaginationChanged = (params: any) => {

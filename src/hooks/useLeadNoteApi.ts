@@ -59,6 +59,8 @@ export const useLeadNoteActions = () => {
       formData.append('remark', remark.trim());
       if (lead_note_id) {
         formData.append('lead_note_id', String(lead_note_id));
+        formData.append('id', String(lead_note_id));
+        formData.append('note_id', String(lead_note_id));
       }
 
       const response = await api.post(endPointApi.LEAD.INSERT_LEAD_NOTE, formData);

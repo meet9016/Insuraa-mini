@@ -10,7 +10,6 @@ import { getAgencyCodeColumns } from '@/utils/tableColumns';
 export default function GeneralAgencyCodeList() {
   const [page, setPage] = useState<number>(1);
   const [limit, setLimit] = useState<number>(10);
-  const [search, setSearch] = useState<string>('');
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | number | null>(null);
@@ -39,16 +38,28 @@ export default function GeneralAgencyCodeList() {
     isDeleting: false,
   });
 
-  // API Hooks
+  const [search, setSearch] = useState<string>('');
+  const [debouncedSearch, setDebouncedSearch] = useState<string>('');
+
+  // Debounce search input (500ms delay) to prevent API calls on every character keypress
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // API Hooks with debounced search
   const { data: companyDropdownList = [], isLoading: isLoadingCompanies } = useCompanyDropdownList();
-  const { data: agencyCodeRes, isLoading: isLoadingList } = useAgencyCodeList({ page, limit, search });
+  const { data: agencyCodeRes, isLoading: isLoadingList } = useAgencyCodeList({ page, limit, search: debouncedSearch });
   const agencyCodeList = agencyCodeRes?.agencyCodeList || [];
   const totalRecords = agencyCodeRes?.totalRecords ?? agencyCodeList.length ?? 0;
   const { insertAgencyCode, deleteAgencyCode } = useAgencyCodeActions();
 
   const handleSearchChange = (val: string) => {
     setSearch(val);
-    setPage(1);
   };
 
   const handlePaginationChanged = (params: any) => {

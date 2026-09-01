@@ -68,6 +68,14 @@ export interface EndPointApi {
     LEAD_REMINDER_LIST: string;
     DELETE_LEAD_REMINDER: string;
   };
+  LIFE_INSURANCE: {
+    INSERT_LIFE_INSURANCE: string;
+    LIFE_INSURANCE_MASTER_DATA: string;
+    LIFE_INSURANCE_COMPANY_PLANS_AND_AGENCY: string;
+    LIFE_INSURANCE_LIST: string;
+    DELETE_LIFE_INSURANCE: string;
+    VIEW_LIFE_INSURANCE: string;
+  };
 }
 
 // Define and export the standard API endpoint object
@@ -141,7 +149,15 @@ const endPointApi: EndPointApi = {
     LEAD_REMINDER_LIST: 'lead_reminder_list',
     DELETE_LEAD_REMINDER: 'delete_lead_reminder',
   },
-};  
+  LIFE_INSURANCE: {
+    INSERT_LIFE_INSURANCE: 'insert_life_insurance',
+    LIFE_INSURANCE_MASTER_DATA: 'life_insurance_master_data',
+    LIFE_INSURANCE_COMPANY_PLANS_AND_AGENCY: 'life_insurance_company_plans_and_agency',
+    LIFE_INSURANCE_LIST: 'life_insurance_list',
+    DELETE_LIFE_INSURANCE: 'delete_life_insurance',
+    VIEW_LIFE_INSURANCE: 'view_life_insurance',
+  },
+};
 
 export default endPointApi;
 

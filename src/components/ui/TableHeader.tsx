@@ -10,6 +10,8 @@ interface TableHeaderProps {
   buttonText?: string;
   onButtonClick?: () => void;
   showSearch?: boolean;
+  extraActions?: React.ReactNode;
+  children?: React.ReactNode;
 }
 
 export default function TableHeader({
@@ -21,9 +23,11 @@ export default function TableHeader({
   buttonText,
   onButtonClick,
   showSearch = true,
+  extraActions,
+  children,
 }: TableHeaderProps) {
   return (
-    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-5 border-b border-gray-200">
+    <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 p-5 border-b border-gray-200">
       <div>
         <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
         {subtitle && (
@@ -31,9 +35,9 @@ export default function TableHeader({
         )}
       </div>
 
-      <div className="flex items-center gap-3 w-full sm:w-auto">
+      <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
         {showSearch && onSearchChange && (
-          <div className="relative flex-1 sm:flex-none">
+          <div className="relative flex-1 sm:flex-none min-w-[200px]">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
@@ -44,6 +48,7 @@ export default function TableHeader({
             />
           </div>
         )}
+        {extraActions}
         {buttonText && onButtonClick && (
           <button
             type="button"
@@ -54,7 +59,9 @@ export default function TableHeader({
             <span>{buttonText}</span>
           </button>
         )}
+        {children}
       </div>
     </div>
   );
 }
+

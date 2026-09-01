@@ -16,7 +16,6 @@ export default function AddLifeCompanies() {
   const [editingCompanyId, setEditingCompanyId] = useState<string | number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [search, setSearch] = useState<string>('');
   const [page, setPage] = useState<number>(1);
   const [limit, setLimit] = useState<number>(10);
 
@@ -42,14 +41,26 @@ export default function AddLifeCompanies() {
     isDeleting: false,
   });
 
-  // Fetch life company list using custom hook (API: company_list_life)
-  const { data: companyRes, isLoading } = useLifeCompanyList({ page, limit, search });
+  const [search, setSearch] = useState<string>('');
+  const [debouncedSearch, setDebouncedSearch] = useState<string>('');
+
+  // Debounce search input (500ms delay) to prevent API calls on every character keypress
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // Fetch life company list using custom hook (API: company_list_life) with debounced search
+  const { data: companyRes, isLoading } = useLifeCompanyList({ page, limit, search: debouncedSearch });
   const companyList = companyRes?.companyList || [];
   const totalRecords = companyRes?.totalRecords ?? companyList.length ?? 0;
 
   const handleSearchChange = (val: string) => {
     setSearch(val);
-    setPage(1);
   };
 
   const handlePaginationChanged = (params: any) => {

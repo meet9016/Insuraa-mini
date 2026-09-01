@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { PhoneCall, FileText, Edit, Trash2, Bell } from 'lucide-react';
+import { PhoneCall, FileText, Edit, Trash2, Bell, LayoutGrid, List, Download } from 'lucide-react';
+import TableHeader from '@/components/ui/TableHeader';
 import DeleteConfirmationModal from '@/components/ui/DeleteConfirmationModal';
 import ReminderNotesModal from '@/components/leads/ReminderNotesModal';
 import {
@@ -12,12 +13,33 @@ import {
 
 interface KanbanViewProps {
   search: string;
+  onSearchChange?: (val: string) => void;
   onEditLead?: (lead: LeadItem) => void;
   onOpenNotes?: (lead: LeadItem) => void;
   onOpenReminders?: (lead: LeadItem) => void;
+  onAddLead?: () => void;
+  onExport?: () => void;
+  viewMode?: 'kanban' | 'table';
+  onViewModeChange?: (mode: 'kanban' | 'table') => void;
+  title?: string;
+  subtitle?: string;
+  searchPlaceholder?: string;
 }
 
-export default function KanbanView({ search, onEditLead, onOpenNotes, onOpenReminders }: KanbanViewProps) {
+export default function KanbanView({
+  search,
+  onSearchChange,
+  onEditLead,
+  onOpenNotes,
+  onOpenReminders,
+  onAddLead,
+  onExport,
+  viewMode = 'kanban',
+  onViewModeChange,
+  title = 'Leads Board',
+  subtitle,
+  searchPlaceholder = 'Search leads by name or ID...',
+}: KanbanViewProps) {
   const { data: apiKanbanGroups = [], isLoading: isKanbanLoading } = useLeadKanbanList();
   const { deleteLead } = useLeadActions();
 
@@ -116,33 +138,83 @@ export default function KanbanView({ search, onEditLead, onOpenNotes, onOpenRemi
     };
   });
 
-  if (isKanbanLoading) {
-    return (
-      <div className="flex-1 flex items-center justify-center py-20">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#2B4399]"></div>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex-1 overflow-x-auto overflow-y-hidden pb-4">
-      <div className="flex gap-5 h-[calc(100vh-190px)] min-w-[1200px]">
-        {kanbanGroups.map((group) => (
-          <div key={group.status_id} className="flex-1 min-w-[240px] h-full">
-            <KanbanColumn
-              statusId={group.status_id}
-              title={group.status_name}
-              count={group.total_count ?? group.leads?.length ?? 0}
-              color={group.color}
-              initialLeads={group.leads || []}
-              onEdit={onEditLead}
-              onDelete={handleDeleteClick}
-              onOpenNotes={handleOpenNotesTab}
-              onOpenReminders={handleOpenRemindersTab}
-            />
+    <div className="w-full bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-gray-200 overflow-hidden flex flex-col p-0 gap-4">
+      <TableHeader
+        title={title}
+        subtitle={subtitle}
+        searchPlaceholder={searchPlaceholder}
+        searchValue={search}
+        onSearchChange={onSearchChange}
+        showSearch={!!onSearchChange}
+        extraActions={
+          <>
+            {onViewModeChange && (
+              <div className="bg-white border border-gray-200 p-1 rounded-md flex items-center shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => onViewModeChange('kanban')}
+                  className={`p-1.5 rounded-sm flex items-center justify-center transition-all ${viewMode === 'kanban'
+                    ? 'bg-[#2B4399] shadow-sm text-white'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                    }`}
+                  title="Kanban View"
+                >
+                  <LayoutGrid size={16} strokeWidth={2.5} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onViewModeChange('table')}
+                  className={`p-1.5 rounded-sm flex items-center justify-center transition-all ${viewMode === 'table'
+                    ? 'bg-[#2B4399] shadow-sm text-white'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                    }`}
+                  title="Table View"
+                >
+                  <List size={16} strokeWidth={2.5} />
+                </button>
+              </div>
+            )}
+            {onExport && (
+              <button
+                type="button"
+                onClick={onExport}
+                className="bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 px-4 py-2.5 rounded-md text-sm font-bold flex items-center gap-2 transition-all shadow-sm hover:shadow whitespace-nowrap"
+              >
+                <Download size={16} className="text-gray-500" /> Export
+              </button>
+            )}
+          </>
+        }
+        buttonText={onAddLead ? 'Add Lead' : undefined}
+        onButtonClick={onAddLead}
+      />
+
+      {isKanbanLoading ? (
+        <div className="flex-1 flex items-center justify-center py-20">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#2B4399]"></div>
+        </div>
+      ) : (
+        <div className="flex-1 overflow-x-auto overflow-y-hidden pb-4 custom-scrollbar">
+          <div className="flex gap-5 h-[calc(100vh-250px)] min-w-[1200px]">
+            {kanbanGroups.map((group) => (
+              <div key={group.status_id} className="flex-1 min-w-[240px] h-full">
+                <KanbanColumn
+                  statusId={group.status_id}
+                  title={group.status_name}
+                  count={group.total_count ?? group.leads?.length ?? 0}
+                  color={group.color}
+                  initialLeads={group.leads || []}
+                  onEdit={onEditLead}
+                  onDelete={handleDeleteClick}
+                  onOpenNotes={handleOpenNotesTab}
+                  onOpenReminders={handleOpenRemindersTab}
+                />
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </div>
+      )}
 
       {/* Delete Confirmation Modal */}
       <DeleteConfirmationModal
@@ -239,15 +311,15 @@ function KanbanColumn({
   return (
     <div className="flex flex-col h-full bg-gray-100/60 rounded-2xl border border-gray-200/50 overflow-hidden shadow-sm">
       {/* Column Header */}
-      <div className="px-5 py-4 flex justify-between items-center border-b border-gray-200/50 bg-[#2B4399] backdrop-blur-sm shrink-0">
-        <div className="flex items-center gap-2.5">
+      <div className="px-4 py-3 flex justify-between items-center border-b border-gray-200/50 bg-[#2B4399] backdrop-blur-sm shrink-0">
+        <div className="flex items-center gap-2">
           <span
             className="w-2.5 h-2.5 rounded-full shadow-sm"
             style={{ backgroundColor: color || '#FFC107' }}
           ></span>
-          <h3 className="font-bold text-[15px] text-white tracking-tight">{title}</h3>
+          <h3 className="font-semibold text-sm text-white tracking-tight">{title}</h3>
         </div>
-        <span className="bg-white text-gray-600 border border-gray-200 text-xs font-extrabold px-2.5 py-0.5 rounded-full shadow-sm">
+        <span className="bg-white text-gray-700 border border-gray-200 text-xs font-semibold px-2.5 py-0.5 rounded-full shadow-sm">
           {count}
         </span>
       </div>
@@ -255,7 +327,7 @@ function KanbanColumn({
       {/* Scrollable Cards Container */}
       <div
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar"
+        className="flex-1 overflow-y-auto p-2.5 space-y-2.5 custom-scrollbar"
       >
         {columnLeads.length === 0 ? (
           <div className="text-center py-8 text-xs font-semibold text-gray-400">
@@ -265,32 +337,50 @@ function KanbanColumn({
           columnLeads.map((lead) => (
             <div
               key={lead.lead_id}
-              className="bg-white p-3 rounded-xl shadow-sm border border-[#2B4399]/30 transition-all duration-300 hover:shadow-md hover:border-[#2B4399]/50 hover:-translate-y-1 group relative"
+              className="bg-white p-2.5 rounded-xl shadow-xs border border-gray-200 hover:border-[#2B4399]/40 transition-all duration-200 hover:shadow-sm group relative"
             >
-              <div className="flex justify-between items-center mb-1.5">
-                <div className="text-[10px] text-gray-400 font-bold bg-gray-100/80 px-2 py-0.5 rounded-md">
-                  #LEAD-{lead.lead_id}
+              {/* Header: Lead ID & Date */}
+              <div className="flex justify-between items-center mb-1">
+                <div className="text-[11px] text-black font-semibold bg-gray-100 px-1.5 py-0.5 rounded-md">
+                  #lead-{lead.lead_id}
                 </div>
-                <div className="text-[10px] font-bold text-gray-500">{lead.date || ''}</div>
+                <div className="text-[11px] font-semibold text-black">{lead.date || ''}</div>
               </div>
 
-              <h4 className="font-bold text-[#2B4399] text-[15px] mb-1.5 leading-tight">
+              {/* Lead Name */}
+              <h4 className="font-semibold text-black text-[16px] mb-1 leading-tight truncate">
                 {lead.full_name}
               </h4>
 
-              <div className="flex items-center mb-2.5">
-                <div className="flex items-center gap-1.5 text-gray-600 font-bold text-[11px] bg-gray-50/80 px-2 py-1 rounded-md border border-gray-100">
-                  <PhoneCall size={12} className="text-gray-400" /> {lead.number}
+              {/* Phone & Product Row */}
+              <div className="flex items-center justify-between mb-1.5 gap-1">
+                <div className="flex items-center gap-1.5 text-black font-semibold text-[11px] bg-gray-50 px-2 py-0.5 rounded-md border border-gray-100">
+                  <PhoneCall size={11} className="text-black" />
+                  <span>{lead.number}</span>
                 </div>
-              </div>
-
-              {/* Product and Actions */}
-              <div className="flex items-center justify-between mb-2 gap-1">
-                <span className="inline-block bg-[#eef2ff] text-[#2B4399] font-bold text-[10px] px-2.5 py-1 rounded-full truncate max-w-[90px]">
+                <span className="inline-block bg-[#eef2ff] text-black font-semibold text-[11px] px-2 py-0.5 rounded-full truncate max-w-[95px]">
                   {lead.product_name || 'Insurance'}
                 </span>
+              </div>
 
-                <div className="flex items-center gap-1.5">
+              {/* Footer: Group/Ref & Action Buttons */}
+              <div className="flex items-center justify-between pt-1.5 border-t border-gray-100 gap-1">
+                {lead.business_group_name ? (
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <div className="w-4 h-4 rounded-full flex items-center justify-center text-white text-[8px] font-semibold shrink-0 bg-purple-500">
+                      {lead.business_group_name.charAt(0)}
+                    </div>
+                    <span className="text-[11px] font-semibold text-black truncate">
+                      {lead.business_group_name}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="text-[11px] font-semibold text-black italic truncate">
+                    {lead.reference ? `Ref: ${lead.reference}` : 'Direct'}
+                  </div>
+                )}
+
+                <div className="flex items-center gap-1 shrink-0">
                   <button
                     onClick={() => onOpenNotes(lead)}
                     className="w-6 h-6 flex items-center justify-center rounded border border-[#2B4399]/20 bg-[#2B4399]/10 text-[#2B4399] hover:bg-[#2B4399] hover:text-white transition-all shadow-xs"
@@ -313,24 +403,6 @@ function KanbanColumn({
                     <Trash2 size={12} strokeWidth={2.5} />
                   </button>
                 </div>
-              </div>
-
-              {/* Footer containing business group / reference */}
-              <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                {lead.business_group_name ? (
-                  <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 rounded-full flex items-center justify-center text-white text-[9px] font-bold shadow-sm bg-purple-500">
-                      {lead.business_group_name.charAt(0)}
-                    </div>
-                    <span className="text-[11px] font-bold text-gray-500">
-                      {lead.business_group_name}
-                    </span>
-                  </div>
-                ) : (
-                  <div className="text-[11px] font-bold text-gray-400 italic">
-                    {lead.reference ? `Ref: ${lead.reference}` : 'Direct'}
-                  </div>
-                )}
               </div>
             </div>
           ))

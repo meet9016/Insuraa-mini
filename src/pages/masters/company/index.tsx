@@ -17,6 +17,7 @@ export default function AddCompanies() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [search, setSearch] = useState<string>('');
+  const [debouncedSearch, setDebouncedSearch] = useState<string>('');
   const [page, setPage] = useState<number>(1);
   const [limit, setLimit] = useState<number>(10);
 
@@ -42,14 +43,23 @@ export default function AddCompanies() {
     isDeleting: false,
   });
 
-  // Fetch company list using custom hook
-  const { data: companyRes, isLoading } = useCompanyList({ page, limit, search });
+  // Debounce search input (500ms delay) to prevent API calls on every character keypress
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // Fetch company list using custom hook with debounced search
+  const { data: companyRes, isLoading } = useCompanyList({ page, limit, search: debouncedSearch });
   const companyList = companyRes?.companyList || [];
   const totalRecords = companyRes?.totalRecords ?? companyList.length ?? 0;
 
   const handleSearchChange = (val: string) => {
     setSearch(val);
-    setPage(1);
   };
 
   const handlePaginationChanged = (params: any) => {

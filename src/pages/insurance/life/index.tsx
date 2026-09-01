@@ -1,267 +1,159 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import DataTable, { Column } from '@/components/ui/DataTable';
-import { FileEdit, Trash2, User, Eye } from 'lucide-react';
-
-interface LifeInsuranceRecord {
-  id: string;
-  customerName: string;
-  mobile: string;
-  customerCode: string;
-  addedBy: string;
-  company: string;
-  policyNumber: string;
-  planName: string;
-  totalPremium: string;
-  gstAmount: string;
-  maturityAmount: string;
-  sumAssured: string;
-  planType: string;
-  paymentMode: string;
-  overdueDays: string;
-  loginDate: string;
-  startDate: string;
-  premiumEndDate: string;
-  maturityDate: string;
-  installmentDate: string;
-  status: string;
-}
-
-const mockData: LifeInsuranceRecord[] = [
-  {
-    id: "1",
-    customerName: "Shopno",
-    mobile: "1234567899",
-    customerCode: "S7899",
-    addedBy: "Self",
-    company: "Bajaj Life Insurance Limited",
-    policyNumber: "5555555555",
-    planName: "Bajaj Life ETouch II",
-    totalPremium: "1500",
-    gstAmount: "₹500.00",
-    maturityAmount: "₹0.00",
-    sumAssured: "₹50,000.00",
-    planType: "Fresh",
-    paymentMode: "Monthly",
-    overdueDays: "30 Days",
-    loginDate: "29-06-2026",
-    startDate: "29-06-2026",
-    premiumEndDate: "29-05-2032",
-    maturityDate: "29-06-2036",
-    installmentDate: "29-07-2026",
-    status: "Inforce",
-  },
-  {
-    id: "2",
-    customerName: "Amit Mehta",
-    mobile: "9876543212",
-    customerCode: "AM3212",
-    addedBy: "Kavita Mehta",
-    company: "Bajaj Life Insurance Limited",
-    policyNumber: "LI-2024-003",
-    planName: "Bajaj Life ETouch II",
-    totalPremium: "51000",
-    gstAmount: "₹0.00",
-    maturityAmount: "₹2,500,000.00",
-    sumAssured: "₹2,000,000.00",
-    planType: "Fresh",
-    paymentMode: "Quarterly",
-    overdueDays: "45 Days",
-    loginDate: "01-03-2024",
-    startDate: "01-03-2024",
-    premiumEndDate: "01-12-2048",
-    maturityDate: "01-03-2059",
-    installmentDate: "01-07-2024",
-    status: "Lapsed",
-  },
-  {
-    id: "3",
-    customerName: "Ramesh Kumar Patel",
-    mobile: "9876543210",
-    customerCode: "RKP3210",
-    addedBy: "Self",
-    company: "Bajaj Life Insurance Limited",
-    policyNumber: "LI-2024-001",
-    planName: "Bajaj Life Smart Protect Goal",
-    totalPremium: "30090",
-    gstAmount: "₹4,509.00",
-    maturityAmount: "₹1,200,000.00",
-    sumAssured: "₹1,000,000.00",
-    planType: "Fresh",
-    paymentMode: "Monthly",
-    overdueDays: "30 Days",
-    loginDate: "01-01-2024",
-    startDate: "01-01-2024",
-    premiumEndDate: "31-12-2043",
-    maturityDate: "31-12-2053",
-    installmentDate: "01-01-2025",
-    status: "Lapsed",
-  },
-  {
-    id: "4",
-    customerName: "Shopno",
-    mobile: "1234567899",
-    customerCode: "S7899",
-    addedBy: "Self",
-    company: "Bajaj Life Insurance Limited",
-    policyNumber: "5555555555",
-    planName: "Bajaj Life ETouch II",
-    totalPremium: "6500",
-    gstAmount: "₹500.00",
-    maturityAmount: "₹0.00",
-    sumAssured: "₹5,000.00",
-    planType: "Fresh",
-    paymentMode: "Yearly",
-    overdueDays: "30 Days",
-    loginDate: "13-06-2026",
-    startDate: "13-06-2026",
-    premiumEndDate: "13-06-2030",
-    maturityDate: "13-06-2036",
-    installmentDate: "13-06-2030",
-    status: "Inforce",
-  }
-];
+import AgGridTable from '@/components/ui/tableaggrid/AgGridTable';
+import TableHeader from '@/components/ui/TableHeader';
+import DeleteConfirmationModal from '@/components/ui/DeleteConfirmationModal';
+import LifeInsuranceViewModal from '@/components/insurance/LifeInsuranceViewModal';
+import { useLifeInsuranceList, useLifeInsuranceActions } from '@/hooks/useLifeInsuranceApi';
+import { getLifeInsuranceColumns } from '@/utils/tableColumns';
 
 export default function LifeInsuranceList() {
   const router = useRouter();
+  const { deleteLifeInsurance } = useLifeInsuranceActions();
 
-  const columns: Column<LifeInsuranceRecord>[] = [
-    {
-      key: "select",
-      label: "",
-      render: () => (
-        <input type="checkbox" className="rounded border-gray-300 text-[#2B4399] focus:ring-[#2D3591]" />
-      )
-    },
-    {
-      key: "customerName",
-      label: "Customer Name",
-      render: (row) => (
-        <div className="flex flex-col">
-          <span className="font-bold text-gray-900">{row.customerName}</span>
-          <span className="text-xs text-gray-500">Mo: {row.mobile}</span>
-          <span className="text-[10px] bg-blue-50 text-[#2B4399] px-1.5 py-0.5 rounded w-fit mt-0.5">Code: {row.customerCode}</span>
-          <div className="flex items-center gap-1 mt-1 text-xs text-gray-500">
-            <User size={12} className="text-[#2B4399]" /> Added by {row.addedBy}
-          </div>
-        </div>
-      )
-    },
-    {
-      key: "policyNumber",
-      label: "Policy Number",
-      render: (row) => <span className="font-bold text-gray-900">{row.policyNumber}</span>
-    },
-    {
-      key: "policyDate",
-      label: "Policy Date",
-      render: (row) => (
-        <div className="flex flex-col gap-1.5 text-xs min-w-[190px]">
-          <div className="flex items-center gap-3"><span className="text-gray-500 font-medium min-w-[105px]">Login Date:</span> <span className="font-bold text-gray-900">{row.loginDate}</span></div>
-          <div className="flex items-center gap-3"><span className="text-gray-500 font-medium min-w-[105px]">Start Date:</span> <span className="font-bold text-gray-900">{row.startDate}</span></div>
-          <div className="flex items-center gap-3"><span className="text-gray-500 font-medium min-w-[105px]">Premium End:</span> <span className="font-bold text-gray-900">{row.premiumEndDate}</span></div>
-          <div className="flex items-center gap-3"><span className="text-gray-500 font-medium min-w-[105px]">Maturity Date:</span> <span className="font-bold text-gray-900">{row.maturityDate}</span></div>
-          <div className="flex items-center gap-3"><span className="text-orange-500 font-medium min-w-[105px]">Installment Date:</span> <span className="font-bold text-orange-500">{row.installmentDate}</span></div>
-        </div>
-      )
-    },
-    {
-      key: "company",
-      label: "Companies",
-      render: (row) => <div className="font-semibold text-gray-700 min-w-[140px] max-w-[200px] whitespace-normal">{row.company}</div>
-    },
-    {
-      key: "planName",
-      label: "Plan Name",
-      render: (row) => <div className="text-gray-700 min-w-[120px] max-w-[160px] whitespace-normal">{row.planName}</div>
-    },
-    {
-      key: "totalPremium",
-      label: "Total Premium",
-      render: (row) => <span className="text-gray-700 font-medium">{row.totalPremium}</span>
-    },
-    {
-      key: "gstAmount",
-      label: "GST Amount",
-      render: (row) => <span className="font-bold text-gray-900">{row.gstAmount}</span>
-    },
-    {
-      key: "maturityAmount",
-      label: "Maturity Amount",
-      render: (row) => <span className="font-bold text-gray-900">{row.maturityAmount}</span>
-    },
-    {
-      key: "sumAssured",
-      label: "Sum Assured",
-      render: (row) => <span className="font-bold text-gray-900">{row.sumAssured}</span>
-    },
-    {
-      key: "planType",
-      label: "Plan Type",
-      render: (row) => {
-        let badgeColor = "bg-blue-50 text-blue-600"; // Fresh
-        if (row.planType === 'Port') badgeColor = "bg-amber-50 text-amber-600";
-        if (row.planType === 'Renewal') badgeColor = "bg-emerald-50 text-emerald-600";
-        return <span className={`text-xs font-bold px-2.5 py-1 rounded-md ${badgeColor}`}>{row.planType}</span>;
-      }
-    },
-    {
-      key: "paymentMode",
-      label: "Payment Mode",
-      render: (row) => <span className="text-gray-700 font-medium">{row.paymentMode}</span>
-    },
-    {
-      key: "overdueDays",
-      label: "Premium Overdue Days",
-      render: (row) => <span className="text-gray-700 font-medium">{row.overdueDays}</span>
-    },
-    {
-      key: "status",
-      label: "Status",
-      render: (row) => {
-        let badgeClass = "bg-gray-100 text-gray-700";
-        if (row.status === 'Inforce') badgeClass = "bg-emerald-100 text-emerald-700";
-        if (row.status === 'Lapsed') badgeClass = "bg-rose-100 text-rose-700";
-        if (row.status === 'Pending') badgeClass = "bg-amber-100 text-amber-700";
+  const [page, setPage] = useState<number>(1);
+  const [limit, setLimit] = useState<number>(10);
+  const [search, setSearch] = useState<string>('');
+  const [debouncedSearch, setDebouncedSearch] = useState<string>('');
 
-        return <span className={`text-xs font-bold px-4 py-1.5 rounded-full ${badgeClass}`}>{row.status}</span>;
-      }
-    },
-    {
-      key: "action",
-      label: "Action",
-      render: () => (
-        <div className="flex items-center gap-1.5">
-          <button className="p-1.5 bg-[#0ea5e9] text-white rounded hover:bg-[#0284c7] transition-colors" title="View">
-            <Eye size={14} />
-          </button>
-          <button className="p-1.5 bg-[#10b981] text-white rounded hover:bg-[#059669] transition-colors" title="Edit">
-            <FileEdit size={14} />
-          </button>
-          <button className="p-1.5 bg-[#f43f5e] text-white rounded hover:bg-[#e11d48] transition-colors" title="Delete">
-            <Trash2 size={14} />
-          </button>
-        </div>
-      )
+  // View Modal state
+  const [viewId, setViewId] = useState<string | null>(null);
+
+  // Delete Modal state
+  const [deleteModalState, setDeleteModalState] = useState<{
+    isOpen: boolean;
+    id: string;
+    name: string;
+    isDeleting: boolean;
+  }>({
+    isOpen: false,
+    id: '',
+    name: '',
+    isDeleting: false,
+  });
+
+  // Debounce search input (500ms delay) to prevent API calls on every character keypress
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // Fetch life insurance list using custom hook with debounced search
+  const { data: resData, isLoading } = useLifeInsuranceList({ page, limit, search: debouncedSearch });
+  const insuranceList = resData?.lifeInsuranceList || [];
+  const totalRecords = resData?.totalRecords ?? insuranceList.length ?? 0;
+
+  const handleSearchChange = (val: string) => {
+    setSearch(val);
+  };
+
+  const handlePaginationChanged = (params: any) => {
+    if (!params || !params.api) return;
+    const newPage = params.api.paginationGetCurrentPage() + 1;
+    const newLimit = params.api.paginationGetPageSize();
+
+    if (newLimit !== limit) {
+      setLimit(newLimit);
+      setPage(1);
+    } else if (newPage !== page) {
+      setPage(newPage);
     }
-  ];
+  };
+
+  const fullRowData = useMemo(() => {
+    if (!totalRecords || totalRecords <= insuranceList.length) return insuranceList;
+    const padded = new Array(totalRecords).fill(null).map((_, idx) => ({ id: `placeholder-${idx}` }));
+    const startIndex = (page - 1) * limit;
+    insuranceList.forEach((item: any, i: number) => {
+      if (startIndex + i < totalRecords) {
+        padded[startIndex + i] = item;
+      }
+    });
+    return padded;
+  }, [insuranceList, totalRecords, page, limit]);
+
+  const handleDeleteClick = (data: any) => {
+    const targetId = data?.life_insurance_id || data?.id;
+    const displayName = data?.policy_number ? `Policy #${data.policy_number}` : (data?.customer_name || 'Life Insurance Record');
+    setDeleteModalState({
+      isOpen: true,
+      id: String(targetId),
+      name: displayName,
+      isDeleting: false,
+    });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteModalState.id) return;
+    setDeleteModalState(prev => ({ ...prev, isDeleting: true }));
+    const success = await deleteLifeInsurance(deleteModalState.id);
+    setDeleteModalState(prev => ({ ...prev, isDeleting: false }));
+    if (success) {
+      setDeleteModalState({ isOpen: false, id: '', name: '', isDeleting: false });
+    }
+  };
+
+  const columnDefs = useMemo(
+    () =>
+      getLifeInsuranceColumns({
+        onView: (data: any) => setViewId(String(data?.life_insurance_id || data?.id)),
+        onEdit: (data: any) => router.push(`/insurance/life/add?id=${data?.life_insurance_id || data?.id}`),
+        onDelete: handleDeleteClick,
+      }),
+    [router]
+  );
 
   return (
-    <div className="bg-[#f8fafc] min-h-[calc(100vh-72px-56px)] ">
+    <div className="bg-[#f8fafc]  flex flex-col">
       <Head>
-        <title>Life Insurance - Insuraa</title>
+        <title>Life Insurance Management - Insuraa</title>
       </Head>
 
-      <div className="w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <DataTable
+      <div className="w-full bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-gray-200 overflow-hidden flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <TableHeader
           title="Life Insurance Management"
-          columns={columns}
-          data={mockData}
-          addLabel="Add Life Insurance"
-          onAdd={() => router.push('/insurance/life/add')}
+          subtitle="Manage and view your life insurance records"
+          searchPlaceholder="Search life insurance..."
+          searchValue={search}
+          onSearchChange={handleSearchChange}
+          buttonText="Add Life Insurance"
+          onButtonClick={() => router.push('/insurance/life/add')}
         />
+
+        <div className="w-full">
+          <AgGridTable
+            rowData={fullRowData}
+            columnDefs={columnDefs as any}
+            loading={isLoading}
+            rowHeight={85}
+            pagination={true}
+            paginationPageSize={limit}
+            onPaginationChanged={handlePaginationChanged}
+          />
+        </div>
       </div>
+
+      {/* View Policy Modal */}
+      <LifeInsuranceViewModal
+        isOpen={Boolean(viewId)}
+        onClose={() => setViewId(null)}
+        lifeInsuranceId={viewId}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={deleteModalState.isOpen}
+        onClose={() => setDeleteModalState({ isOpen: false, id: '', name: '', isDeleting: false })}
+        onConfirm={handleConfirmDelete}
+        title="Delete Life Insurance Record"
+        itemName={deleteModalState.name}
+        isDeleting={deleteModalState.isDeleting}
+      />
     </div>
   );
 }

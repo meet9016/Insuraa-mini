@@ -17,7 +17,6 @@ export default function SourceOfLead() {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [page, setPage] = useState<number>(1);
   const [limit, setLimit] = useState<number>(10);
-  const [search, setSearch] = useState<string>('');
 
   // Delete modal state
   const [deleteModalState, setDeleteModalState] = useState<{
@@ -32,15 +31,27 @@ export default function SourceOfLead() {
     isDeleting: false,
   });
 
-  // API hooks
-  const { data: sourceRes, isLoading } = useSourceOfLeadList({ page, limit, search });
+  const [search, setSearch] = useState<string>('');
+  const [debouncedSearch, setDebouncedSearch] = useState<string>('');
+
+  // Debounce search input (500ms delay) to prevent API calls on every character keypress
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // API hooks with debounced search
+  const { data: sourceRes, isLoading } = useSourceOfLeadList({ page, limit, search: debouncedSearch });
   const sources = sourceRes?.sourceOfLeadList || [];
   const totalRecords = sourceRes?.totalRecords ?? sources.length ?? 0;
   const { insertLeadProduct, deleteLeadProduct } = useSourceOfLeadActions();
 
   const handleSearchChange = (val: string) => {
     setSearch(val);
-    setPage(1);
   };
 
   const handlePaginationChanged = (params: any) => {

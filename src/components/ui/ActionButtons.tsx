@@ -24,7 +24,7 @@ export default function ActionButtons({
         type="button"
         className="bg-gray-400 hover:bg-gray-500 text-white px-5 py-2 rounded-md text-sm transition-colors"
       >
-        {cancelText}
+        {cancelText}     
       </button>
       <button
         onClick={onSubmit}

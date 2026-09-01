@@ -11,15 +11,25 @@ export default function CustomersPage() {
   const [page, setPage] = useState<number>(1);
   const [limit, setLimit] = useState<number>(10);
   const [search, setSearch] = useState<string>('');
+  const [debouncedSearch, setDebouncedSearch] = useState<string>('');
 
-  // Fetch customer list using common custom hook
-  const { data: customerRes, isLoading } = useCustomerList({ page, limit, search });
+  // Debounce search input (500ms delay) to prevent API calls on every character keypress
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // Fetch customer list using common custom hook with debounced search
+  const { data: customerRes, isLoading } = useCustomerList({ page, limit, search: debouncedSearch });
   const customers = customerRes?.customerList || [];
   const totalRecords = customerRes?.totalRecords ?? customers.length ?? 0;
 
   const handleSearchChange = (val: string) => {
     setSearch(val);
-    setPage(1);
   };
 
   const handlePaginationChanged = (params: any) => {

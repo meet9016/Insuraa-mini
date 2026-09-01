@@ -18,6 +18,7 @@ export default function DocumentList() {
   const [page, setPage] = useState<number>(1);
   const [limit, setLimit] = useState<number>(10);
   const [search, setSearch] = useState<string>('');
+  const [debouncedSearch, setDebouncedSearch] = useState<string>('');
 
   // Delete modal state
   const [deleteModalState, setDeleteModalState] = useState<{
@@ -32,15 +33,24 @@ export default function DocumentList() {
     isDeleting: false,
   });
 
-  // API hooks
-  const { data: documentRes, isLoading } = useDocumentList({ page, limit, search });
+  // Debounce search input (500ms delay) to prevent API calls on every character keypress
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // API hooks with debounced search
+  const { data: documentRes, isLoading } = useDocumentList({ page, limit, search: debouncedSearch });
   const documents = documentRes?.documentList || [];
   const totalRecords = documentRes?.totalRecords ?? documents.length ?? 0;
   const { insertDocument, deleteDocument } = useDocumentActions();
 
   const handleSearchChange = (val: string) => {
     setSearch(val);
-    setPage(1);
   };
 
   const handlePaginationChanged = (params: any) => {
