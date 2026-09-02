@@ -6,14 +6,23 @@ export default function Select({ children, className, onChange, value, ...props 
   const [search, setSearch] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // Helper to extract text from React children without comma-joining arrays
+  const getLabelText = (node: any): string => {
+    if (node === null || node === undefined) return '';
+    if (typeof node === 'string' || typeof node === 'number') return String(node);
+    if (Array.isArray(node)) return node.map(getLabelText).join('');
+    if (isValidElement(node)) return getLabelText((node.props as any).children);
+    return '';
+  };
+
   // Parse standard <option> children into an array
   const options = React.useMemo(() => {
     const opts: any[] = [];
     Children.forEach(children, (child) => {
       if (isValidElement(child) && child.type === 'option') {
         const props = child.props as any;
-        const val = props.value !== undefined ? String(props.value) : String(props.children);
-        const label = String(props.children);
+        const val = props.value !== undefined ? String(props.value) : getLabelText(props.children);
+        const label = getLabelText(props.children);
         opts.push({ value: val, label });
       }
     });

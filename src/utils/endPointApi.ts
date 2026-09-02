@@ -76,6 +76,14 @@ export interface EndPointApi {
     DELETE_LIFE_INSURANCE: string;
     VIEW_LIFE_INSURANCE: string;
   };
+  HEALTH_INSURANCE: {
+    INSERT_HEALTH_INSURANCE: string;
+    HEALTH_INSURANCE_MASTER_DATA: string;
+    HEALTH_INSURANCE_COMPANY_PLANS_AND_AGENCY: string;
+    HEALTH_INSURANCE_LIST: string;
+    DELETE_HEALTH_INSURANCE: string;
+    VIEW_HEALTH_INSURANCE: string;
+  };
 }
 
 // Define and export the standard API endpoint object
@@ -157,8 +165,17 @@ const endPointApi: EndPointApi = {
     DELETE_LIFE_INSURANCE: 'delete_life_insurance',
     VIEW_LIFE_INSURANCE: 'view_life_insurance',
   },
+  HEALTH_INSURANCE: {
+    INSERT_HEALTH_INSURANCE: 'insert_health_insurance',
+    HEALTH_INSURANCE_MASTER_DATA: 'health_insurance_master_data',
+    HEALTH_INSURANCE_COMPANY_PLANS_AND_AGENCY: 'health_insurance_company_plans_and_agency',
+    HEALTH_INSURANCE_LIST: 'health_insurance_list',
+    DELETE_HEALTH_INSURANCE: 'delete_health_insurance',
+    VIEW_HEALTH_INSURANCE: 'view_health_insurance',
+  },
 };
 
 export default endPointApi;
+
 
 
