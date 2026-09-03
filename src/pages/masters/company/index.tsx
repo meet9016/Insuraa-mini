@@ -8,6 +8,7 @@ import PlansModal from '@/components/company/PlansModal';
 import PlanFormModal from '@/components/company/PlanFormModal';
 import { useCompanyList, useCompanyPlans, useCompanyActions } from '@/hooks/useCompanyApi';
 import { getCompanyColumns, getCompanyPlanColumns } from '@/utils/tableColumns';
+import { validateCompany, validateCompanyPlan } from '@/utils/validation';
 
 export default function AddCompanies() {
   const [isAddCompanyOpen, setIsAddCompanyOpen] = useState(false);
@@ -104,8 +105,9 @@ export default function AddCompanies() {
   };
 
   const handleAddCompany = async () => {
-    if (!companyName.trim()) {
-      setCompanyNameError('Company Name is required');
+    const errorMsg = validateCompany(companyName);
+    if (errorMsg) {
+      setCompanyNameError(errorMsg);
       return;
     }
 
@@ -134,8 +136,9 @@ export default function AddCompanies() {
   };
 
   const handleAddPlan = async () => {
-    if (!planName.trim()) {
-      setPlanNameError('Plan Name is required');
+    const errorMsg = validateCompanyPlan(planName);
+    if (errorMsg) {
+      setPlanNameError(errorMsg);
       return;
     }
 

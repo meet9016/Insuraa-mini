@@ -51,16 +51,72 @@ export default function Header() {
   const [dropdownRect, setDropdownRect] = useState({ left: 0, top: 0 });
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
+  const navRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (profileRef.current && !profileRef.current.contains(target)) {
         setIsProfileOpen(false);
+      }
+      if (
+        navRef.current && !navRef.current.contains(target) &&
+        dropdownRef.current && !dropdownRef.current.contains(target)
+      ) {
+        setActiveDropdown(null);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+    };
   }, []);
+
+  const handleMouseEnter = (idx: number, element: HTMLElement) => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+    const rect = element.getBoundingClientRect();
+    setDropdownRect({ left: rect.left, top: rect.bottom });
+    setActiveDropdown(idx);
+  };
+
+  const handleMouseLeave = () => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+    hoverTimeoutRef.current = setTimeout(() => {
+      setActiveDropdown(null);
+    }, 150);
+  };
+
+  const handleDropdownMouseEnter = () => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+  };
+
+  const handleLinkClick = (e: React.MouseEvent, link: typeof NAV_LINKS[0], idx: number, element: HTMLElement) => {
+    if (link.items) {
+      e.preventDefault();
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+        hoverTimeoutRef.current = null;
+      }
+      if (activeDropdown === idx) {
+        setActiveDropdown(null);
+      } else {
+        const rect = element.getBoundingClientRect();
+        setDropdownRect({ left: rect.left, top: rect.bottom });
+        setActiveDropdown(idx);
+      }
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full flex flex-col bg-white/95 backdrop-blur-md border-b border-gray-200/80 shadow-[0_4px_30px_rgba(0,0,0,0.04)]">
@@ -221,27 +277,35 @@ export default function Header() {
       {/* Bottom Bar: Horizontal Navigation */}
       <div className="hidden xl:flex bg-white/95 border-t border-gray-200/80 shadow-[0_4px_15px_-3px_rgba(0,0,0,0.03)] h-14 w-full relative z-40">
         <nav
+          ref={navRef}
           className="flex items-center justify-start w-full px-4 gap-1.5 overflow-hidden"
           onScroll={() => setActiveDropdown(null)}
         >
           {NAV_LINKS.map((link, idx) => {
             const isActive = pathname === link.path || link.items?.some(sub => pathname === sub.path);
             const Icon = link.icon;
+            const hasItems = !!link.items;
+
             return (
               <div
                 key={idx}
                 className="relative group h-full flex items-center shrink-0"
                 onMouseEnter={(e) => {
-                  if (link.items) {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    setDropdownRect({ left: rect.left, top: rect.bottom });
-                    setActiveDropdown(idx);
+                  if (hasItems) {
+                    handleMouseEnter(idx, e.currentTarget);
                   }
                 }}
-                onMouseLeave={() => setActiveDropdown(null)}
+                onMouseLeave={() => {
+                  if (hasItems) {
+                    handleMouseLeave();
+                  }
+                }}
               >
                 <Link
-                  href={link.items ? '#' : link.path}
+                  href={hasItems ? '#' : link.path}
+                  onClick={(e) => {
+                    handleLinkClick(e, link, idx, e.currentTarget);
+                  }}
                   className={`relative flex items-center gap-2 whitespace-nowrap px-3.5 py-2 rounded-lg text-[13px] font-semibold transition-all duration-300 ${isActive
                     ? 'text-[#2F439D] bg-blue-50/80 shadow-sm border border-[#2F439D]/10'
                     : 'text-gray-700 hover:bg-emerald-50 hover:text-[#00A389] border border-transparent'
@@ -249,12 +313,7 @@ export default function Header() {
                 >
                   <Icon size={16} className={`transition-transform duration-300 group-hover:scale-110 ${isActive ? 'text-[#2F439D]' : 'text-gray-500 group-hover:text-[#00A389]'}`} />
                   {link.name}
-                  {/* {link.badge && (
-                    <span className="absolute top-1.5 right-1.5 bg-rose-500 text-white text-[9px] font-bold h-4 w-4 flex items-center justify-center rounded-full shadow-md z-20">
-                      {link.badge}
-                    </span>
-                  )} */}
-                  {link.items && <ChevronDown size={14} className={`ml-0.5 opacity-60 group-hover:opacity-100 transition-transform ${activeDropdown === idx ? 'rotate-180 text-[#2F439D]' : 'group-hover:rotate-180 group-hover:text-[#00A389]'}`} />}
+                  {hasItems && <ChevronDown size={14} className={`ml-0.5 opacity-60 group-hover:opacity-100 transition-transform ${activeDropdown === idx ? 'rotate-180 text-[#2F439D]' : 'group-hover:rotate-180 group-hover:text-[#00A389]'}`} />}
                 </Link>
 
                 {/* Active Underline */}
@@ -269,10 +328,11 @@ export default function Header() {
         {/* Portaled Dropdown Menu outside scroll container */}
         {activeDropdown !== null && NAV_LINKS[activeDropdown]?.items && (
           <div
-            className="fixed min-w-[220px] bg-white border border-gray-200/80 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] rounded-xl z-[60] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
+            ref={dropdownRef}
+            className="fixed min-w-[220px] bg-white border border-gray-200/80 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] rounded-xl z-[60] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 before:content-[''] before:absolute before:-top-3 before:left-0 before:right-0 before:h-3"
             style={{ left: dropdownRect.left, top: dropdownRect.top + 4 }}
-            onMouseEnter={() => setActiveDropdown(activeDropdown)}
-            onMouseLeave={() => setActiveDropdown(null)}
+            onMouseEnter={handleDropdownMouseEnter}
+            onMouseLeave={handleMouseLeave}
           >
             <div className="p-2 space-y-1">
               {NAV_LINKS[activeDropdown].items.map((subLink, subIdx) => {

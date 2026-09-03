@@ -8,6 +8,7 @@ import DatePicker from '@/components/ui/DatePicker';
 import { toast } from 'react-toastify';
 import { api } from '@/utils/axiosInstance';
 import endPointApi from '@/utils/endPointApi';
+import { validateLifeInsurance } from '@/utils/validation';
 
 import { useCustomerList } from '@/hooks/useCustomerApi';
 import {
@@ -84,13 +85,14 @@ export default function AddLifeInsurance() {
   ]);
 
   const [nominees, setNominees] = useState<Array<{ id: number; nomainee_name: string; nomainee_relationship: string; nomainee_per: string }>>([
-    { id: 1, nomainee_name: '', nomainee_relationship: '1', nomainee_per: '100' }
+    { id: 1, nomainee_name: '', nomainee_relationship: '', nomainee_per: '' }
   ]);
 
   const [documents, setDocuments] = useState<Array<{ id: number; other_document_name: string; other_document_image: File | null }>>([
     { id: 1, other_document_name: '', other_document_image: null }
   ]);
 
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -220,10 +222,24 @@ export default function AddLifeInsurance() {
 
   const handleChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+
+  const validateForm = async () => {
+    const { isValid, errors: newErrors } = await validateLifeInsurance(formData, nominees);
+    setErrors(newErrors);
+    return isValid;
   };
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+
+    const isValid = await validateForm();
+    if (!isValid) {
+      return;
+    }
 
     setIsSubmitting(true);
 
@@ -341,9 +357,9 @@ export default function AddLifeInsurance() {
                     <button type="button" onClick={() => router.push('/customers/add')} className="text-xs text-[#2B4399] font-bold hover:underline">Add Customer</button>
                   </div>
                   <Select
-                    className={inputClass}
+                    className={`${inputClass} ${errors.customer_id ? '!border-red-500 focus:!ring-red-200' : ''}`}
                     value={formData.customer_id}
-                    onChange={(e) => handleChange('customer_id', e.target.value)}
+                    onChange={(e: any) => handleChange('customer_id', e.target.value)}
                   >
                     <option value="">Select Customer Name</option>
                     {customerList.map((cust: any) => {
@@ -356,6 +372,7 @@ export default function AddLifeInsurance() {
                       );
                     })}
                   </Select>
+                  {errors.customer_id && <p className="text-xs text-red-500 font-semibold mt-1">{errors.customer_id}</p>}
                 </div>
               </div>
             </div>
@@ -371,7 +388,7 @@ export default function AddLifeInsurance() {
                   <div className="flex items-center gap-4">
                     <input
                       type="file"
-                      onChange={(e) => setPolicyPdf(e.target.files?.[0] || null)}
+                      onChange={(e: any) => setPolicyPdf(e.target.files?.[0] || null)}
                       className="h-[46px] border border-gray-300 rounded-lg text-sm px-4 py-2.5 w-full max-w-md file:mr-4 file:py-1 file:px-4 file:rounded file:border-0 file:text-sm file:font-bold file:bg-gray-100 hover:file:bg-gray-200 cursor-pointer shadow-sm"
                     />
                     <button type="button" className="h-[46px] bg-[var(--primary)] text-white px-10 rounded-lg text-sm font-bold hover:bg-[#203378] transition-colors shadow-sm flex items-center justify-center">AI</button>
@@ -398,9 +415,9 @@ export default function AddLifeInsurance() {
                 <div className="lg:col-span-2">
                   <label className={labelClass}>Insurance Company Name <span className="text-red-500">*</span></label>
                   <Select
-                    className={inputClass}
+                    className={`${inputClass} ${errors.companies_id ? '!border-red-500 focus:!ring-red-200' : ''}`}
                     value={formData.companies_id}
-                    onChange={(e) => handleChange('companies_id', e.target.value)}
+                    onChange={(e: any) => handleChange('companies_id', e.target.value)}
                   >
                     <option value="">Select Insurance Company Name</option>
                     {companyList.map((comp: any) => (
@@ -409,13 +426,14 @@ export default function AddLifeInsurance() {
                       </option>
                     ))}
                   </Select>
+                  {errors.companies_id && <p className="text-xs text-red-500 font-semibold mt-1">{errors.companies_id}</p>}
                 </div>
                 <div>
-                  <label className={labelClass}>Plan Name <span className="text-red-500">*</span></label>
+                  <label className={labelClass}>Plan Name</label>
                   <Select
                     className={inputClass}
                     value={formData.plan_name}
-                    onChange={(e) => handleChange('plan_name', e.target.value)}
+                    onChange={(e: any) => handleChange('plan_name', e.target.value)}
                   >
                     <option value="">Select Company Plan Name</option>
                     {companyPlans.map((plan: any) => {
@@ -434,7 +452,7 @@ export default function AddLifeInsurance() {
                   <Select
                     className={inputClass}
                     value={formData.companies_agency_code}
-                    onChange={(e) => handleChange('companies_agency_code', e.target.value)}
+                    onChange={(e: any) => handleChange('companies_agency_code', e.target.value)}
                   >
                     <option value="">Select Agency Code</option>
                     {agencyCodeList.map((ac: any) => {
@@ -452,9 +470,9 @@ export default function AddLifeInsurance() {
                 <div>
                   <label className={labelClass}>Payment Mode <span className="text-red-500">*</span></label>
                   <Select
-                    className={inputClass}
+                    className={`${inputClass} ${errors.payment_mode ? '!border-red-500 focus:!ring-red-200' : ''}`}
                     value={formData.payment_mode}
-                    onChange={(e) => handleChange('payment_mode', e.target.value)}
+                    onChange={(e: any) => handleChange('payment_mode', e.target.value)}
                   >
                     {paymentModes.map((pm: any) => (
                       <option key={pm.id} value={pm.id}>
@@ -462,24 +480,26 @@ export default function AddLifeInsurance() {
                       </option>
                     ))}
                   </Select>
+                  {errors.payment_mode && <p className="text-xs text-red-500 font-semibold mt-1">{errors.payment_mode}</p>}
                 </div>
                 <div>
                   <label className={labelClass}>Policy Number <span className="text-red-500">*</span></label>
                   <input
                     type="text"
                     placeholder="Enter Policy Number"
-                    className={inputClass}
+                    className={`${inputClass} ${errors.policy_number ? '!border-red-500 focus:!ring-red-200' : ''}`}
                     value={formData.policy_number}
-                    onChange={(e) => handleChange('policy_number', e.target.value)}
+                    onChange={(e: any) => handleChange('policy_number', e.target.value)}
                   />
+                  {errors.policy_number && <p className="text-xs text-red-500 font-semibold mt-1">{errors.policy_number}</p>}
                 </div>
                 <div>
                   <label className={labelClass}>Policy Premium Term (Y)<span className="text-red-500">*</span></label>
                   {policyTermOptions.length > 0 ? (
                     <Select
-                      className={inputClass}
+                      className={`${inputClass} ${errors.policy_premium_term ? '!border-red-500 focus:!ring-red-200' : ''}`}
                       value={formData.policy_premium_term}
-                      onChange={(e) => handleChange('policy_premium_term', e.target.value)}
+                      onChange={(e: any) => handleChange('policy_premium_term', e.target.value)}
                     >
                       {policyTermOptions.map((pt: any) => (
                         <option key={pt.id} value={pt.term || pt.id}>
@@ -490,19 +510,20 @@ export default function AddLifeInsurance() {
                   ) : (
                     <input
                       type="text"
-                      className={inputClass}
+                      className={`${inputClass} ${errors.policy_premium_term ? '!border-red-500 focus:!ring-red-200' : ''}`}
                       value={formData.policy_premium_term}
-                      onChange={(e) => handleChange('policy_premium_term', e.target.value)}
+                      onChange={(e: any) => handleChange('policy_premium_term', e.target.value)}
                     />
                   )}
+                  {errors.policy_premium_term && <p className="text-xs text-red-500 font-semibold mt-1">{errors.policy_premium_term}</p>}
                 </div>
                 <div>
                   <label className={labelClass}>Policy Term (Y)<span className="text-red-500">*</span></label>
                   {policyTermOptions.length > 0 ? (
                     <Select
-                      className={inputClass}
+                      className={`${inputClass} ${errors.policy_term ? '!border-red-500 focus:!ring-red-200' : ''}`}
                       value={formData.policy_term}
-                      onChange={(e) => handleChange('policy_term', e.target.value)}
+                      onChange={(e: any) => handleChange('policy_term', e.target.value)}
                     >
                       {policyTermOptions.map((pt: any) => (
                         <option key={pt.id} value={pt.term || pt.id}>
@@ -513,49 +534,54 @@ export default function AddLifeInsurance() {
                   ) : (
                     <input
                       type="text"
-                      className={inputClass}
+                      className={`${inputClass} ${errors.policy_term ? '!border-red-500 focus:!ring-red-200' : ''}`}
                       value={formData.policy_term}
-                      onChange={(e) => handleChange('policy_term', e.target.value)}
+                      onChange={(e: any) => handleChange('policy_term', e.target.value)}
                     />
                   )}
+                  {errors.policy_term && <p className="text-xs text-red-500 font-semibold mt-1">{errors.policy_term}</p>}
                 </div>
 
                 <div>
                   <label className={labelClass}>Policy Login Date <span className="text-red-500">*</span></label>
                   <DatePicker
-                    className={inputClass}
+                    className={`${inputClass} ${errors.policy_login_date ? '!border-red-500 focus:!ring-red-200' : ''}`}
                     placeholder="Select Login Date"
                     value={formData.policy_login_date}
                     onChange={(dateStr: string) => handleChange('policy_login_date', dateStr)}
                   />
+                  {errors.policy_login_date && <p className="text-xs text-red-500 font-semibold mt-1">{errors.policy_login_date}</p>}
                 </div>
                 <div>
                   <label className={labelClass}>Policy Start Date <span className="text-red-500">*</span></label>
                   <DatePicker
-                    className={inputClass}
+                    className={`${inputClass} ${errors.policy_start_date ? '!border-red-500 focus:!ring-red-200' : ''}`}
                     placeholder="Select Start Date"
                     value={formData.policy_start_date}
                     onChange={(dateStr: string) => handleChange('policy_start_date', dateStr)}
                   />
+                  {errors.policy_start_date && <p className="text-xs text-[#cf3838] font-semibold mt-1">{errors.policy_start_date}</p>}
                 </div>
                 <div className="lg:col-span-2">
                   <label className={labelClass}>Policy Premium End Date <span className="text-red-500">*</span></label>
                   <DatePicker
-                    className={inputClass}
+                    className={`${inputClass} ${errors.policy_end_date ? '!border-red-500 focus:!ring-red-200' : ''}`}
                     placeholder="Select Premium End Date"
                     value={formData.policy_end_date}
                     onChange={(dateStr: string) => handleChange('policy_end_date', dateStr)}
                   />
+                  {errors.policy_end_date && <p className="text-xs text-red-500 font-semibold mt-1">{errors.policy_end_date}</p>}
                 </div>
 
                 <div>
                   <label className={labelClass}>Policy Maturity Date <span className="text-red-500">*</span></label>
                   <DatePicker
-                    className={inputClass}
+                    className={`${inputClass} ${errors.policy_maturity_date ? '!border-red-500 focus:!ring-red-200' : ''}`}
                     placeholder="Select Maturity Date"
                     value={formData.policy_maturity_date}
                     onChange={(dateStr: string) => handleChange('policy_maturity_date', dateStr)}
                   />
+                  {errors.policy_maturity_date && <p className="text-xs text-red-500 font-semibold mt-1">{errors.policy_maturity_date}</p>}
                 </div>
                 <div>
                   <label className={labelClass}>Maturity Amount</label>
@@ -564,15 +590,15 @@ export default function AddLifeInsurance() {
                     placeholder="Enter Maturity Amount"
                     className={inputClass}
                     value={formData.maturity_amount}
-                    onChange={(e) => handleChange('maturity_amount', e.target.value)}
+                    onChange={(e: any) => handleChange('maturity_amount', e.target.value)}
                   />
                 </div>
                 <div className="lg:col-span-2">
                   <label className={labelClass}>Plan Type <span className="text-red-500">*</span></label>
                   <Select
-                    className={inputClass}
+                    className={`${inputClass} ${errors.plan_type ? '!border-red-500 focus:!ring-red-200' : ''}`}
                     value={formData.plan_type}
-                    onChange={(e) => handleChange('plan_type', e.target.value)}
+                    onChange={(e: any) => handleChange('plan_type', e.target.value)}
                   >
                     {planTypeOptions.map((pt: any) => (
                       <option key={pt.id} value={pt.id}>
@@ -580,6 +606,7 @@ export default function AddLifeInsurance() {
                       </option>
                     ))}
                   </Select>
+                  {errors.plan_type && <p className="text-xs text-red-500 font-semibold mt-1">{errors.plan_type}</p>}
                 </div>
 
                 <div>
@@ -587,20 +614,22 @@ export default function AddLifeInsurance() {
                   <input
                     type="text"
                     placeholder="Enter Sum Assured"
-                    className={inputClass}
+                    className={`${inputClass} ${errors.sum_assured ? '!border-red-500 focus:!ring-red-200' : ''}`}
                     value={formData.sum_assured}
-                    onChange={(e) => handleChange('sum_assured', e.target.value)}
+                    onChange={(e: any) => handleChange('sum_assured', e.target.value)}
                   />
+                  {errors.sum_assured && <p className="text-xs text-red-500 font-semibold mt-1">{errors.sum_assured}</p>}
                 </div>
                 <div className="lg:col-span-3">
                   <label className={labelClass}>Net Premium<span className="text-red-500">*</span></label>
                   <input
                     type="text"
                     placeholder="Enter Net Premium"
-                    className={inputClass}
+                    className={`${inputClass} ${errors.net_premium ? '!border-red-500 focus:!ring-red-200' : ''}`}
                     value={formData.net_premium}
-                    onChange={(e) => handleChange('net_premium', e.target.value)}
+                    onChange={(e: any) => handleChange('net_premium', e.target.value)}
                   />
+                  {errors.net_premium && <p className="text-xs text-red-500 font-semibold mt-1">{errors.net_premium}</p>}
                 </div>
 
                 {/* Dynamic Riders Section */}
@@ -612,7 +641,7 @@ export default function AddLifeInsurance() {
                         <Select
                           className={inputClass}
                           value={rider.riders_id}
-                          onChange={(e) => updateRider(rider.id, 'riders_id', e.target.value)}
+                          onChange={(e: any) => updateRider(rider.id, 'riders_id', e.target.value)}
                         >
                           <option value="">Select Rider</option>
                           {riderListOptions.map((rd: any) => {
@@ -633,7 +662,7 @@ export default function AddLifeInsurance() {
                           placeholder="Enter Amount"
                           className={inputClass}
                           value={rider.riders_amount}
-                          onChange={(e) => updateRider(rider.id, 'riders_amount', e.target.value)}
+                          onChange={(e: any) => updateRider(rider.id, 'riders_amount', e.target.value)}
                         />
                       </div>
                       <div className="lg:col-span-2 flex items-center gap-4">
@@ -644,7 +673,7 @@ export default function AddLifeInsurance() {
                             placeholder="Enter Note"
                             className={inputClass}
                             value={rider.riders_note}
-                            onChange={(e) => updateRider(rider.id, 'riders_note', e.target.value)}
+                            onChange={(e: any) => updateRider(rider.id, 'riders_note', e.target.value)}
                           />
                         </div>
                         {index === 0 ? (
@@ -668,7 +697,7 @@ export default function AddLifeInsurance() {
                     placeholder="Enter GST Amount"
                     className={inputClass}
                     value={formData.gst_amount}
-                    onChange={(e) => handleChange('gst_amount', e.target.value)}
+                    onChange={(e: any) => handleChange('gst_amount', e.target.value)}
                   />
                 </div>
                 <div className="lg:col-span-3">
@@ -678,7 +707,7 @@ export default function AddLifeInsurance() {
                     placeholder="Total Premium"
                     className={inputClass}
                     value={formData.total_premium}
-                    onChange={(e) => handleChange('total_premium', e.target.value)}
+                    onChange={(e: any) => handleChange('total_premium', e.target.value)}
                   />
                 </div>
 
@@ -687,7 +716,7 @@ export default function AddLifeInsurance() {
                   <Select
                     className={inputClass}
                     value={formData.customer_payment_mode}
-                    onChange={(e) => handleChange('customer_payment_mode', e.target.value)}
+                    onChange={(e: any) => handleChange('customer_payment_mode', e.target.value)}
                   >
                     <option value="1">Cash / Online</option>
                     <option value="2">Cheque</option>
@@ -699,7 +728,7 @@ export default function AddLifeInsurance() {
                   <Select
                     className={inputClass}
                     value={formData.premium_overdue_days}
-                    onChange={(e) => handleChange('premium_overdue_days', e.target.value)}
+                    onChange={(e: any) => handleChange('premium_overdue_days', e.target.value)}
                   >
                     <option value="15">15 Days</option>
                     <option value="30">30 Days</option>
@@ -719,7 +748,7 @@ export default function AddLifeInsurance() {
                 <input
                   type="checkbox"
                   checked={formData.regenerate_installments}
-                  onChange={(e) => handleChange('regenerate_installments', e.target.checked)}
+                  onChange={(e: any) => handleChange('regenerate_installments', e.target.checked)}
                   className="mt-1 w-4 h-4 border-gray-300 rounded text-[#2B4399] focus:ring-[#2D3591]"
                 />
                 <div>
@@ -747,16 +776,16 @@ export default function AddLifeInsurance() {
                       <input
                         type="text"
                         placeholder="Nominee Name *"
-                        className={inputClass}
+                        className={`${inputClass} ${errors.nomainee_name && !nominee.nomainee_name ? '!border-red-500 focus:!ring-red-200' : ''}`}
                         value={nominee.nomainee_name}
-                        onChange={(e) => updateNominee(nominee.id, 'nomainee_name', e.target.value)}
+                        onChange={(e: any) => updateNominee(nominee.id, 'nomainee_name', e.target.value)}
                       />
                     </div>
                     <div className="flex-[2]">
                       <Select
                         className={inputClass}
                         value={nominee.nomainee_relationship}
-                        onChange={(e) => updateNominee(nominee.id, 'nomainee_relationship', e.target.value)}
+                        onChange={(e: any) => updateNominee(nominee.id, 'nomainee_relationship', e.target.value)}
                       >
                         {relationshipOptions.map((rel: any) => (
                           <option key={rel.id} value={rel.id}>
@@ -771,7 +800,7 @@ export default function AddLifeInsurance() {
                         placeholder="Percentage (%)"
                         className={inputClass}
                         value={nominee.nomainee_per}
-                        onChange={(e) => updateNominee(nominee.id, 'nomainee_per', e.target.value)}
+                        onChange={(e: any) => updateNominee(nominee.id, 'nomainee_per', e.target.value)}
                       />
                     </div>
                     {index > 0 && (
@@ -784,8 +813,6 @@ export default function AddLifeInsurance() {
               </div>
             </div>
 
-
-
             {/* Note Details */}
             <div>
               <div className={sectionHeaderClass}>
@@ -797,7 +824,7 @@ export default function AddLifeInsurance() {
                   rows={4}
                   className={inputClass}
                   value={formData.note}
-                  onChange={(e) => handleChange('note', e.target.value)}
+                  onChange={(e: any) => handleChange('note', e.target.value)}
                 ></textarea>
               </div>
             </div>
@@ -815,7 +842,7 @@ export default function AddLifeInsurance() {
                     placeholder="Enter Bank Name"
                     className={inputClass}
                     value={formData.bank_name}
-                    onChange={(e) => handleChange('bank_name', e.target.value)}
+                    onChange={(e: any) => handleChange('bank_name', e.target.value)}
                   />
                 </div>
                 <div>
@@ -825,7 +852,7 @@ export default function AddLifeInsurance() {
                     placeholder="Enter Account Type"
                     className={inputClass}
                     value={formData.account_type}
-                    onChange={(e) => handleChange('account_type', e.target.value)}
+                    onChange={(e: any) => handleChange('account_type', e.target.value)}
                   />
                 </div>
                 <div>
@@ -835,7 +862,7 @@ export default function AddLifeInsurance() {
                     placeholder="Enter Account Number"
                     className={inputClass}
                     value={formData.account_number}
-                    onChange={(e) => handleChange('account_number', e.target.value)}
+                    onChange={(e: any) => handleChange('account_number', e.target.value)}
                   />
                 </div>
               </div>
@@ -847,7 +874,7 @@ export default function AddLifeInsurance() {
                     placeholder="Enter IFSC CODE"
                     className={inputClass}
                     value={formData.ifsc_code}
-                    onChange={(e) => handleChange('ifsc_code', e.target.value)}
+                    onChange={(e: any) => handleChange('ifsc_code', e.target.value)}
                   />
                 </div>
                 <div>
@@ -857,7 +884,7 @@ export default function AddLifeInsurance() {
                     placeholder="Enter Account Holder Name"
                     className={inputClass}
                     value={formData.account_holder_name}
-                    onChange={(e) => handleChange('account_holder_name', e.target.value)}
+                    onChange={(e: any) => handleChange('account_holder_name', e.target.value)}
                   />
                 </div>
               </div>
@@ -881,7 +908,7 @@ export default function AddLifeInsurance() {
                       <Select
                         className={inputClass}
                         value={doc.other_document_name}
-                        onChange={(e) => updateDocument(doc.id, 'other_document_name', e.target.value)}
+                        onChange={(e: any) => updateDocument(doc.id, 'other_document_name', e.target.value)}
                       >
                         <option value="">Select Other Document Name</option>
                         {documentListOptions.map((dc: any) => {
@@ -898,7 +925,7 @@ export default function AddLifeInsurance() {
                     <div className="flex-1 flex flex-col">
                       <input
                         type="file"
-                        onChange={(e) => updateDocument(doc.id, 'other_document_image', e.target.files?.[0] || null)}
+                        onChange={(e: any) => updateDocument(doc.id, 'other_document_image', e.target.files?.[0] || null)}
                         className="border border-gray-300 rounded-lg text-sm px-4 py-1.5 w-full file:mr-4 file:py-1.5 file:px-4 file:rounded file:border-0 file:text-sm file:font-bold file:bg-gray-100 hover:file:bg-gray-200 cursor-pointer shadow-sm bg-white"
                       />
                       {(doc as any).existing_image_url && !(doc.other_document_image) && (

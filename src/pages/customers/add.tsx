@@ -3,13 +3,13 @@ import Head from 'next/head';
 import { Plus, Minus } from 'lucide-react';
 import { useRouter } from 'next/router';
 import Select from '@/components/ui/Select';
-import Input from '@/components/ui/Input';
 import DatePicker from '@/components/ui/DatePicker';
 import PageHeader from '@/components/ui/PageHeader';
 import { useCustomerDropdowns } from '@/hooks/useCustomerDropdowns';
 import { api } from '@/utils/axiosInstance';
 import endPointApi from '@/utils/endPointApi';
 import { toast } from 'react-toastify';
+import { validateCustomer } from '@/utils/validation';
 
 export default function AddCustomer() {
   const router = useRouter();
@@ -141,28 +141,9 @@ export default function AddCustomer() {
   };
 
   const validateForm = () => {
-    const newErrors: { [key: string]: string } = {};
-
-    if (!formValues.customerType.trim()) {
-      newErrors.customerType = 'Customer Type is required';
-    }
-    if (!formValues.firstName.trim()) {
-      newErrors.firstName = 'First Name is required';
-    }
-    if (!formValues.lastName.trim()) {
-      newErrors.lastName = 'Last Name is required';
-    }
-    if (!formValues.customerNumber.trim()) {
-      newErrors.customerNumber = 'Phone Number is required';
-    } else if (!/^\d{10}$/.test(formValues.customerNumber.trim())) {
-      newErrors.customerNumber = 'Please enter a valid 10-digit phone number';
-    }
-    if (!formValues.pincode.trim()) {
-      newErrors.pincode = 'Pincode is required';
-    }
-
+    const { isValid, errors: newErrors } = validateCustomer(formValues);
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return isValid;
   };
 
   const addDocument = () => {
@@ -314,71 +295,85 @@ export default function AddCustomer() {
               </div>
               <div className="hidden md:block md:col-span-3"></div>
 
-              <Input
-                label="First Name"
-                name="firstName"
-                required
-                placeholder="Enter First Name"
-                value={formValues.firstName}
-                onChange={(e: any) => handleChange('firstName', e.target.value)}
-                error={errors.firstName}
-                labelClassName={labelClass}
-              />
-              <Input
-                label="Middle Name"
-                name="middleName"
-                placeholder="Enter Middle Name"
-                value={formValues.middleName}
-                onChange={(e: any) => handleChange('middleName', e.target.value)}
-                labelClassName={labelClass}
-              />
-              <Input
-                label="Last Name"
-                name="lastName"
-                required
-                placeholder="Enter Last Name"
-                value={formValues.lastName}
-                onChange={(e: any) => handleChange('lastName', e.target.value)}
-                error={errors.lastName}
-                labelClassName={labelClass}
-              />
-              <Input
-                label="Phone Number"
-                name="customerNumber"
-                required
-                placeholder="Enter Phone Number"
-                value={formValues.customerNumber}
-                onChange={(e: any) => handleChange('customerNumber', e.target.value)}
-                error={errors.customerNumber}
-                labelClassName={labelClass}
-              />
+              <div>
+                <label className={labelClass}>First Name <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  className={getInputClass('firstName')}
+                  placeholder="Enter First Name"
+                  value={formValues.firstName}
+                  onChange={(e: any) => handleChange('firstName', e.target.value)}
+                />
+                {errors.firstName && <p className="text-xs text-red-500 mt-1 font-medium">{errors.firstName}</p>}
+              </div>
 
-              <Input
-                type="file"
-                label="Customer Image"
-                name="customerImage"
-                accept="image/*"
-                onChange={(e: any) => setCustomerImage(e.target.value || e.target.files?.[0] || null)}
-                labelClassName={labelClass}
-              />
-              <Input
-                type="email"
-                label="Email"
-                name="email"
-                placeholder="Enter Email"
-                value={formValues.email}
-                onChange={(e: any) => handleChange('email', e.target.value)}
-                labelClassName={labelClass}
-              />
+              <div>
+                <label className={labelClass}>Middle Name</label>
+                <input
+                  type="text"
+                  className={inputClass}
+                  placeholder="Enter Middle Name"
+                  value={formValues.middleName}
+                  onChange={(e: any) => handleChange('middleName', e.target.value)}
+                />
+              </div>
 
-              <Input
-                label="Reference By"
-                name="referenceBy"
-                placeholder="Reference By"
-                value={formValues.referenceBy}
-                onChange={(e: any) => handleChange('referenceBy', e.target.value)}
-                labelClassName={labelClass}
-              />
+              <div>
+                <label className={labelClass}>Last Name <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  className={getInputClass('lastName')}
+                  placeholder="Enter Last Name"
+                  value={formValues.lastName}
+                  onChange={(e: any) => handleChange('lastName', e.target.value)}
+                />
+                {errors.lastName && <p className="text-xs text-red-500 mt-1 font-medium">{errors.lastName}</p>}
+              </div>
+
+              <div>
+                <label className={labelClass}>Phone Number <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  className={getInputClass('customerNumber')}
+                  placeholder="Enter Phone Number"
+                  value={formValues.customerNumber}
+                  onChange={(e: any) => handleChange('customerNumber', e.target.value)}
+                />
+                {errors.customerNumber && <p className="text-xs text-red-500 mt-1 font-medium">{errors.customerNumber}</p>}
+              </div>
+
+              <div>
+                <label className={labelClass}>Customer Image</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e: any) => setCustomerImage(e.target.files?.[0] || null)}
+                  className="h-[46px] border border-gray-300 rounded-lg text-sm px-4 py-2.5 w-full file:mr-4 file:py-1 file:px-4 file:rounded file:border-0 file:text-sm file:font-bold file:bg-gray-100 hover:file:bg-gray-200 cursor-pointer shadow-sm bg-white"
+                />
+              </div>
+
+              <div>
+                <label className={labelClass}>Email</label>
+                <input
+                  type="email"
+                  className={inputClass}
+                  placeholder="Enter Email"
+                  value={formValues.email}
+                  onChange={(e: any) => handleChange('email', e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className={labelClass}>Reference By</label>
+                <input
+                  type="text"
+                  className={inputClass}
+                  placeholder="Reference By"
+                  value={formValues.referenceBy}
+                  onChange={(e: any) => handleChange('referenceBy', e.target.value)}
+                />
+              </div>
+
               <div>
                 <label className={labelClass}>Date Of Birth</label>
                 <DatePicker
@@ -388,14 +383,17 @@ export default function AddCustomer() {
                   placeholder="Select Date Of Birth"
                 />
               </div>
-              <Input
-                label="Year ( Age )"
-                name="age"
-                placeholder="Enter Year ( Age )"
-                value={formValues.age}
-                onChange={(e: any) => handleChange('age', e.target.value)}
-                labelClassName={labelClass}
-              />
+
+              <div>
+                <label className={labelClass}>Year ( Age )</label>
+                <input
+                  type="text"
+                  className={inputClass}
+                  placeholder="Enter Year ( Age )"
+                  value={formValues.age}
+                  onChange={(e: any) => handleChange('age', e.target.value)}
+                />
+              </div>
 
               <div>
                 <label className={labelClass}>Gender</label>
@@ -412,22 +410,28 @@ export default function AddCustomer() {
                   ))}
                 </Select>
               </div>
-              <Input
-                label="Height"
-                name="height"
-                placeholder="Enter Height"
-                value={formValues.height}
-                onChange={(e: any) => handleChange('height', e.target.value)}
-                labelClassName={labelClass}
-              />
-              <Input
-                label="Weight"
-                name="weight"
-                placeholder="Enter Weight"
-                value={formValues.weight}
-                onChange={(e: any) => handleChange('weight', e.target.value)}
-                labelClassName={labelClass}
-              />
+              <div>
+                <label className={labelClass}>Height</label>
+                <input
+                  type="text"
+                  className={inputClass}
+                  placeholder="Enter Height"
+                  value={formValues.height}
+                  onChange={(e: any) => handleChange('height', e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className={labelClass}>Weight</label>
+                <input
+                  type="text"
+                  className={inputClass}
+                  placeholder="Enter Weight"
+                  value={formValues.weight}
+                  onChange={(e: any) => handleChange('weight', e.target.value)}
+                />
+              </div>
+
               <div>
                 <label className={labelClass}>Marital Status</label>
                 <Select
@@ -469,22 +473,28 @@ export default function AddCustomer() {
                   ))}
                 </Select>
               </div>
-              <Input
-                label="Adhar Card Number"
-                name="adharCardNo"
-                placeholder="Enter Adhar Card Number"
-                value={formValues.adharCardNo}
-                onChange={(e: any) => handleChange('adharCardNo', e.target.value)}
-                labelClassName={labelClass}
-              />
-              <Input
-                label="Pancard Number"
-                name="pancardNo"
-                placeholder="Enter Pancard Number"
-                value={formValues.pancardNo}
-                onChange={(e: any) => handleChange('pancardNo', e.target.value)}
-                labelClassName={labelClass}
-              />
+
+              <div>
+                <label className={labelClass}>Adhar Card Number</label>
+                <input
+                  type="text"
+                  className={inputClass}
+                  placeholder="Enter Adhar Card Number"
+                  value={formValues.adharCardNo}
+                  onChange={(e: any) => handleChange('adharCardNo', e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className={labelClass}>Pancard Number</label>
+                <input
+                  type="text"
+                  className={inputClass}
+                  placeholder="Enter Pancard Number"
+                  value={formValues.pancardNo}
+                  onChange={(e: any) => handleChange('pancardNo', e.target.value)}
+                />
+              </div>
             </div>
           </div>
 
@@ -495,49 +505,61 @@ export default function AddCustomer() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-x-6 gap-y-5">
-              <Input
-                label="Pincode"
-                name="pincode"
-                required
-                placeholder="Enter Pincode"
-                value={formValues.pincode}
-                onChange={(e: any) => handleChange('pincode', e.target.value)}
-                error={errors.pincode}
-                labelClassName={labelClass}
-              />
-              <Input
-                label="Nationality"
-                name="nationality"
-                placeholder="Nationality"
-                value={formValues.nationality}
-                onChange={(e: any) => handleChange('nationality', e.target.value)}
-                labelClassName={labelClass}
-              />
-              <Input
-                label="State"
-                name="state"
-                placeholder="State"
-                value={formValues.state}
-                onChange={(e: any) => handleChange('state', e.target.value)}
-                labelClassName={labelClass}
-              />
+              <div>
+                <label className={labelClass}>Pincode <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  className={getInputClass('pincode')}
+                  placeholder="Enter Pincode"
+                  value={formValues.pincode}
+                  onChange={(e: any) => handleChange('pincode', e.target.value)}
+                />
+                {errors.pincode && <p className="text-xs text-red-500 mt-1 font-medium">{errors.pincode}</p>}
+              </div>
 
-              <Input
-                label="City"
-                name="city"
-                placeholder="City"
-                value={formValues.city}
-                onChange={(e: any) => handleChange('city', e.target.value)}
-                labelClassName={labelClass}
-              />
-              <Input
-                label="Home Address"
-                name="address"
-                placeholder="Enter Home Address"
-                value={formValues.address}
-                onChange={(e: any) => handleChange('address', e.target.value)}
-                labelClassName={labelClass}
-              />
+              <div>
+                <label className={labelClass}>Nationality</label>
+                <input
+                  type="text"
+                  className={inputClass}
+                  placeholder="Nationality"
+                  value={formValues.nationality}
+                  onChange={(e: any) => handleChange('nationality', e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className={labelClass}>State</label>
+                <input
+                  type="text"
+                  className={inputClass}
+                  placeholder="State"
+                  value={formValues.state}
+                  onChange={(e: any) => handleChange('state', e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className={labelClass}>City</label>
+                <input
+                  type="text"
+                  className={inputClass}
+                  placeholder="City"
+                  value={formValues.city}
+                  onChange={(e: any) => handleChange('city', e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className={labelClass}>Home Address</label>
+                <input
+                  type="text"
+                  className={inputClass}
+                  placeholder="Enter Home Address"
+                  value={formValues.address}
+                  onChange={(e: any) => handleChange('address', e.target.value)}
+                />
+              </div>
             </div>
           </div>
 
@@ -577,10 +599,10 @@ export default function AddCustomer() {
                     </Select>
                   </div>
                   <div className="flex-1 w-full">
-                    <Input
+                    <input
                       type="file"
-                      name={`document_file_${doc.id}`}
-                      onChange={(e: any) => handleDocumentFileChange(doc.id, e.target.value || e.target.files?.[0] || null)}
+                      onChange={(e: any) => handleDocumentFileChange(doc.id, e.target.files?.[0] || null)}
+                      className="border border-gray-300 rounded-lg text-sm px-4 py-2 w-full file:mr-4 file:py-1 file:px-4 file:rounded file:border-0 file:text-sm file:font-bold file:bg-gray-100 hover:file:bg-gray-200 cursor-pointer shadow-sm bg-white"
                     />
                   </div>
 

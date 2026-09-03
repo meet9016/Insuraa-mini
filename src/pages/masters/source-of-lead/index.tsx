@@ -5,9 +5,9 @@ import AgGridTable from '@/components/ui/tableaggrid/AgGridTable';
 import ActionButtons from '@/components/ui/ActionButtons';
 import TableHeader from '@/components/ui/TableHeader';
 import DeleteConfirmationModal from '@/components/ui/DeleteConfirmationModal';
-import Input from '@/components/ui/Input';
 import { useSourceOfLeadList, useSourceOfLeadActions } from '@/hooks/useSourceOfLeadApi';
 import { getSourceOfLeadColumns } from '@/utils/tableColumns';
+import { validateSourceOfLead } from '@/utils/validation';
 
 export default function SourceOfLead() {
   const [newName, setNewName] = useState('');
@@ -87,8 +87,9 @@ export default function SourceOfLead() {
   };
 
   const handleSave = async () => {
-    if (!newName.trim()) {
-      setNameError('Source of Lead Name is required');
+    const errorMsg = validateSourceOfLead(newName);
+    if (errorMsg) {
+      setNameError(errorMsg);
       return;
     }
 
@@ -191,18 +192,27 @@ export default function SourceOfLead() {
             </div>
 
             <div className="p-6">
-              <Input
-                label="Name"
-                name="name"
-                required
-                placeholder="Enter Source of Lead Name"
-                value={newName}
-                onChange={(e: any) => {
-                  setNewName(e.target.value);
-                  if (nameError) setNameError('');
-                }}
-                error={nameError}
-              />
+              <div>
+                <label className="text-[13px] font-semibold text-gray-700 mb-1.5 block">
+                  Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  placeholder="Enter Source of Lead Name"
+                  value={newName}
+                  onChange={(e: any) => {
+                    setNewName(e.target.value);
+                    if (nameError) setNameError('');
+                  }}
+                  className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#2D3591]/20 focus:border-[#2D3591] transition-all bg-white shadow-sm placeholder:text-gray-400 ${
+                    nameError ? '!border-red-500 ring-2 ring-red-500/20' : ''
+                  }`}
+                />
+                {nameError && (
+                  <p className="text-xs text-red-500 mt-1 font-medium">{nameError}</p>
+                )}
+              </div>
             </div>
 
             <ActionButtons

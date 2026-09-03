@@ -4,10 +4,10 @@ import { Plus, Minus, ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/router';
 import Select from '@/components/ui/Select';
 import DatePicker from '@/components/ui/DatePicker';
-import Input from '@/components/ui/Input';
 import { toast } from 'react-toastify';
 import { api } from '@/utils/axiosInstance';
 import endPointApi from '@/utils/endPointApi';
+import { validateHealthInsurance } from '@/utils/validation';
 import { useCustomerList } from '@/hooks/useCustomerApi';
 import {
   useHealthInsuranceMasterData,
@@ -282,31 +282,15 @@ export default function AddHealthInsurance() {
   }, [id]);
 
   const validateForm = () => {
-    const newErrors: { [key: string]: string } = {};
-
-    if (!formData.customer_id) newErrors.customer_id = 'Customer Name is required';
-    if (!formData.companies_id) newErrors.companies_id = 'Insurance Company is required';
-    if (!formData.plan_name) newErrors.plan_name = 'Plan Name is required';
-    if (!formData.insurance_type) newErrors.insurance_type = 'Insurance Type is required';
-    if (!formData.payment_mode) newErrors.payment_mode = 'Payment Mode is required';
-    if (!formData.policy_number.trim()) newErrors.policy_number = 'Policy Number is required';
-    if (!formData.policy_login_date) newErrors.policy_login_date = 'Policy Login Date is required';
-    if (!formData.policy_start_date) newErrors.policy_start_date = 'Policy Start Date is required';
-    if (!formData.policy_end_date) newErrors.policy_end_date = 'Policy End Date is required';
-    if (!formData.plan_type) newErrors.plan_type = 'Plan Type is required';
-    if (!formData.sum_assured.toString().trim()) newErrors.sum_assured = 'Sum Assured is required';
-    if (!formData.net_premium.toString().trim()) newErrors.net_premium = 'Net Premium is required';
-    if (!formData.total_premium.toString().trim()) newErrors.total_premium = 'Total Premium is required';
-
+    const { isValid, errors: newErrors } = validateHealthInsurance(formData);
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return isValid;
   };
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
 
     if (!validateForm()) {
-      toast.error('Please fill all required fields');
       return;
     }
 
@@ -503,15 +487,16 @@ export default function AddHealthInsurance() {
                 {errors.companies_id && <p className="text-xs text-red-500 mt-1 font-medium">{errors.companies_id}</p>}
               </div>
 
-              <Input
-                label="Company Agency Code"
-                name="companies_agency_code"
-                placeholder="Enter Company Agency Code"
-                value={formData.companies_agency_code}
-                onChange={(e: any) => handleChange('companies_agency_code', e.target.value)}
-                className={inputClass}
-                labelClassName={labelClass}
-              />
+              <div>
+                <label className={labelClass}>Company Agency Code</label>
+                <input
+                  type="text"
+                  className={inputClass}
+                  placeholder="Enter Company Agency Code"
+                  value={formData.companies_agency_code}
+                  onChange={(e: any) => handleChange('companies_agency_code', e.target.value)}
+                />
+              </div>
 
               <div>
                 <label className={labelClass}>Plan Name <span className="text-red-500">*</span></label>
@@ -564,17 +549,17 @@ export default function AddHealthInsurance() {
                 {errors.payment_mode && <p className="text-xs text-red-500 mt-1 font-medium">{errors.payment_mode}</p>}
               </div>
 
-              <Input
-                label="Policy Number"
-                name="policy_number"
-                required
-                placeholder="Enter Policy Number"
-                value={formData.policy_number}
-                onChange={(e: any) => handleChange('policy_number', e.target.value)}
-                error={errors.policy_number}
-                className={inputClass}
-                labelClassName={labelClass}
-              />
+              <div>
+                <label className={labelClass}>Policy Number <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  className={getSelectClass('policy_number')}
+                  placeholder="Enter Policy Number"
+                  value={formData.policy_number}
+                  onChange={(e: any) => handleChange('policy_number', e.target.value)}
+                />
+                {errors.policy_number && <p className="text-xs text-red-500 mt-1 font-medium">{errors.policy_number}</p>}
+              </div>
 
               <div>
                 <label className={labelClass}>Policy Login Date <span className="text-red-500">*</span></label>
@@ -636,27 +621,28 @@ export default function AddHealthInsurance() {
                 {errors.plan_type && <p className="text-xs text-red-500 mt-1 font-medium">{errors.plan_type}</p>}
               </div>
 
-              <Input
-                label="Sum Assured"
-                name="sum_assured"
-                required
-                placeholder="Enter Sum Assured"
-                value={formData.sum_assured}
-                onChange={(e: any) => handleChange('sum_assured', e.target.value)}
-                error={errors.sum_assured}
-                className={inputClass}
-                labelClassName={labelClass}
-              />
+              <div>
+                <label className={labelClass}>Sum Assured <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  className={getSelectClass('sum_assured')}
+                  placeholder="Enter Sum Assured"
+                  value={formData.sum_assured}
+                  onChange={(e: any) => handleChange('sum_assured', e.target.value)}
+                />
+                {errors.sum_assured && <p className="text-xs text-red-500 mt-1 font-medium">{errors.sum_assured}</p>}
+              </div>
 
-              <Input
-                label="Bonus"
-                name="bonus"
-                placeholder="Enter Bonus"
-                value={formData.bonus}
-                onChange={(e: any) => handleChange('bonus', e.target.value)}
-                className={inputClass}
-                labelClassName={labelClass}
-              />
+              <div>
+                <label className={labelClass}>Bonus</label>
+                <input
+                  type="text"
+                  className={inputClass}
+                  placeholder="Enter Bonus"
+                  value={formData.bonus}
+                  onChange={(e: any) => handleChange('bonus', e.target.value)}
+                />
+              </div>
 
               <div>
                 <label className={labelClass}>Health Check Up</label>
@@ -674,69 +660,73 @@ export default function AddHealthInsurance() {
                 </Select>
               </div>
 
-              <Input
-                label="Health Check Up Amount"
-                name="health_check_up_amount"
-                placeholder="Enter Health Check Up Amount"
-                value={formData.health_check_up_amount}
-                onChange={(e: any) => handleChange('health_check_up_amount', e.target.value)}
-                className={inputClass}
-                labelClassName={labelClass}
-              />
+              <div>
+                <label className={labelClass}>Health Check Up Amount</label>
+                <input
+                  type="text"
+                  className={inputClass}
+                  placeholder="Enter Health Check Up Amount"
+                  value={formData.health_check_up_amount}
+                  onChange={(e: any) => handleChange('health_check_up_amount', e.target.value)}
+                />
+              </div>
 
-              <Input
-                label="Deductable"
-                name="deductable"
-                placeholder="Enter Deductable"
-                value={formData.deductable}
-                onChange={(e: any) => handleChange('deductable', e.target.value)}
-                className={inputClass}
-                labelClassName={labelClass}
-              />
+              <div>
+                <label className={labelClass}>Deductable</label>
+                <input
+                  type="text"
+                  className={inputClass}
+                  placeholder="Enter Deductable"
+                  value={formData.deductable}
+                  onChange={(e: any) => handleChange('deductable', e.target.value)}
+                />
+              </div>
 
-              <Input
-                label="Claim"
-                name="claim"
-                placeholder="Enter Claim"
-                value={formData.claim}
-                onChange={(e: any) => handleChange('claim', e.target.value)}
-                className={inputClass}
-                labelClassName={labelClass}
-              />
+              <div>
+                <label className={labelClass}>Claim</label>
+                <input
+                  type="text"
+                  className={inputClass}
+                  placeholder="Enter Claim"
+                  value={formData.claim}
+                  onChange={(e: any) => handleChange('claim', e.target.value)}
+                />
+              </div>
 
-              <Input
-                label="Net Premium"
-                name="net_premium"
-                required
-                placeholder="Enter Net Premium"
-                value={formData.net_premium}
-                onChange={(e: any) => handleChange('net_premium', e.target.value)}
-                error={errors.net_premium}
-                className={inputClass}
-                labelClassName={labelClass}
-              />
+              <div>
+                <label className={labelClass}>Net Premium <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  className={getSelectClass('net_premium')}
+                  placeholder="Enter Net Premium"
+                  value={formData.net_premium}
+                  onChange={(e: any) => handleChange('net_premium', e.target.value)}
+                />
+                {errors.net_premium && <p className="text-xs text-red-500 mt-1 font-medium">{errors.net_premium}</p>}
+              </div>
 
-              <Input
-                label="GST Amount"
-                name="gst_amount"
-                placeholder="Enter GST Amount"
-                value={formData.gst_amount}
-                onChange={(e: any) => handleChange('gst_amount', e.target.value)}
-                className={inputClass}
-                labelClassName={labelClass}
-              />
+              <div>
+                <label className={labelClass}>GST Amount</label>
+                <input
+                  type="text"
+                  className={inputClass}
+                  placeholder="Enter GST Amount"
+                  value={formData.gst_amount}
+                  onChange={(e: any) => handleChange('gst_amount', e.target.value)}
+                />
+              </div>
 
-              <Input
-                label="Total Premium"
-                name="total_premium"
-                required
-                placeholder="Enter Total Premium"
-                value={formData.total_premium}
-                onChange={(e: any) => handleChange('total_premium', e.target.value)}
-                error={errors.total_premium}
-                className={inputClass}
-                labelClassName={labelClass}
-              />
+              <div>
+                <label className={labelClass}>Total Premium <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  className={getSelectClass('total_premium')}
+                  placeholder="Enter Total Premium"
+                  value={formData.total_premium}
+                  onChange={(e: any) => handleChange('total_premium', e.target.value)}
+                />
+                {errors.total_premium && <p className="text-xs text-red-500 mt-1 font-medium">{errors.total_premium}</p>}
+              </div>
 
             </div>
           </div>
@@ -755,15 +745,16 @@ export default function AddHealthInsurance() {
             <div className="space-y-4">
               {members.map((member, index) => (
                 <div key={member.id} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-start bg-gray-50/50 p-4 rounded-xl border border-gray-200/80 relative">
-                  <Input
-                    label="Member Name"
-                    name={`member_name_${index}`}
-                    placeholder="Enter Member Name"
-                    value={member.member_name}
-                    onChange={(e: any) => updateMember(member.id, 'member_name', e.target.value)}
-                    className={inputClass}
-                    labelClassName={labelClass}
-                  />
+                  <div>
+                    <label className={labelClass}>Member Name</label>
+                    <input
+                      type="text"
+                      placeholder="Enter Member Name"
+                      value={member.member_name}
+                      onChange={(e: any) => updateMember(member.id, 'member_name', e.target.value)}
+                      className={inputClass}
+                    />
+                  </div>
                   <div>
                     <label className={labelClass}>Relationship</label>
                     <Select
@@ -790,15 +781,16 @@ export default function AddHealthInsurance() {
                   </div>
                   <div className="flex items-start gap-3">
                     <div className="flex-1">
-                      <Input
-                        label="Age"
-                        name={`member_age_${index}`}
-                        placeholder="Enter Age"
-                        value={member.member_age}
-                        onChange={(e: any) => updateMember(member.id, 'member_age', e.target.value)}
-                        className={inputClass}
-                        labelClassName={labelClass}
-                      />
+                      <div>
+                        <label className={labelClass}>Age</label>
+                        <input
+                          type="text"
+                          placeholder="Enter Age"
+                          value={member.member_age}
+                          onChange={(e: any) => updateMember(member.id, 'member_age', e.target.value)}
+                          className={inputClass}
+                        />
+                      </div>
                     </div>
                     {members.length > 1 && (
                       <button
@@ -821,16 +813,16 @@ export default function AddHealthInsurance() {
             <div className={sectionHeaderClass}>
               <NoteIcon /> Note Details
             </div>
-            <Input
-              as="textarea"
-              label="Note"
-              name="note"
-              placeholder="Sample note for health policy"
-              value={formData.note}
-              onChange={(e: any) => handleChange('note', e.target.value)}
-              className={inputClass}
-              labelClassName={labelClass}
-            />
+            <div>
+              <label className={labelClass}>Note</label>
+              <textarea
+                rows={4}
+                placeholder="Sample note for health policy"
+                value={formData.note}
+                onChange={(e: any) => handleChange('note', e.target.value)}
+                className={inputClass}
+              />
+            </div>
           </div>
 
           {/* Additional Document Information */}

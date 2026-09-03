@@ -6,6 +6,7 @@ import TableHeader from '@/components/ui/TableHeader';
 import AgencyCodeModal, { AgencyCodeFormData } from '@/components/agency-code/AgencyCodeModal';
 import { useLifeCompanyDropdownList, useLifeAgencyCodeList, useLifeAgencyCodeActions } from '@/hooks/useAgencyCodeApi';
 import { getAgencyCodeColumns } from '@/utils/tableColumns';
+import { validateAgencyCode } from '@/utils/validation';
 
 export default function LifeAgencyCodeList() {
   const [page, setPage] = useState<number>(1);
@@ -116,12 +117,9 @@ export default function LifeAgencyCodeList() {
   };
 
   const validate = () => {
-    const newErrors: Record<string, string> = {};
-    if (!formData.company_id) newErrors.company_id = 'Company is required';
-    if (!formData.name.trim()) newErrors.name = 'Name is required';
-    if (!formData.code.trim()) newErrors.code = 'Agency Code is required';
+    const { isValid, errors: newErrors } = validateAgencyCode(formData);
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return isValid;
   };
 
   const handleSubmit = async () => {

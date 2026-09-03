@@ -39,19 +39,27 @@ export default function CompanyModal({
           </button>
         </div>
         <div className="p-6">
-          <Input
-            label="Company Name"
-            name="companyName"
-            required
-            placeholder="Enter Company Name"
-            value={companyName}
-            onChange={(e: any) => {
-              setCompanyName(e.target.value);
-              if (companyNameError) setCompanyNameError('');
-            }}
-            error={companyNameError}
-            labelClassName="text-[13px] font-semibold text-gray-700"
-          />
+          <div>
+            <label className="text-[13px] font-semibold text-gray-700 mb-1.5 block">
+              Company Name <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="companyName"
+              placeholder="Enter Company Name"
+              value={companyName}
+              onChange={(e: any) => {
+                setCompanyName(e.target.value);
+                if (companyNameError) setCompanyNameError('');
+              }}
+              className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#2D3591]/20 focus:border-[#2D3591] transition-all bg-white shadow-sm placeholder:text-gray-400 ${
+                companyNameError ? '!border-red-500 ring-2 ring-red-500/20' : ''
+              }`}
+            />
+            {companyNameError && (
+              <p className="text-xs text-red-500 mt-1 font-medium">{companyNameError}</p>
+            )}
+          </div>
         </div>
         <ActionButtons 
           onCancel={onClose}
