@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
-import { Plus, Minus, ArrowLeft } from 'lucide-react';
+import { Plus, Minus, ArrowLeft, Sparkles, User, FileText, Shield, Users, BookOpen } from 'lucide-react';
 import { useRouter } from 'next/router';
+import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import DatePicker from '@/components/ui/DatePicker';
+import FileUpload from '@/components/ui/FileUpload';
 import { toast } from 'react-toastify';
 import { api } from '@/utils/axiosInstance';
 import endPointApi from '@/utils/endPointApi';
@@ -56,13 +58,14 @@ export default function AddHealthInsurance() {
     deductable: '',
     claim: '',
     net_premium: '',
-    gst_amount: '0',
-    total_premium: '0',
+    gst_amount: '',
+    total_premium: '',
     note: '',
   });
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [policyPdf, setPolicyPdf] = useState<File | null>(null);
+  const [existingPolicyPdfUrl, setExistingPolicyPdfUrl] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Fetch company plans based on selected company_id
@@ -82,30 +85,30 @@ export default function AddHealthInsurance() {
   ]);
 
   const addMember = () => {
-    setMembers([
-      ...members,
+    setMembers(prev => [
+      ...prev,
       { id: Date.now(), member_name: '', member_relationship: '', member_dob: '', member_age: '' }
     ]);
   };
 
   const removeMember = (id: number) => {
     if (members.length > 1) {
-      setMembers(members.filter(m => m.id !== id));
+      setMembers(prev => prev.filter(m => m.id !== id));
     }
   };
 
   const updateMember = (id: number, field: string, value: any) => {
-    setMembers(members.map(m => m.id === id ? { ...m, [field]: value } : m));
+    setMembers(prev => prev.map(m => m.id === id ? { ...m, [field]: value } : m));
   };
 
   // Documents state
   const [documents, setDocuments] = useState([
-    { id: 1, document_name: '', document_file: null as File | null }
+    { id: 1, document_name: '', document_file: null as File | null, existing_image_url: null as string | null }
   ]);
 
   const addDocument = () => {
     if (documents.length < maxDocumentsAllowed) {
-      setDocuments([...documents, { id: Date.now(), document_name: '', document_file: null }]);
+      setDocuments(prev => [...prev, { id: Date.now(), document_name: '', document_file: null, existing_image_url: null }]);
     } else {
       toast.warning(`Maximum ${maxDocumentsAllowed} documents allowed`);
     }
@@ -113,12 +116,12 @@ export default function AddHealthInsurance() {
 
   const removeDocument = (id: number) => {
     if (documents.length > 1) {
-      setDocuments(documents.filter(d => d.id !== id));
+      setDocuments(prev => prev.filter(d => d.id !== id));
     }
   };
 
   const updateDocument = (id: number, field: string, value: any) => {
-    setDocuments(documents.map(d => d.id === id ? { ...d, [field]: value } : d));
+    setDocuments(prev => prev.map(d => d.id === id ? { ...d, [field]: value } : d));
   };
 
   // Prefill edit data if editing existing health insurance policy
@@ -185,6 +188,11 @@ export default function AddHealthInsurance() {
             total_premium: String(item.total_premium ?? '0').trim(),
             note: String(item.note || item.remarks || '').trim(),
           }));
+
+          const pdfFile = item.policy_pdf || item.policy_pdf_path || item.policy_file || item.policy_doc || item.policy_pdf_url;
+          if (pdfFile) {
+            setExistingPolicyPdfUrl(String(pdfFile));
+          }
 
           // Parse Insured Members
           let rawMembers: any = item.members || item.member_list || item.insured_members || item.member || item.members_list || item.health_insurance_members || item.insured_member || item.member_details || item.insured_member_list;
@@ -253,12 +261,14 @@ export default function AddHealthInsurance() {
               id: idx + 1,
               document_name: String(d.other_document_name || d.document_name || d.name || d.document_id || d.id || ''),
               document_file: null,
+              existing_image_url: d.other_document_image || d.document_image || d.image || d.file || d.path || d.image_url || d.url || null
             }));
           } else if (Array.isArray(item.other_document_name)) {
             parsedDocs = item.other_document_name.map((docName: string, idx: number) => ({
               id: idx + 1,
               document_name: String(docName || ''),
               document_file: null,
+              existing_image_url: item.other_document_image?.[idx] || null
             }));
           } else if (item.other_document_name && typeof item.other_document_name === 'string') {
             const docNames = item.other_document_name.split(',').map((s: string) => s.trim());
@@ -266,6 +276,7 @@ export default function AddHealthInsurance() {
               id: idx + 1,
               document_name: String(docName),
               document_file: null,
+              existing_image_url: null
             }));
           }
 
@@ -345,45 +356,35 @@ export default function AddHealthInsurance() {
     }
   };
 
-  const sectionHeaderClass = "bg-[#EEF1FA] text-[#2B4399] px-5 py-3 text-[15px] font-bold rounded-lg flex items-center gap-2 mb-5";
+  const sectionHeaderClass = "bg-[#EEF1FA] text-[#2B4399] px-5 py-3 text-[15px] font-bold rounded-xl flex items-center justify-between gap-2 mb-6 border-l-4 border-[#2B4399]";
   const labelClass = "text-[13px] font-bold text-gray-700 mb-1.5 block";
-  const inputClass = "w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#2D3591]/20 focus:border-[#2D3591] transition-all bg-white shadow-sm placeholder:text-gray-400";
-  const getSelectClass = (fieldName: string) => `${inputClass} ${errors[fieldName] ? '!border-red-500 ring-2 ring-red-500/20' : ''}`;
+  const selectClass = "w-full h-[42px] px-3.5 py-2 border border-gray-300 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#2B4399]/20 focus:border-[#2B4399] transition-all bg-white shadow-2xs";
 
   return (
-    <div className="bg-[#f8fafc] min-h-[calc(100vh-72px-56px)] p-0">
+    <div className="bg-[#f8fafc] min-h-screen p-4 sm:p-6 lg:p-0">
       <Head>
         <title>{id ? 'Edit Health Insurance' : 'Add Health Insurance'} - Insuraa</title>
-        <style>{`
-          body {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-          }
-          body::-webkit-scrollbar {
-            display: none;
-          }
-        `}</style>
       </Head>
 
-      <div className="w-full mx-auto animate-in fade-in duration-500 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+      <div className="w-full mx-auto animate-in fade-in duration-500 bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-gray-200/80">
 
         {/* Page Header */}
-        <div className="sticky top-0 z-40 bg-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200 pb-5 mb-8 pt-6 -mt-6 -mx-6 px-6 rounded-t-xl">
+        <div className="sticky top-0 z-40 backdrop-blur-md bg-white/90 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200/80 pb-5 mb-8 pt-4 -mt-6 -mx-6 px-6 rounded-t-2xl">
           <div className="flex items-center gap-3 font-bold text-gray-900">
-            <button onClick={() => router.back()} type="button" className="p-2 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors" title="Go Back">
+            <button onClick={() => router.back()} type="button" className="p-2 border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors shadow-2xs" title="Go Back">
               <ArrowLeft size={18} />
             </button>
-            <h1 className="text-xl">{id ? 'Edit Health Insurance' : 'Add Health Insurance'}</h1>
+            <h1 className="text-xl font-bold tracking-tight text-gray-900">{id ? 'Edit Health Insurance' : 'Add Health Insurance'}</h1>
           </div>
           <div className="flex items-center gap-3 w-full sm:w-auto">
-            <button type="button" onClick={() => router.back()} className="flex-1 sm:flex-none px-5 py-2.5 border border-gray-300 rounded-lg text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors">
+            <button type="button" onClick={() => router.back()} className="flex-1 sm:flex-none px-5 py-2.5 border border-gray-300 rounded-xl text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors shadow-2xs">
               Cancel
             </button>
             <button
               type="button"
               onClick={() => handleSubmit()}
               disabled={isSubmitting}
-              className="flex-1 sm:flex-none bg-[#2B4399] text-white px-6 py-2.5 rounded-lg text-sm font-bold hover:bg-[#203378] transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
+              className="flex-1 sm:flex-none bg-[#2B4399] text-white px-7 py-2.5 rounded-xl text-sm font-bold hover:bg-[#203378] transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {isSubmitting ? 'Saving...' : 'Save Insurance'}
             </button>
@@ -391,39 +392,33 @@ export default function AddHealthInsurance() {
         </div>
 
         {/* Form Content */}
-        <form className="space-y-8 bg-white" onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="space-y-9 bg-white">
 
           {/* Customer Information */}
-          <div>
+          <div className="bg-white rounded-2xl border border-gray-200/80 p-5 sm:p-6 shadow-2xs">
             <div className={sectionHeaderClass}>
-              <UserIcon /> Customer Information
+              <div className="flex items-center gap-2">
+                <User size={18} />
+                <span>Customer Information</span>
+              </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-5">
-              <div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="lg:col-span-2">
                 <div className="flex justify-between items-center mb-1.5">
-                  <label className="text-[13px] font-bold text-gray-700">Customer Name <span className="text-red-500">*</span></label>
+                  <label className={labelClass}>Customer Name <span className="text-red-500">*</span></label>
                   <button type="button" onClick={() => router.push('/customers/add')} className="text-xs text-[#2B4399] font-bold hover:underline">Add Customer</button>
                 </div>
                 <Select
-                  className={getSelectClass('customer_id')}
+                  className={`${selectClass} ${errors.customer_id ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
                   value={formData.customer_id}
                   onChange={(e: any) => handleChange('customer_id', e.target.value)}
                 >
                   <option value="">Select Customer Name</option>
                   {customerList.map((cust: any) => {
                     const custId = cust.customer_id || cust.id;
-                    let rawName = '';
-                    if (cust.first_name || cust.last_name) {
-                      const fn = String(cust.first_name || '').replace(/,/g, '').trim();
-                      const ln = String(cust.last_name || '').replace(/,/g, '').trim();
-                      rawName = `${fn} ${ln}`.trim();
-                    }
-                    if (!rawName) {
-                      rawName = String(cust.full_name || cust.name || cust.customer_name || `Customer #${custId}`);
-                    }
-                    const custName = rawName.replace(/,/g, '').replace(/\s+/g, ' ').trim();
-                    const cleanMobile = (cust.customer_number || cust.mobile) ? String(cust.customer_number || cust.mobile).replace(/,/g, '').trim() : '';
-                    const optionLabel = cleanMobile ? `${custName} (${cleanMobile})` : custName;
+                    const custName = cust.full_name || `Customer #${custId}`;
+                    const phone = cust.number || '';
+                    const optionLabel = phone ? `${custName} (${phone})` : custName;
                     return (
                       <option key={custId} value={String(custId)}>
                         {optionLabel}
@@ -431,46 +426,63 @@ export default function AddHealthInsurance() {
                     );
                   })}
                 </Select>
-                {errors.customer_id && <p className="text-xs text-red-500 mt-1 font-medium">{errors.customer_id}</p>}
+                {errors.customer_id && <p className="text-xs text-red-500 font-semibold mt-1">{errors.customer_id}</p>}
               </div>
             </div>
           </div>
 
           {/* Policy PDF Details */}
-          <div>
+          <div className="bg-white rounded-2xl border border-gray-200/80 p-5 sm:p-6 shadow-2xs">
             <div className={sectionHeaderClass}>
-              <FileIcon /> Policy PDF Details
+              <div className="flex items-center gap-2">
+                <FileText size={18} />
+                <span>Policy PDF Details</span>
+              </div>
             </div>
             <div className="space-y-4">
               <div>
-                <label className={labelClass}>Upload Policy</label>
+                <label className={labelClass}>Upload Policy PDF</label>
                 <div className="flex items-center gap-4">
-                  <input
-                    type="file"
-                    onChange={(e) => setPolicyPdf(e.target.files?.[0] || null)}
-                    className="h-[46px] border border-gray-300 rounded-lg text-sm px-4 py-2.5 w-full max-w-md file:mr-4 file:py-1 file:px-4 file:rounded file:border-0 file:text-sm file:font-bold file:bg-gray-100 hover:file:bg-gray-200 cursor-pointer shadow-sm"
-                  />
-                  <button type="button" className="h-[46px] bg-[var(--primary)] text-white px-10 rounded-lg text-sm font-bold hover:bg-[#203378] transition-colors shadow-sm flex items-center justify-center">AI</button>
+                  <div className="flex-1 max-w-xl">
+                    <FileUpload
+                      name="policy_pdf"
+                      accept=".pdf,.doc,.docx,image/*"
+                      file={policyPdf}
+                      existingUrl={existingPolicyPdfUrl}
+                      onChange={(file) => setPolicyPdf(file)}
+                      placeholder="Click or drag Policy PDF file to upload"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    className="h-[46px] bg-[#2B4399] text-white px-6 rounded-xl text-sm font-bold hover:bg-[#203378] transition-colors shadow-2xs flex items-center justify-center gap-2 shrink-0"
+                  >
+                    <Sparkles size={16} />
+                    <span>AI</span>
+                  </button>
                 </div>
               </div>
-              <div className="bg-red-50 text-[#cf3838] p-4 rounded-lg text-xs border border-red-100 font-semibold leading-relaxed">
+              <div className="bg-red-50/70 text-[#cf3838] p-4 rounded-xl text-xs border border-red-100 font-semibold leading-relaxed">
                 Note: After Uploading The Policy PDF And Clicking The AI Button, The Form Will Be Auto-Filled. Please Review And Verify All Details Carefully, As AI-Generated Data May Not Be Fully Accurate, Before Saving Or Submitting.
               </div>
             </div>
           </div>
 
-          {/* Insurance Information */}
-          <div>
+          {/* Insurance Information (Strict 4 Fields Per Row Grid) */}
+          <div className="bg-white rounded-2xl border border-gray-200/80 p-5 sm:p-6 shadow-2xs">
             <div className={sectionHeaderClass}>
-              <ShieldIcon /> Insurance Information
+              <div className="flex items-center gap-2">
+                <Shield size={18} />
+                <span>Insurance Information</span>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-5 items-start">
-
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {/* Row 1 */}
               <div>
                 <label className={labelClass}>Insurance Company Name <span className="text-red-500">*</span></label>
                 <Select
-                  className={getSelectClass('companies_id')}
+                  className={`${selectClass} ${errors.companies_id ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
                   value={formData.companies_id}
                   onChange={(e: any) => {
                     handleChange('companies_id', e.target.value);
@@ -484,14 +496,13 @@ export default function AddHealthInsurance() {
                     </option>
                   ))}
                 </Select>
-                {errors.companies_id && <p className="text-xs text-red-500 mt-1 font-medium">{errors.companies_id}</p>}
+                {errors.companies_id && <p className="text-xs text-red-500 font-semibold mt-1">{errors.companies_id}</p>}
               </div>
 
               <div>
                 <label className={labelClass}>Company Agency Code</label>
-                <input
-                  type="text"
-                  className={inputClass}
+                <Input
+                  name="companies_agency_code"
                   placeholder="Enter Company Agency Code"
                   value={formData.companies_agency_code}
                   onChange={(e: any) => handleChange('companies_agency_code', e.target.value)}
@@ -501,7 +512,7 @@ export default function AddHealthInsurance() {
               <div>
                 <label className={labelClass}>Plan Name <span className="text-red-500">*</span></label>
                 <Select
-                  className={getSelectClass('plan_name')}
+                  className={`${selectClass} ${errors.plan_name ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
                   value={formData.plan_name}
                   onChange={(e: any) => handleChange('plan_name', e.target.value)}
                 >
@@ -512,13 +523,13 @@ export default function AddHealthInsurance() {
                     </option>
                   ))}
                 </Select>
-                {errors.plan_name && <p className="text-xs text-red-500 mt-1 font-medium">{errors.plan_name}</p>}
+                {errors.plan_name && <p className="text-xs text-red-500 font-semibold mt-1">{errors.plan_name}</p>}
               </div>
 
               <div>
                 <label className={labelClass}>Insurance Type <span className="text-red-500">*</span></label>
                 <Select
-                  className={getSelectClass('insurance_type')}
+                  className={`${selectClass} ${errors.insurance_type ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
                   value={formData.insurance_type}
                   onChange={(e: any) => handleChange('insurance_type', e.target.value)}
                 >
@@ -529,13 +540,14 @@ export default function AddHealthInsurance() {
                     </option>
                   ))}
                 </Select>
-                {errors.insurance_type && <p className="text-xs text-red-500 mt-1 font-medium">{errors.insurance_type}</p>}
+                {errors.insurance_type && <p className="text-xs text-red-500 font-semibold mt-1">{errors.insurance_type}</p>}
               </div>
 
+              {/* Row 2 */}
               <div>
                 <label className={labelClass}>Payment Mode <span className="text-red-500">*</span></label>
                 <Select
-                  className={getSelectClass('payment_mode')}
+                  className={`${selectClass} ${errors.payment_mode ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
                   value={formData.payment_mode}
                   onChange={(e: any) => handleChange('payment_mode', e.target.value)}
                 >
@@ -546,58 +558,58 @@ export default function AddHealthInsurance() {
                     </option>
                   ))}
                 </Select>
-                {errors.payment_mode && <p className="text-xs text-red-500 mt-1 font-medium">{errors.payment_mode}</p>}
+                {errors.payment_mode && <p className="text-xs text-red-500 font-semibold mt-1">{errors.payment_mode}</p>}
               </div>
 
               <div>
                 <label className={labelClass}>Policy Number <span className="text-red-500">*</span></label>
-                <input
-                  type="text"
-                  className={getSelectClass('policy_number')}
+                <Input
+                  name="policy_number"
                   placeholder="Enter Policy Number"
                   value={formData.policy_number}
                   onChange={(e: any) => handleChange('policy_number', e.target.value)}
+                  error={errors.policy_number}
                 />
-                {errors.policy_number && <p className="text-xs text-red-500 mt-1 font-medium">{errors.policy_number}</p>}
               </div>
 
               <div>
                 <label className={labelClass}>Policy Login Date <span className="text-red-500">*</span></label>
                 <DatePicker
-                  className={getSelectClass('policy_login_date')}
+                  className={`${selectClass} ${errors.policy_login_date ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
                   value={formData.policy_login_date}
                   onChange={(date) => handleChange('policy_login_date', date)}
                   placeholder="Select Policy Login Date"
                 />
-                {errors.policy_login_date && <p className="text-xs text-red-500 mt-1 font-medium">{errors.policy_login_date}</p>}
+                {errors.policy_login_date && <p className="text-xs text-red-500 font-semibold mt-1">{errors.policy_login_date}</p>}
               </div>
 
               <div>
                 <label className={labelClass}>Policy Start Date <span className="text-red-500">*</span></label>
                 <DatePicker
-                  className={getSelectClass('policy_start_date')}
+                  className={`${selectClass} ${errors.policy_start_date ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
                   value={formData.policy_start_date}
                   onChange={(date) => handleChange('policy_start_date', date)}
                   placeholder="Select Policy Start Date"
                 />
-                {errors.policy_start_date && <p className="text-xs text-red-500 mt-1 font-medium">{errors.policy_start_date}</p>}
+                {errors.policy_start_date && <p className="text-xs text-red-500 font-semibold mt-1">{errors.policy_start_date}</p>}
               </div>
 
+              {/* Row 3 */}
               <div>
                 <label className={labelClass}>Policy End Date <span className="text-red-500">*</span></label>
                 <DatePicker
-                  className={getSelectClass('policy_end_date')}
+                  className={`${selectClass} ${errors.policy_end_date ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
                   value={formData.policy_end_date}
                   onChange={(date) => handleChange('policy_end_date', date)}
                   placeholder="Select Policy End Date"
                 />
-                {errors.policy_end_date && <p className="text-xs text-red-500 mt-1 font-medium">{errors.policy_end_date}</p>}
+                {errors.policy_end_date && <p className="text-xs text-red-500 font-semibold mt-1">{errors.policy_end_date}</p>}
               </div>
 
               <div>
                 <label className={labelClass}>Policy Inspection Date</label>
                 <DatePicker
-                  className={inputClass}
+                  className={selectClass}
                   value={formData.policy_inspection_date}
                   onChange={(date) => handleChange('policy_inspection_date', date)}
                   placeholder="Select Policy Inspection Date"
@@ -607,7 +619,7 @@ export default function AddHealthInsurance() {
               <div>
                 <label className={labelClass}>Plan Type <span className="text-red-500">*</span></label>
                 <Select
-                  className={getSelectClass('plan_type')}
+                  className={`${selectClass} ${errors.plan_type ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
                   value={formData.plan_type}
                   onChange={(e: any) => handleChange('plan_type', e.target.value)}
                 >
@@ -618,26 +630,25 @@ export default function AddHealthInsurance() {
                     </option>
                   ))}
                 </Select>
-                {errors.plan_type && <p className="text-xs text-red-500 mt-1 font-medium">{errors.plan_type}</p>}
+                {errors.plan_type && <p className="text-xs text-red-500 font-semibold mt-1">{errors.plan_type}</p>}
               </div>
 
               <div>
                 <label className={labelClass}>Sum Assured <span className="text-red-500">*</span></label>
-                <input
-                  type="text"
-                  className={getSelectClass('sum_assured')}
+                <Input
+                  name="sum_assured"
                   placeholder="Enter Sum Assured"
                   value={formData.sum_assured}
                   onChange={(e: any) => handleChange('sum_assured', e.target.value)}
+                  error={errors.sum_assured}
                 />
-                {errors.sum_assured && <p className="text-xs text-red-500 mt-1 font-medium">{errors.sum_assured}</p>}
               </div>
 
+              {/* Row 4 */}
               <div>
                 <label className={labelClass}>Bonus</label>
-                <input
-                  type="text"
-                  className={inputClass}
+                <Input
+                  name="bonus"
                   placeholder="Enter Bonus"
                   value={formData.bonus}
                   onChange={(e: any) => handleChange('bonus', e.target.value)}
@@ -647,7 +658,7 @@ export default function AddHealthInsurance() {
               <div>
                 <label className={labelClass}>Health Check Up</label>
                 <Select
-                  className={inputClass}
+                  className={selectClass}
                   value={formData.health_check_up}
                   onChange={(e: any) => handleChange('health_check_up', e.target.value)}
                 >
@@ -662,9 +673,8 @@ export default function AddHealthInsurance() {
 
               <div>
                 <label className={labelClass}>Health Check Up Amount</label>
-                <input
-                  type="text"
-                  className={inputClass}
+                <Input
+                  name="health_check_up_amount"
                   placeholder="Enter Health Check Up Amount"
                   value={formData.health_check_up_amount}
                   onChange={(e: any) => handleChange('health_check_up_amount', e.target.value)}
@@ -673,20 +683,19 @@ export default function AddHealthInsurance() {
 
               <div>
                 <label className={labelClass}>Deductable</label>
-                <input
-                  type="text"
-                  className={inputClass}
+                <Input
+                  name="deductable"
                   placeholder="Enter Deductable"
                   value={formData.deductable}
                   onChange={(e: any) => handleChange('deductable', e.target.value)}
                 />
               </div>
 
+              {/* Row 5 */}
               <div>
                 <label className={labelClass}>Claim</label>
-                <input
-                  type="text"
-                  className={inputClass}
+                <Input
+                  name="claim"
                   placeholder="Enter Claim"
                   value={formData.claim}
                   onChange={(e: any) => handleChange('claim', e.target.value)}
@@ -695,21 +704,19 @@ export default function AddHealthInsurance() {
 
               <div>
                 <label className={labelClass}>Net Premium <span className="text-red-500">*</span></label>
-                <input
-                  type="text"
-                  className={getSelectClass('net_premium')}
+                <Input
+                  name="net_premium"
                   placeholder="Enter Net Premium"
                   value={formData.net_premium}
                   onChange={(e: any) => handleChange('net_premium', e.target.value)}
+                  error={errors.net_premium}
                 />
-                {errors.net_premium && <p className="text-xs text-red-500 mt-1 font-medium">{errors.net_premium}</p>}
               </div>
 
               <div>
                 <label className={labelClass}>GST Amount</label>
-                <input
-                  type="text"
-                  className={inputClass}
+                <Input
+                  name="gst_amount"
                   placeholder="Enter GST Amount"
                   value={formData.gst_amount}
                   onChange={(e: any) => handleChange('gst_amount', e.target.value)}
@@ -718,47 +725,43 @@ export default function AddHealthInsurance() {
 
               <div>
                 <label className={labelClass}>Total Premium <span className="text-red-500">*</span></label>
-                <input
-                  type="text"
-                  className={getSelectClass('total_premium')}
+                <Input
+                  name="total_premium"
                   placeholder="Enter Total Premium"
                   value={formData.total_premium}
                   onChange={(e: any) => handleChange('total_premium', e.target.value)}
+                  error={errors.total_premium}
                 />
-                {errors.total_premium && <p className="text-xs text-red-500 mt-1 font-medium">{errors.total_premium}</p>}
               </div>
 
             </div>
           </div>
 
-          {/* Insured Members Information */}
-          <div>
-            <div className="flex items-center justify-between bg-[#EEF1FA] text-[#2B4399] px-5 py-3 rounded-lg mb-5">
-              <div className="flex items-center gap-2 text-[15px] font-bold">
-                <UsersIcon /> Insured Members
+          {/* Insured Members Information (Exact 4 Columns Row with Square Icon Button) */}
+          <div className="bg-white rounded-2xl border border-gray-200/80 p-5 sm:p-6 shadow-2xs">
+            <div className={sectionHeaderClass}>
+              <div className="flex items-center gap-2">
+                <Users size={18} />
+                <span>Insured Members</span>
               </div>
-              <button type="button" onClick={addMember} className="bg-[#2B4399] text-white p-1.5 rounded-md hover:bg-[#203378] transition-colors shadow-sm">
-                <Plus size={16} />
-              </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-5">
               {members.map((member, index) => (
-                <div key={member.id} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-start bg-gray-50/50 p-4 rounded-xl border border-gray-200/80 relative">
+                <div key={member.id} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 items-end">
                   <div>
                     <label className={labelClass}>Member Name</label>
-                    <input
-                      type="text"
+                    <Input
+                      name={`member_name_${member.id}`}
                       placeholder="Enter Member Name"
                       value={member.member_name}
                       onChange={(e: any) => updateMember(member.id, 'member_name', e.target.value)}
-                      className={inputClass}
                     />
                   </div>
                   <div>
                     <label className={labelClass}>Relationship</label>
                     <Select
-                      className={inputClass}
+                      className={selectClass}
                       value={member.member_relationship}
                       onChange={(e: any) => updateMember(member.id, 'member_relationship', e.target.value)}
                     >
@@ -773,33 +776,39 @@ export default function AddHealthInsurance() {
                   <div>
                     <label className={labelClass}>DOB</label>
                     <DatePicker
-                      className={inputClass}
+                      className={selectClass}
                       value={member.member_dob}
                       onChange={(date) => updateMember(member.id, 'member_dob', date)}
                       placeholder="Select DOB"
                     />
                   </div>
-                  <div className="flex items-start gap-3">
-                    <div className="flex-1">
-                      <div>
-                        <label className={labelClass}>Age</label>
-                        <input
-                          type="text"
-                          placeholder="Enter Age"
-                          value={member.member_age}
-                          onChange={(e: any) => updateMember(member.id, 'member_age', e.target.value)}
-                          className={inputClass}
-                        />
-                      </div>
-                    </div>
-                    {members.length > 1 && (
+                  <div>
+                    <label className={labelClass}>Age</label>
+                    <Input
+                      name={`member_age_${member.id}`}
+                      placeholder="Enter Age"
+                      value={member.member_age}
+                      onChange={(e: any) => updateMember(member.id, 'member_age', e.target.value)}
+                    />
+                  </div>
+                  <div className="flex items-center">
+                    {index === 0 ? (
+                      <button
+                        type="button"
+                        onClick={addMember}
+                        className="w-[42px] h-[42px] bg-[#2B4399] hover:bg-[#203378] text-white rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
+                        title="Add Member"
+                      >
+                        <Plus size={20} />
+                      </button>
+                    ) : (
                       <button
                         type="button"
                         onClick={() => removeMember(member.id)}
-                        className="bg-[#cf3838] text-white p-2.5 rounded-lg hover:bg-[#a12828] transition-colors shrink-0 shadow-sm mt-7"
+                        className="w-[42px] h-[42px] bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
                         title="Remove Member"
                       >
-                        <Minus size={18} />
+                        <Minus size={20} />
                       </button>
                     )}
                   </div>
@@ -809,40 +818,41 @@ export default function AddHealthInsurance() {
           </div>
 
           {/* Note Details */}
-          <div>
+          <div className="bg-white rounded-2xl border border-gray-200/80 p-5 sm:p-6 shadow-2xs">
             <div className={sectionHeaderClass}>
-              <NoteIcon /> Note Details
+              <div className="flex items-center gap-2">
+                <BookOpen size={18} />
+                <span>Note Details</span>
+              </div>
             </div>
             <div>
               <label className={labelClass}>Note</label>
-              <textarea
-                rows={4}
+              <Input
+                as="textarea"
+                name="note"
                 placeholder="Sample note for health policy"
                 value={formData.note}
                 onChange={(e: any) => handleChange('note', e.target.value)}
-                className={inputClass}
               />
             </div>
           </div>
 
-          {/* Additional Document Information */}
-          <div>
-            <div className="flex items-center justify-between bg-[#EEF1FA] text-[#2B4399] px-5 py-3 rounded-lg mb-5">
-              <div className="flex items-center gap-2 text-[15px] font-bold">
-                <FileIcon /> Additional Document Information
+          {/* Additional Document Information (Clean Tight Flex Container) */}
+          <div className="bg-white rounded-2xl border border-gray-200/80 p-5 sm:p-6 shadow-2xs">
+            <div className={sectionHeaderClass}>
+              <div className="flex items-center gap-2">
+                <FileText size={18} />
+                <span>Additional Document Information</span>
               </div>
-              <button type="button" onClick={addDocument} className="bg-[#2B4399] text-white p-1.5 rounded-md hover:bg-[#203378] transition-colors shadow-sm">
-                <Plus size={16} />
-              </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-5">
               {documents.map((doc, index) => (
-                <div key={doc.id} className="flex items-start gap-4">
-                  <div className="flex-[2]">
+                <div key={doc.id} className="flex flex-col sm:flex-row items-end gap-4">
+                  <div className="w-full sm:w-1/3">
                     <label className={labelClass}>Document Name</label>
                     <Select
-                      className={inputClass}
+                      className={selectClass}
                       value={doc.document_name}
                       onChange={(e: any) => updateDocument(doc.id, 'document_name', e.target.value)}
                     >
@@ -854,19 +864,37 @@ export default function AddHealthInsurance() {
                       ))}
                     </Select>
                   </div>
-                  <div className="flex-1">
-                    <label className={labelClass}>Upload File</label>
-                    <input
-                      type="file"
-                      onChange={(e) => updateDocument(doc.id, 'document_file', e.target.files?.[0] || null)}
-                      className="border border-gray-300 rounded-lg text-sm px-4 py-2 w-full file:mr-4 file:py-1 file:px-4 file:rounded file:border-0 file:text-sm file:font-bold file:bg-gray-100 hover:file:bg-gray-200 cursor-pointer shadow-sm bg-white"
+                  <div className="flex-1 w-full">
+                    <FileUpload
+                      label="Upload Image/Document"
+                      name={`document_file_${doc.id}`}
+                      file={doc.document_file}
+                      existingUrl={(doc as any).existing_image_url}
+                      onChange={(file) => updateDocument(doc.id, 'document_file', file)}
+                      placeholder="Click or drag image to upload"
                     />
                   </div>
-                  {documents.length > 1 && (
-                    <button type="button" onClick={() => removeDocument(doc.id)} className="bg-[#cf3838] text-white p-2.5 rounded-lg hover:bg-[#a12828] transition-colors shrink-0 shadow-sm mt-7">
-                      <Minus size={18} />
-                    </button>
-                  )}
+                  <div className="shrink-0 pb-[2px]">
+                    {index === 0 ? (
+                      <button
+                        type="button"
+                        onClick={addDocument}
+                        className="w-[42px] h-[42px] bg-[#2B4399] hover:bg-[#203378] text-white rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
+                        title="Add Document"
+                      >
+                        <Plus size={20} />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => removeDocument(doc.id)}
+                        className="w-[42px] h-[42px] bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
+                        title="Remove Document"
+                      >
+                        <Minus size={20} />
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -876,21 +904,4 @@ export default function AddHealthInsurance() {
       </div>
     </div>
   );
-}
-
-// Icons matching theme
-function UserIcon() {
-  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
-}
-function UsersIcon() {
-  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
-}
-function FileIcon() {
-  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" /></svg>
-}
-function ShieldIcon() {
-  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
-}
-function NoteIcon() {
-  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
 }

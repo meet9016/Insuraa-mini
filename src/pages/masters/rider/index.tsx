@@ -5,6 +5,7 @@ import AgGridTable from '@/components/ui/tableaggrid/AgGridTable';
 import ActionButtons from '@/components/ui/ActionButtons';
 import TableHeader from '@/components/ui/TableHeader';
 import DeleteConfirmationModal from '@/components/ui/DeleteConfirmationModal';
+import Input from '@/components/ui/Input';
 import { useRiderList, useRiderActions } from '@/hooks/useRiderApi';
 import { getRiderColumns } from '@/utils/tableColumns';
 import { validateRider } from '@/utils/validation';
@@ -191,27 +192,26 @@ export default function RiderList() {
             </div>
 
             <div className="p-6">
-              <div>
-                <label className="text-[13px] font-semibold text-gray-700 mb-1.5 block">
-                  Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  placeholder="Enter Rider Name"
-                  value={newName}
-                  onChange={(e: any) => {
-                    setNewName(e.target.value);
-                    if (nameError) setNameError('');
-                  }}
-                  className={`w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#2D3591]/20 focus:border-[#2D3591] transition-all bg-white shadow-sm placeholder:text-gray-400 ${
-                    nameError ? '!border-red-500 ring-2 ring-red-500/20' : ''
-                  }`}
-                />
-                {nameError && (
-                  <p className="text-xs text-red-500 mt-1 font-medium">{nameError}</p>
-                )}
-              </div>
+              <Input
+                label="Name"
+                required
+                name="name"
+                placeholder="Enter Rider Name"
+                value={newName}
+                onChange={(e: any) => {
+                  const val = e.target.value;
+                  setNewName(val);
+                  if (nameError) {
+                    setNameError(validateRider(val));
+                  }
+                }}
+                onBlur={() => {
+                  if (nameError || newName) {
+                    setNameError(validateRider(newName));
+                  }
+                }}
+                error={nameError}
+              />
             </div>
 
             <ActionButtons

@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
-import { Plus, Minus, ArrowLeft } from 'lucide-react';
+import { Plus, Minus, ArrowLeft, Sparkles, User, FileText, Shield, Settings, Users, Building2, BookOpen } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import DatePicker from '@/components/ui/DatePicker';
+import FileUpload from '@/components/ui/FileUpload';
 import { toast } from 'react-toastify';
 import { api } from '@/utils/axiosInstance';
 import endPointApi from '@/utils/endPointApi';
 import { validateLifeInsurance } from '@/utils/validation';
-
 import { useCustomerList } from '@/hooks/useCustomerApi';
 import {
   useLifeInsuranceActions,
@@ -44,23 +45,23 @@ export default function AddLifeInsurance() {
     companies_agency_code: '',
     plan_name: '',
     branch: '',
-    payment_mode: '1',
+    payment_mode: '',
     policy_number: '',
-    policy_premium_term: '1',
-    policy_term: '1',
+    policy_premium_term: '',
+    policy_term: '',
     policy_login_date: '',
     policy_start_date: '',
     policy_end_date: '',
     policy_maturity_date: '',
     maturity_amount: '',
-    plan_type: '1',
+    plan_type: '',
     sum_assured: '',
     net_premium: '',
     fy_gst: '18',
     gst_amount: '',
     total_premium: '',
-    customer_payment_mode: '1',
-    premium_overdue_days: '30',
+    customer_payment_mode: '',
+    premium_overdue_days: '',
     regenerate_installments: false,
     note: '',
     bank_name: '',
@@ -88,7 +89,7 @@ export default function AddLifeInsurance() {
     { id: 1, nomainee_name: '', nomainee_relationship: '', nomainee_per: '' }
   ]);
 
-  const [documents, setDocuments] = useState<Array<{ id: number; other_document_name: string; other_document_image: File | null }>>([
+  const [documents, setDocuments] = useState<Array<{ id: number; other_document_name: string; other_document_image: File | null; existing_image_url?: string | null }>>([
     { id: 1, other_document_name: '', other_document_image: null }
   ]);
 
@@ -106,17 +107,35 @@ export default function AddLifeInsurance() {
       try {
         const formData = new FormData();
         formData.append('life_insurance_id', queryId);
-        formData.append('id', queryId);
-        formData.append('search', queryId);
-        formData.append('limit', '100');
-        formData.append('page', '1');
 
-        const response = await api.post(endPointApi.LIFE_INSURANCE.LIFE_INSURANCE_LIST, formData);
-        const resData = response?.data;
-        const list = resData?.data?.life_insurance_list || resData?.data?.list || resData?.data || resData?.life_insurance_list || [];
-        const item = Array.isArray(list)
-          ? list.find((c: any) => String(c.id || c.life_insurance_id) === queryId) || list[0]
-          : (resData?.data?.life_insurance_details || resData?.data || null);
+        let item: any = null;
+
+        try {
+          const viewResponse = await api.post(endPointApi.LIFE_INSURANCE.VIEW_LIFE_INSURANCE, formData);
+          const viewResData = viewResponse?.data;
+          item = viewResData?.data || viewResData?.life_insurance_details || viewResData;
+          if (typeof item === 'object' && item?.data) {
+            item = item.data;
+          }
+        } catch (e) {
+          console.warn('View endpoint failed, falling back to list endpoint', e);
+        }
+
+        if (!item || (!item.customer_id && !item.policy_number && !item.companies_id)) {
+          const listFormData = new FormData();
+          listFormData.append('life_insurance_id', queryId);
+          listFormData.append('id', queryId);
+          listFormData.append('search', queryId);
+          listFormData.append('limit', '100');
+          listFormData.append('page', '1');
+
+          const response = await api.post(endPointApi.LIFE_INSURANCE.LIFE_INSURANCE_LIST, listFormData);
+          const resData = response?.data;
+          const list = resData?.data?.life_insurance_list || resData?.data?.list || resData?.data || resData?.life_insurance_list || [];
+          item = Array.isArray(list)
+            ? list.find((c: any) => String(c.id || c.life_insurance_id) === queryId) || list[0]
+            : (resData?.data?.life_insurance_details || resData?.data || null);
+        }
 
         if (item) {
           const riderData = item.riders || item.rider || item.life_insurance_riders || item.rider_list || item.riders_list || [];
@@ -126,26 +145,26 @@ export default function AddLifeInsurance() {
           setFormData(prev => ({
             ...prev,
             life_insurance_id: String(item.id || item.life_insurance_id || queryId),
-            customer_id: String(item.customer_id || ''),
-            companies_id: String(item.companies_id || item.company_id || ''),
-            companies_agency_code: String(item.companies_agency_code || item.agency_code || ''),
-            plan_name: String(item.plan_name || item.plan_id || ''),
-            payment_mode: String(item.payment_mode || item.payment_mode_id || '1'),
+            customer_id: String(item.customer_id || item.customer?.id || ''),
+            companies_id: String(item.companies_id || item.company_id || item.company?.id || ''),
+            companies_agency_code: String(item.companies_agency_code || item.agency_code || item.agency_code_id || ''),
+            plan_name: String(item.plan_name || item.plan_id || item.company_plan_id || ''),
+            payment_mode: String(item.payment_mode || item.payment_mode_id || ''),
             policy_number: item.policy_number || '',
-            policy_term: String(item.policy_term || '1'),
-            policy_premium_term: String(item.policy_premium_term || '1'),
+            policy_term: String(item.policy_term || item.policy_term_id || ''),
+            policy_premium_term: String(item.policy_premium_term || item.policy_premium_term_id || ''),
             policy_login_date: item.policy_login_date || item.login_date || '',
             policy_start_date: item.policy_start_date || item.start_date || '',
             policy_end_date: item.policy_end_date || item.end_date || '',
             policy_maturity_date: item.policy_maturity_date || item.maturity_date || '',
             maturity_amount: String(item.maturity_amount ?? ''),
-            plan_type: String(item.plan_type || item.plan_type_id || '1'),
+            plan_type: String(item.plan_type || item.plan_type_id || ''),
             sum_assured: String(item.sum_assured ?? ''),
             net_premium: String(item.net_premium ?? item.total_premium ?? ''),
             gst_amount: String(item.gst_amount ?? ''),
             total_premium: String(item.total_premium ?? ''),
-            customer_payment_mode: String(item.customer_payment_mode || '1'),
-            premium_overdue_days: String(item.premium_overdue_days || '30'),
+            customer_payment_mode: String(item.customer_payment_mode || ''),
+            premium_overdue_days: String(item.premium_overdue_days || ''),
             regenerate_installments: Boolean(item.regenerate_installments),
             note: item.note || item.policy_note || item.remarks || item.remark || '',
             bank_name: item.bank_name || '',
@@ -173,7 +192,7 @@ export default function AddLifeInsurance() {
             setNominees(nomineeData.map((n: any, index: number) => ({
               id: index + 1,
               nomainee_name: n.nomainee_name || n.nominee_name || n.name || '',
-              nomainee_relationship: String(n.nomainee_relationship || n.nominee_relationship || n.relationship_id || '1'),
+              nomainee_relationship: String(n.nomainee_relationship || n.nominee_relationship || n.relationship_id || ''),
               nomainee_per: String(n.nomainee_per || n.nominee_per || n.percentage || '100')
             })));
           }
@@ -201,7 +220,7 @@ export default function AddLifeInsurance() {
     setRiders(prev => prev.map(r => r.id === id ? { ...r, [field]: value } : r));
   };
 
-  const addNominee = () => setNominees(prev => [...prev, { id: Date.now(), nomainee_name: '', nomainee_relationship: '1', nomainee_per: '' }]);
+  const addNominee = () => setNominees(prev => [...prev, { id: Date.now(), nomainee_name: '', nomainee_relationship: '', nomainee_per: '' }]);
   const removeNominee = (id: number) => setNominees(prev => prev.filter(n => n.id !== id));
   const updateNominee = (id: number, field: string, value: string) => {
     setNominees(prev => prev.map(n => n.id === id ? { ...n, [field]: value } : n));
@@ -296,45 +315,36 @@ export default function AddLifeInsurance() {
     }
   };
 
-  const sectionHeaderClass = "bg-[#EEF1FA] text-[#2B4399] px-5 py-3 text-[15px] font-bold rounded-lg flex items-center gap-2 mb-5";
+  const sectionHeaderClass = "bg-[#EEF1FA] text-[#2B4399] px-5 py-3 text-[15px] font-bold rounded-xl flex items-center justify-between gap-2 mb-6 border-l-4 border-[#2B4399]";
   const labelClass = "text-[13px] font-bold text-gray-700 mb-1.5 block";
-  const inputClass = "w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#2D3591]/20 focus:border-[#2D3591] transition-all bg-white shadow-sm";
+  const selectClass = "w-full h-[42px] px-3.5 py-2 border border-gray-300 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#2B4399]/20 focus:border-[#2B4399] transition-all bg-white shadow-2xs";
 
   return (
-    <div className="bg-[#f8fafc] min-h-[calc(100vh-72px-56px)] ">
+    <div className="bg-[#f8fafc] min-h-screen p-4 sm:p-6 lg:p-0">
       <Head>
-        <title>Add Life Insurance - Insuraa</title>
-        <style>{`
-          body {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-          }
-          body::-webkit-scrollbar {
-            display: none;
-          }
-        `}</style>
+        <title>{formData.life_insurance_id ? 'Edit Life Insurance' : 'Add Life Insurance'} - Insuraa</title>
       </Head>
 
-      <div className="w-full mx-auto animate-in fade-in duration-500 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+      <div className="w-full mx-auto animate-in fade-in duration-500 bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-gray-200/80">
 
         {/* Page Header */}
-        <div className="sticky top-0 z-40 bg-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200 pb-5 mb-8 pt-6 -mt-6 -mx-6 px-6 rounded-t-xl">
+        <div className="sticky top-0 z-40 backdrop-blur-md bg-white/90 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200/80 pb-5 mb-8 pt-4 -mt-6 -mx-6 px-6 rounded-t-2xl">
           <div className="flex items-center gap-3 font-bold text-gray-900">
-            <button onClick={() => router.back()} type="button" className="p-2 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors" title="Go Back">
+            <button onClick={() => router.back()} type="button" className="p-2 border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors shadow-2xs" title="Go Back">
               <ArrowLeft size={18} />
             </button>
 
-            <h1 className="text-xl">{formData.life_insurance_id ? 'Edit Life Insurance' : 'Add Life Insurance'}</h1>
+            <h1 className="text-xl font-bold tracking-tight text-gray-900">{formData.life_insurance_id ? 'Edit Life Insurance' : 'Add Life Insurance'}</h1>
           </div>
           <div className="flex items-center gap-3 w-full sm:w-auto">
-            <button type="button" onClick={() => router.back()} className="flex-1 sm:flex-none px-5 py-2.5 border border-gray-300 rounded-lg text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors">
+            <button type="button" onClick={() => router.back()} className="flex-1 sm:flex-none px-5 py-2.5 border border-gray-300 rounded-xl text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors shadow-2xs">
               Cancel
             </button>
             <button
               type="button"
               onClick={() => handleSubmit()}
               disabled={isSubmitting}
-              className="flex-1 sm:flex-none bg-[#2B4399] text-white px-6 py-2.5 rounded-lg text-sm font-bold hover:bg-[#203378] transition-colors shadow-sm disabled:opacity-50"
+              className="flex-1 sm:flex-none bg-[#2B4399] text-white px-7 py-2.5 rounded-xl text-sm font-bold hover:bg-[#203378] transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {isSubmitting ? 'Saving...' : 'Save Insurance'}
             </button>
@@ -342,637 +352,678 @@ export default function AddLifeInsurance() {
         </div>
 
         {/* Form Content */}
-        <div className="flex-1 overflow-y-auto p-6 pt-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-          <form onSubmit={handleSubmit} className="space-y-8 bg-white">
+        <form onSubmit={handleSubmit} className="space-y-9 bg-white">
 
-            {/* Customer Information */}
-            <div>
-              <div className={sectionHeaderClass}>
-                <UserIcon /> Customer Information
+          {/* Customer Information */}
+          <div className="bg-white rounded-2xl border border-gray-200/80 p-5 sm:p-6 shadow-2xs">
+            <div className={sectionHeaderClass}>
+              <div className="flex items-center gap-2">
+                <User size={18} />
+                <span>Customer Information</span>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-5">
-                <div>
-                  <div className="flex justify-between items-center mb-1.5">
-                    <label className="text-[13px] font-bold text-gray-700">Customer Name <span className="text-red-500">*</span></label>
-                    <button type="button" onClick={() => router.push('/customers/add')} className="text-xs text-[#2B4399] font-bold hover:underline">Add Customer</button>
-                  </div>
-                  <Select
-                    className={`${inputClass} ${errors.customer_id ? '!border-red-500 focus:!ring-red-200' : ''}`}
-                    value={formData.customer_id}
-                    onChange={(e: any) => handleChange('customer_id', e.target.value)}
-                  >
-                    <option value="">Select Customer Name</option>
-                    {customerList.map((cust: any) => {
-                      const id = cust.id || cust.customer_id;
-                      const name = cust.first_name ? `${cust.first_name} ${cust.last_name || ''}`.trim() : (cust.name || `Customer #${id}`);
-                      return (
-                        <option key={id} value={id}>
-                          {name}
-                        </option>
-                      );
-                    })}
-                  </Select>
-                  {errors.customer_id && <p className="text-xs text-red-500 font-semibold mt-1">{errors.customer_id}</p>}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="lg:col-span-2">
+                <div className="flex justify-between items-center mb-1.5">
+                  <label className={labelClass}>Customer Name <span className="text-red-500">*</span></label>
+                  <button type="button" onClick={() => router.push('/customers/add')} className="text-xs text-[#2B4399] font-bold hover:underline">Add Customer</button>
                 </div>
+                <Select
+                  className={`${selectClass} ${errors.customer_id ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
+                  value={formData.customer_id}
+                  onChange={(e: any) => handleChange('customer_id', e.target.value)}
+                >
+                  <option value="">Select Customer Name</option>
+                  {customerList.map((cust: any) => {
+                    const id = cust.customer_id || cust.id;
+                    const name = cust.full_name || `Customer #${id}`;
+                    const phone = cust.number || '';
+                    const label = phone ? `${name} (${phone})` : name;
+                    return (
+                      <option key={id} value={id}>
+                        {label}
+                      </option>
+                    );
+                  })}
+                </Select>
+                {errors.customer_id && <p className="text-xs text-red-500 font-semibold mt-1">{errors.customer_id}</p>}
+              </div>
+            </div>
+          </div>
+
+          {/* Policy PDF Details */}
+          <div className="bg-white rounded-2xl border border-gray-200/80 p-5 sm:p-6 shadow-2xs">
+            <div className={sectionHeaderClass}>
+              <div className="flex items-center gap-2">
+                <FileText size={18} />
+                <span>Policy PDF Details</span>
+              </div>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className={labelClass}>Upload Policy PDF</label>
+                <div className="flex items-center gap-4">
+                  <div className="flex-1 max-w-xl">
+                    <FileUpload
+                      name="policy_pdf"
+                      accept=".pdf,.doc,.docx,image/*"
+                      file={policyPdf}
+                      existingUrl={existingPolicyPdfUrl}
+                      onChange={(file) => setPolicyPdf(file)}
+                      placeholder="Click or drag Policy PDF file to upload"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    className="h-[46px] bg-[#2B4399] text-white px-6 rounded-xl text-sm font-bold hover:bg-[#203378] transition-colors shadow-2xs flex items-center justify-center gap-2 shrink-0"
+                  >
+                    <Sparkles size={16} />
+                    <span>AI</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="bg-red-50/70 text-[#cf3838] p-4 rounded-xl text-xs border border-red-100 font-semibold leading-relaxed">
+                Note: After Uploading The Policy PDF And Clicking The AI Button, The Form Will Be Auto-Filled. Please Review And Verify All Details Carefully, As AI-Generated Data May Not Be Fully Accurate, Before Saving Or Submitting.
+              </div>
+            </div>
+          </div>
+
+          {/* Insurance Information (Strict 4 Fields Per Row Grid) */}
+          <div className="bg-white rounded-2xl border border-gray-200/80 p-5 sm:p-6 shadow-2xs">
+            <div className={sectionHeaderClass}>
+              <div className="flex items-center gap-2">
+                <Shield size={18} />
+                <span>Insurance Information</span>
               </div>
             </div>
 
-            {/* Policy PDF Details */}
-            <div>
-              <div className={sectionHeaderClass}>
-                <FileIcon /> Policy PDF Details
-              </div>
-              <div className="space-y-4">
-                <div>
-                  <label className={labelClass}>Upload Policy</label>
-                  <div className="flex items-center gap-4">
-                    <input
-                      type="file"
-                      onChange={(e: any) => setPolicyPdf(e.target.files?.[0] || null)}
-                      className="h-[46px] border border-gray-300 rounded-lg text-sm px-4 py-2.5 w-full max-w-md file:mr-4 file:py-1 file:px-4 file:rounded file:border-0 file:text-sm file:font-bold file:bg-gray-100 hover:file:bg-gray-200 cursor-pointer shadow-sm"
-                    />
-                    <button type="button" className="h-[46px] bg-[var(--primary)] text-white px-10 rounded-lg text-sm font-bold hover:bg-[#203378] transition-colors shadow-sm flex items-center justify-center">AI</button>
-                  </div>
-                  {existingPolicyPdfUrl && (
-                    <div className="mt-2 text-xs text-[#2B4399] font-bold">
-                      Uploaded Policy PDF: <a href={existingPolicyPdfUrl} target="_blank" rel="noreferrer" className="underline hover:text-[#203378]">{existingPolicyPdfUrl.split('/').pop() || 'View Policy PDF'}</a>
-                    </div>
-                  )}
-                </div>
-                <div className="bg-red-50 text-[#cf3838] p-4 rounded-lg text-xs border border-red-100 font-semibold leading-relaxed">
-                  Note: After Uploading The Policy PDF And Clicking The AI Button, The Form Will Be Auto-Filled. Please Review And Verify All Details Carefully, As AI-Generated Data May Not Be Fully Accurate, Before Saving Or Submitting.
-                </div>
-              </div>
-            </div>
-
-            {/* Insurance Information */}
-            <div>
-              <div className={sectionHeaderClass}>
-                <ShieldIcon /> Insurance Information
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-5">
-                <div className="lg:col-span-2">
-                  <label className={labelClass}>Insurance Company Name <span className="text-red-500">*</span></label>
-                  <Select
-                    className={`${inputClass} ${errors.companies_id ? '!border-red-500 focus:!ring-red-200' : ''}`}
-                    value={formData.companies_id}
-                    onChange={(e: any) => handleChange('companies_id', e.target.value)}
-                  >
-                    <option value="">Select Insurance Company Name</option>
-                    {companyList.map((comp: any) => (
-                      <option key={comp.id} value={comp.id}>
-                        {comp.name}
-                      </option>
-                    ))}
-                  </Select>
-                  {errors.companies_id && <p className="text-xs text-red-500 font-semibold mt-1">{errors.companies_id}</p>}
-                </div>
-                <div>
-                  <label className={labelClass}>Plan Name</label>
-                  <Select
-                    className={inputClass}
-                    value={formData.plan_name}
-                    onChange={(e: any) => handleChange('plan_name', e.target.value)}
-                  >
-                    <option value="">Select Company Plan Name</option>
-                    {companyPlans.map((plan: any) => {
-                      const pId = plan.id || plan.plan_id;
-                      const pName = plan.plan_name || plan.name || `Plan #${pId}`;
-                      return (
-                        <option key={pId} value={pId}>
-                          {pName}
-                        </option>
-                      );
-                    })}
-                  </Select>
-                </div>
-                <div>
-                  <label className={labelClass}>Agency Code</label>
-                  <Select
-                    className={inputClass}
-                    value={formData.companies_agency_code}
-                    onChange={(e: any) => handleChange('companies_agency_code', e.target.value)}
-                  >
-                    <option value="">Select Agency Code</option>
-                    {agencyCodeList.map((ac: any) => {
-                      const id = ac.id || ac.agency_code_id || ac.code;
-                      const label = ac.code ? (ac.name ? `${ac.code} - ${ac.name}` : ac.code) : (ac.name || ac.agency_code || `Code #${id}`);
-                      return (
-                        <option key={id} value={ac.id || ac.code || id}>
-                          {label}
-                        </option>
-                      );
-                    })}
-                  </Select>
-                </div>
-
-                <div>
-                  <label className={labelClass}>Payment Mode <span className="text-red-500">*</span></label>
-                  <Select
-                    className={`${inputClass} ${errors.payment_mode ? '!border-red-500 focus:!ring-red-200' : ''}`}
-                    value={formData.payment_mode}
-                    onChange={(e: any) => handleChange('payment_mode', e.target.value)}
-                  >
-                    {paymentModes.map((pm: any) => (
-                      <option key={pm.id} value={pm.id}>
-                        {pm.name}
-                      </option>
-                    ))}
-                  </Select>
-                  {errors.payment_mode && <p className="text-xs text-red-500 font-semibold mt-1">{errors.payment_mode}</p>}
-                </div>
-                <div>
-                  <label className={labelClass}>Policy Number <span className="text-red-500">*</span></label>
-                  <input
-                    type="text"
-                    placeholder="Enter Policy Number"
-                    className={`${inputClass} ${errors.policy_number ? '!border-red-500 focus:!ring-red-200' : ''}`}
-                    value={formData.policy_number}
-                    onChange={(e: any) => handleChange('policy_number', e.target.value)}
-                  />
-                  {errors.policy_number && <p className="text-xs text-red-500 font-semibold mt-1">{errors.policy_number}</p>}
-                </div>
-                <div>
-                  <label className={labelClass}>Policy Premium Term (Y)<span className="text-red-500">*</span></label>
-                  {policyTermOptions.length > 0 ? (
-                    <Select
-                      className={`${inputClass} ${errors.policy_premium_term ? '!border-red-500 focus:!ring-red-200' : ''}`}
-                      value={formData.policy_premium_term}
-                      onChange={(e: any) => handleChange('policy_premium_term', e.target.value)}
-                    >
-                      {policyTermOptions.map((pt: any) => (
-                        <option key={pt.id} value={pt.term || pt.id}>
-                          {pt.term || pt.id}
-                        </option>
-                      ))}
-                    </Select>
-                  ) : (
-                    <input
-                      type="text"
-                      className={`${inputClass} ${errors.policy_premium_term ? '!border-red-500 focus:!ring-red-200' : ''}`}
-                      value={formData.policy_premium_term}
-                      onChange={(e: any) => handleChange('policy_premium_term', e.target.value)}
-                    />
-                  )}
-                  {errors.policy_premium_term && <p className="text-xs text-red-500 font-semibold mt-1">{errors.policy_premium_term}</p>}
-                </div>
-                <div>
-                  <label className={labelClass}>Policy Term (Y)<span className="text-red-500">*</span></label>
-                  {policyTermOptions.length > 0 ? (
-                    <Select
-                      className={`${inputClass} ${errors.policy_term ? '!border-red-500 focus:!ring-red-200' : ''}`}
-                      value={formData.policy_term}
-                      onChange={(e: any) => handleChange('policy_term', e.target.value)}
-                    >
-                      {policyTermOptions.map((pt: any) => (
-                        <option key={pt.id} value={pt.term || pt.id}>
-                          {pt.term || pt.id}
-                        </option>
-                      ))}
-                    </Select>
-                  ) : (
-                    <input
-                      type="text"
-                      className={`${inputClass} ${errors.policy_term ? '!border-red-500 focus:!ring-red-200' : ''}`}
-                      value={formData.policy_term}
-                      onChange={(e: any) => handleChange('policy_term', e.target.value)}
-                    />
-                  )}
-                  {errors.policy_term && <p className="text-xs text-red-500 font-semibold mt-1">{errors.policy_term}</p>}
-                </div>
-
-                <div>
-                  <label className={labelClass}>Policy Login Date <span className="text-red-500">*</span></label>
-                  <DatePicker
-                    className={`${inputClass} ${errors.policy_login_date ? '!border-red-500 focus:!ring-red-200' : ''}`}
-                    placeholder="Select Login Date"
-                    value={formData.policy_login_date}
-                    onChange={(dateStr: string) => handleChange('policy_login_date', dateStr)}
-                  />
-                  {errors.policy_login_date && <p className="text-xs text-red-500 font-semibold mt-1">{errors.policy_login_date}</p>}
-                </div>
-                <div>
-                  <label className={labelClass}>Policy Start Date <span className="text-red-500">*</span></label>
-                  <DatePicker
-                    className={`${inputClass} ${errors.policy_start_date ? '!border-red-500 focus:!ring-red-200' : ''}`}
-                    placeholder="Select Start Date"
-                    value={formData.policy_start_date}
-                    onChange={(dateStr: string) => handleChange('policy_start_date', dateStr)}
-                  />
-                  {errors.policy_start_date && <p className="text-xs text-[#cf3838] font-semibold mt-1">{errors.policy_start_date}</p>}
-                </div>
-                <div className="lg:col-span-2">
-                  <label className={labelClass}>Policy Premium End Date <span className="text-red-500">*</span></label>
-                  <DatePicker
-                    className={`${inputClass} ${errors.policy_end_date ? '!border-red-500 focus:!ring-red-200' : ''}`}
-                    placeholder="Select Premium End Date"
-                    value={formData.policy_end_date}
-                    onChange={(dateStr: string) => handleChange('policy_end_date', dateStr)}
-                  />
-                  {errors.policy_end_date && <p className="text-xs text-red-500 font-semibold mt-1">{errors.policy_end_date}</p>}
-                </div>
-
-                <div>
-                  <label className={labelClass}>Policy Maturity Date <span className="text-red-500">*</span></label>
-                  <DatePicker
-                    className={`${inputClass} ${errors.policy_maturity_date ? '!border-red-500 focus:!ring-red-200' : ''}`}
-                    placeholder="Select Maturity Date"
-                    value={formData.policy_maturity_date}
-                    onChange={(dateStr: string) => handleChange('policy_maturity_date', dateStr)}
-                  />
-                  {errors.policy_maturity_date && <p className="text-xs text-red-500 font-semibold mt-1">{errors.policy_maturity_date}</p>}
-                </div>
-                <div>
-                  <label className={labelClass}>Maturity Amount</label>
-                  <input
-                    type="text"
-                    placeholder="Enter Maturity Amount"
-                    className={inputClass}
-                    value={formData.maturity_amount}
-                    onChange={(e: any) => handleChange('maturity_amount', e.target.value)}
-                  />
-                </div>
-                <div className="lg:col-span-2">
-                  <label className={labelClass}>Plan Type <span className="text-red-500">*</span></label>
-                  <Select
-                    className={`${inputClass} ${errors.plan_type ? '!border-red-500 focus:!ring-red-200' : ''}`}
-                    value={formData.plan_type}
-                    onChange={(e: any) => handleChange('plan_type', e.target.value)}
-                  >
-                    {planTypeOptions.map((pt: any) => (
-                      <option key={pt.id} value={pt.id}>
-                        {pt.name}
-                      </option>
-                    ))}
-                  </Select>
-                  {errors.plan_type && <p className="text-xs text-red-500 font-semibold mt-1">{errors.plan_type}</p>}
-                </div>
-
-                <div>
-                  <label className={labelClass}>Sum Assured <span className="text-red-500">*</span></label>
-                  <input
-                    type="text"
-                    placeholder="Enter Sum Assured"
-                    className={`${inputClass} ${errors.sum_assured ? '!border-red-500 focus:!ring-red-200' : ''}`}
-                    value={formData.sum_assured}
-                    onChange={(e: any) => handleChange('sum_assured', e.target.value)}
-                  />
-                  {errors.sum_assured && <p className="text-xs text-red-500 font-semibold mt-1">{errors.sum_assured}</p>}
-                </div>
-                <div className="lg:col-span-3">
-                  <label className={labelClass}>Net Premium<span className="text-red-500">*</span></label>
-                  <input
-                    type="text"
-                    placeholder="Enter Net Premium"
-                    className={`${inputClass} ${errors.net_premium ? '!border-red-500 focus:!ring-red-200' : ''}`}
-                    value={formData.net_premium}
-                    onChange={(e: any) => handleChange('net_premium', e.target.value)}
-                  />
-                  {errors.net_premium && <p className="text-xs text-red-500 font-semibold mt-1">{errors.net_premium}</p>}
-                </div>
-
-                {/* Dynamic Riders Section */}
-                <div className="lg:col-span-4 space-y-4">
-                  {riders.map((rider, index) => (
-                    <div key={rider.id} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-4 items-end">
-                      <div>
-                        {index === 0 && <label className={labelClass}>Rider Name</label>}
-                        <Select
-                          className={inputClass}
-                          value={rider.riders_id}
-                          onChange={(e: any) => updateRider(rider.id, 'riders_id', e.target.value)}
-                        >
-                          <option value="">Select Rider</option>
-                          {riderListOptions.map((rd: any) => {
-                            const rId = rd.id || rd.rider_id;
-                            const rName = rd.name || rd.rider_name || `Rider #${rId}`;
-                            return (
-                              <option key={rId} value={rId}>
-                                {rName}
-                              </option>
-                            );
-                          })}
-                        </Select>
-                      </div>
-                      <div>
-                        {index === 0 && <label className={labelClass}>Rider Amount</label>}
-                        <input
-                          type="text"
-                          placeholder="Enter Amount"
-                          className={inputClass}
-                          value={rider.riders_amount}
-                          onChange={(e: any) => updateRider(rider.id, 'riders_amount', e.target.value)}
-                        />
-                      </div>
-                      <div className="lg:col-span-2 flex items-center gap-4">
-                        <div className="flex-1">
-                          {index === 0 && <label className={labelClass}>Note</label>}
-                          <input
-                            type="text"
-                            placeholder="Enter Note"
-                            className={inputClass}
-                            value={rider.riders_note}
-                            onChange={(e: any) => updateRider(rider.id, 'riders_note', e.target.value)}
-                          />
-                        </div>
-                        {index === 0 ? (
-                          <button type="button" onClick={addRider} className="bg-[#2B4399] text-white p-2.5 rounded-lg hover:bg-[#203378] transition-colors shrink-0 shadow-sm mt-6">
-                            <Plus size={18} />
-                          </button>
-                        ) : (
-                          <button type="button" onClick={() => removeRider(rider.id)} className="bg-[#cf3838] text-white p-2.5 rounded-lg hover:bg-[#a12828] transition-colors shrink-0 shadow-sm mt-2">
-                            <Minus size={18} />
-                          </button>
-                        )}
-                      </div>
-                    </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {/* Row 1 */}
+              <div>
+                <label className={labelClass}>Insurance Company Name <span className="text-red-500">*</span></label>
+                <Select
+                  className={`${selectClass} ${errors.companies_id ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
+                  value={formData.companies_id}
+                  onChange={(e: any) => handleChange('companies_id', e.target.value)}
+                >
+                  <option value="">Select Insurance Company Name</option>
+                  {companyList.map((comp: any) => (
+                    <option key={comp.id} value={comp.id}>
+                      {comp.name}
+                    </option>
                   ))}
-                </div>
-
-                <div>
-                  <label className={labelClass}>GST Amount</label>
-                  <input
-                    type="text"
-                    placeholder="Enter GST Amount"
-                    className={inputClass}
-                    value={formData.gst_amount}
-                    onChange={(e: any) => handleChange('gst_amount', e.target.value)}
-                  />
-                </div>
-                <div className="lg:col-span-3">
-                  <label className={labelClass}>Total Premium</label>
-                  <input
-                    type="text"
-                    placeholder="Total Premium"
-                    className={inputClass}
-                    value={formData.total_premium}
-                    onChange={(e: any) => handleChange('total_premium', e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <label className={labelClass}>Customer Payment Mode</label>
-                  <Select
-                    className={inputClass}
-                    value={formData.customer_payment_mode}
-                    onChange={(e: any) => handleChange('customer_payment_mode', e.target.value)}
-                  >
-                    <option value="1">Cash / Online</option>
-                    <option value="2">Cheque</option>
-                    <option value="3">Net Banking</option>
-                  </Select>
-                </div>
-                <div className="lg:col-span-3">
-                  <label className={labelClass}>Premium Overdue Days</label>
-                  <Select
-                    className={inputClass}
-                    value={formData.premium_overdue_days}
-                    onChange={(e: any) => handleChange('premium_overdue_days', e.target.value)}
-                  >
-                    <option value="15">15 Days</option>
-                    <option value="30">30 Days</option>
-                    <option value="45">45 Days</option>
-                    <option value="60">60 Days</option>
-                  </Select>
-                </div>
-              </div>
-            </div>
-
-            {/* Options */}
-            <div>
-              <div className={sectionHeaderClass}>
-                <SettingsIcon /> Options
-              </div>
-              <div className="flex items-start gap-4 py-2 px-1">
-                <input
-                  type="checkbox"
-                  checked={formData.regenerate_installments}
-                  onChange={(e: any) => handleChange('regenerate_installments', e.target.checked)}
-                  className="mt-1 w-4 h-4 border-gray-300 rounded text-[#2B4399] focus:ring-[#2D3591]"
-                />
-                <div>
-                  <span className="text-sm text-gray-800 font-bold">Mark All Installments As Paid</span>
-                  <p className="text-xs text-gray-500 mt-1 font-medium">Check To Mark All Installments Up To Today's Date As Paid On Save.</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Nominee Details */}
-            <div>
-              <div className="flex items-center justify-between bg-[#EEF1FA] text-[#2B4399] px-5 py-3 rounded-lg mb-5">
-                <div className="flex items-center gap-2 text-[15px] font-bold">
-                  <UsersIcon /> Nominee Details
-                </div>
-                <button type="button" onClick={addNominee} className="bg-[#2B4399] text-white p-1.5 rounded-md hover:bg-[#203378] transition-colors shadow-sm">
-                  <Plus size={16} />
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                {nominees.map((nominee, index) => (
-                  <div key={nominee.id} className="flex items-center gap-4">
-                    <div className="flex-[2]">
-                      <input
-                        type="text"
-                        placeholder="Nominee Name *"
-                        className={`${inputClass} ${errors.nomainee_name && !nominee.nomainee_name ? '!border-red-500 focus:!ring-red-200' : ''}`}
-                        value={nominee.nomainee_name}
-                        onChange={(e: any) => updateNominee(nominee.id, 'nomainee_name', e.target.value)}
-                      />
-                    </div>
-                    <div className="flex-[2]">
-                      <Select
-                        className={inputClass}
-                        value={nominee.nomainee_relationship}
-                        onChange={(e: any) => updateNominee(nominee.id, 'nomainee_relationship', e.target.value)}
-                      >
-                        {relationshipOptions.map((rel: any) => (
-                          <option key={rel.id} value={rel.id}>
-                            {rel.name}
-                          </option>
-                        ))}
-                      </Select>
-                    </div>
-                    <div className="flex-1">
-                      <input
-                        type="text"
-                        placeholder="Percentage (%)"
-                        className={inputClass}
-                        value={nominee.nomainee_per}
-                        onChange={(e: any) => updateNominee(nominee.id, 'nomainee_per', e.target.value)}
-                      />
-                    </div>
-                    {index > 0 && (
-                      <button type="button" onClick={() => removeNominee(nominee.id)} className="bg-[#cf3838] text-white p-2.5 rounded-lg hover:bg-[#a12828] transition-colors shrink-0 shadow-sm">
-                        <Minus size={18} />
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Note Details */}
-            <div>
-              <div className={sectionHeaderClass}>
-                <NoteIcon /> Note Details
+                </Select>
+                {errors.companies_id && <p className="text-xs text-red-500 font-semibold mt-1">{errors.companies_id}</p>}
               </div>
               <div>
-                <label className={labelClass}>Note</label>
-                <textarea
-                  rows={4}
-                  className={inputClass}
-                  value={formData.note}
-                  onChange={(e: any) => handleChange('note', e.target.value)}
-                ></textarea>
+                <label className={labelClass}>Plan Name</label>
+                <Select
+                  className={selectClass}
+                  value={formData.plan_name}
+                  onChange={(e: any) => handleChange('plan_name', e.target.value)}
+                >
+                  <option value="">Select Company Plan Name</option>
+                  {companyPlans.map((plan: any) => {
+                    const pId = plan.id || plan.plan_id;
+                    const pName = plan.plan_name || plan.name || `Plan #${pId}`;
+                    return (
+                      <option key={pId} value={pId}>
+                        {pName}
+                      </option>
+                    );
+                  })}
+                </Select>
+              </div>
+              <div>
+                <label className={labelClass}>Agency Code</label>
+                <Select
+                  className={selectClass}
+                  value={formData.companies_agency_code}
+                  onChange={(e: any) => handleChange('companies_agency_code', e.target.value)}
+                >
+                  <option value="">Select Agency Code</option>
+                  {agencyCodeList.map((ac: any) => {
+                    const id = ac.id || ac.agency_code_id || ac.code;
+                    const label = ac.code ? (ac.name ? `${ac.code} - ${ac.name}` : ac.code) : (ac.name || ac.agency_code || `Code #${id}`);
+                    return (
+                      <option key={id} value={ac.id || ac.code || id}>
+                        {label}
+                      </option>
+                    );
+                  })}
+                </Select>
+              </div>
+              <div>
+                <label className={labelClass}>Payment Mode <span className="text-red-500">*</span></label>
+                <Select
+                  className={`${selectClass} ${errors.payment_mode ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
+                  value={formData.payment_mode}
+                  onChange={(e: any) => handleChange('payment_mode', e.target.value)}
+                >
+                  <option value="">Select Payment Mode</option>
+                  {paymentModes.map((pm: any) => (
+                    <option key={pm.id} value={pm.id}>
+                      {pm.name}
+                    </option>
+                  ))}
+                </Select>
+                {errors.payment_mode && <p className="text-xs text-red-500 font-semibold mt-1">{errors.payment_mode}</p>}
+              </div>
+
+              {/* Row 2 */}
+              <div>
+                <label className={labelClass}>Policy Number <span className="text-red-500">*</span></label>
+                <Input
+                  name="policy_number"
+                  placeholder="Enter Policy Number"
+                  value={formData.policy_number}
+                  onChange={(e: any) => handleChange('policy_number', e.target.value)}
+                  error={errors.policy_number}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Policy Premium Term (Y)<span className="text-red-500">*</span></label>
+                {policyTermOptions.length > 0 ? (
+                  <Select
+                    className={`${selectClass} ${errors.policy_premium_term ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
+                    value={formData.policy_premium_term}
+                    onChange={(e: any) => handleChange('policy_premium_term', e.target.value)}
+                  >
+                    <option value="">Select Premium Term</option>
+                    {policyTermOptions.map((pt: any) => (
+                      <option key={pt.id} value={pt.term || pt.id}>
+                        {pt.term || pt.id}
+                      </option>
+                    ))}
+                  </Select>
+                ) : (
+                  <Input
+                    name="policy_premium_term"
+                    placeholder="Enter Premium Term"
+                    value={formData.policy_premium_term}
+                    onChange={(e: any) => handleChange('policy_premium_term', e.target.value)}
+                    error={errors.policy_premium_term}
+                  />
+                )}
+                {policyTermOptions.length > 0 && errors.policy_premium_term && <p className="text-xs text-red-500 font-semibold mt-1">{errors.policy_premium_term}</p>}
+              </div>
+              <div>
+                <label className={labelClass}>Policy Term (Y)<span className="text-red-500">*</span></label>
+                {policyTermOptions.length > 0 ? (
+                  <Select
+                    className={`${selectClass} ${errors.policy_term ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
+                    value={formData.policy_term}
+                    onChange={(e: any) => handleChange('policy_term', e.target.value)}
+                  >
+                    <option value="">Select Policy Term</option>
+                    {policyTermOptions.map((pt: any) => (
+                      <option key={pt.id} value={pt.term || pt.id}>
+                        {pt.term || pt.id}
+                      </option>
+                    ))}
+                  </Select>
+                ) : (
+                  <Input
+                    name="policy_term"
+                    placeholder="Enter Policy Term"
+                    value={formData.policy_term}
+                    onChange={(e: any) => handleChange('policy_term', e.target.value)}
+                    error={errors.policy_term}
+                  />
+                )}
+                {policyTermOptions.length > 0 && errors.policy_term && <p className="text-xs text-red-500 font-semibold mt-1">{errors.policy_term}</p>}
+              </div>
+              <div>
+                <label className={labelClass}>Policy Login Date <span className="text-red-500">*</span></label>
+                <DatePicker
+                  className={`${selectClass} ${errors.policy_login_date ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
+                  placeholder="Select Login Date"
+                  value={formData.policy_login_date}
+                  onChange={(dateStr: string) => handleChange('policy_login_date', dateStr)}
+                />
+                {errors.policy_login_date && <p className="text-xs text-red-500 font-semibold mt-1">{errors.policy_login_date}</p>}
+              </div>
+
+              {/* Row 3 */}
+              <div>
+                <label className={labelClass}>Policy Start Date <span className="text-red-500">*</span></label>
+                <DatePicker
+                  className={`${selectClass} ${errors.policy_start_date ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
+                  placeholder="Select Start Date"
+                  value={formData.policy_start_date}
+                  onChange={(dateStr: string) => handleChange('policy_start_date', dateStr)}
+                />
+                {errors.policy_start_date && <p className="text-xs text-red-500 font-semibold mt-1">{errors.policy_start_date}</p>}
+              </div>
+              <div>
+                <label className={labelClass}>Policy Premium End Date <span className="text-red-500">*</span></label>
+                <DatePicker
+                  className={`${selectClass} ${errors.policy_end_date ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
+                  placeholder="Select Premium End Date"
+                  value={formData.policy_end_date}
+                  onChange={(dateStr: string) => handleChange('policy_end_date', dateStr)}
+                />
+                {errors.policy_end_date && <p className="text-xs text-red-500 font-semibold mt-1">{errors.policy_end_date}</p>}
+              </div>
+              <div>
+                <label className={labelClass}>Policy Maturity Date <span className="text-red-500">*</span></label>
+                <DatePicker
+                  className={`${selectClass} ${errors.policy_maturity_date ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
+                  placeholder="Select Maturity Date"
+                  value={formData.policy_maturity_date}
+                  onChange={(dateStr: string) => handleChange('policy_maturity_date', dateStr)}
+                />
+                {errors.policy_maturity_date && <p className="text-xs text-red-500 font-semibold mt-1">{errors.policy_maturity_date}</p>}
+              </div>
+              <div>
+                <label className={labelClass}>Maturity Amount</label>
+                <Input
+                  name="maturity_amount"
+                  placeholder="Enter Maturity Amount"
+                  value={formData.maturity_amount}
+                  onChange={(e: any) => handleChange('maturity_amount', e.target.value)}
+                />
+              </div>
+
+              {/* Row 4 */}
+              <div>
+                <label className={labelClass}>Plan Type <span className="text-red-500">*</span></label>
+                <Select
+                  className={`${selectClass} ${errors.plan_type ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
+                  value={formData.plan_type}
+                  onChange={(e: any) => handleChange('plan_type', e.target.value)}
+                >
+                  <option value="">Select Plan Type</option>
+                  {planTypeOptions.map((pt: any) => (
+                    <option key={pt.id} value={pt.id}>
+                      {pt.name}
+                    </option>
+                  ))}
+                </Select>
+                {errors.plan_type && <p className="text-xs text-red-500 font-semibold mt-1">{errors.plan_type}</p>}
+              </div>
+              <div>
+                <label className={labelClass}>Sum Assured <span className="text-red-500">*</span></label>
+                <Input
+                  name="sum_assured"
+                  placeholder="Enter Sum Assured"
+                  value={formData.sum_assured}
+                  onChange={(e: any) => handleChange('sum_assured', e.target.value)}
+                  error={errors.sum_assured}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Net Premium<span className="text-red-500">*</span></label>
+                <Input
+                  name="net_premium"
+                  placeholder="Enter Net Premium"
+                  value={formData.net_premium}
+                  onChange={(e: any) => handleChange('net_premium', e.target.value)}
+                  error={errors.net_premium}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>GST Amount</label>
+                <Input
+                  name="gst_amount"
+                  placeholder="Enter GST Amount"
+                  value={formData.gst_amount}
+                  onChange={(e: any) => handleChange('gst_amount', e.target.value)}
+                />
+              </div>
+
+              {/* Row 5 */}
+              <div>
+                <label className={labelClass}>Total Premium</label>
+                <Input
+                  name="total_premium"
+                  placeholder="Total Premium"
+                  value={formData.total_premium}
+                  onChange={(e: any) => handleChange('total_premium', e.target.value)}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Customer Payment Mode</label>
+                <Select
+                  className={selectClass}
+                  value={formData.customer_payment_mode}
+                  onChange={(e: any) => handleChange('customer_payment_mode', e.target.value)}
+                >
+                  <option value="">Select Payment Mode</option>
+                  <option value="1">Cash / Online</option>
+                  <option value="2">Cheque</option>
+                  <option value="3">Net Banking</option>
+                </Select>
+              </div>
+              <div>
+                <label className={labelClass}>Premium Overdue Days</label>
+                <Select
+                  className={selectClass}
+                  value={formData.premium_overdue_days}
+                  onChange={(e: any) => handleChange('premium_overdue_days', e.target.value)}
+                >
+                  <option value="">Select Overdue Days</option>
+                  <option value="15">15 Days</option>
+                  <option value="30">30 Days</option>
+                  <option value="45">45 Days</option>
+                  <option value="60">60 Days</option>
+                </Select>
               </div>
             </div>
+          </div>
 
-            {/* Bank Details */}
-            <div>
-              <div className={sectionHeaderClass}>
-                <BankIcon /> Bank Details IN Policy
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-5">
-                <div>
-                  <label className={labelClass}>Bank Name</label>
-                  <input
-                    type="text"
-                    placeholder="Enter Bank Name"
-                    className={inputClass}
-                    value={formData.bank_name}
-                    onChange={(e: any) => handleChange('bank_name', e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>Account Type</label>
-                  <input
-                    type="text"
-                    placeholder="Enter Account Type"
-                    className={inputClass}
-                    value={formData.account_type}
-                    onChange={(e: any) => handleChange('account_type', e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>Account Number</label>
-                  <input
-                    type="text"
-                    placeholder="Enter Account Number"
-                    className={inputClass}
-                    value={formData.account_number}
-                    onChange={(e: any) => handleChange('account_number', e.target.value)}
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div>
-                  <label className={labelClass}>IFSC CODE</label>
-                  <input
-                    type="text"
-                    placeholder="Enter IFSC CODE"
-                    className={inputClass}
-                    value={formData.ifsc_code}
-                    onChange={(e: any) => handleChange('ifsc_code', e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>Account Holder Name</label>
-                  <input
-                    type="text"
-                    placeholder="Enter Account Holder Name"
-                    className={inputClass}
-                    value={formData.account_holder_name}
-                    onChange={(e: any) => handleChange('account_holder_name', e.target.value)}
-                  />
-                </div>
+          {/* Dynamic Riders Section (Exact 4 Columns Row with Square Icon Button) */}
+          <div className="bg-white rounded-2xl border border-gray-200/80 p-5 sm:p-6 shadow-2xs">
+            <div className={sectionHeaderClass}>
+              <div className="flex items-center gap-2">
+                <Shield size={18} />
+                <span>Dynamic Riders</span>
               </div>
             </div>
-
-            {/* Additional Document Information */}
-            <div>
-              <div className="flex items-center justify-between bg-[#EEF1FA] text-[#2B4399] px-5 py-3 rounded-lg mb-5">
-                <div className="flex items-center gap-2 text-[15px] font-bold">
-                  <FileIcon /> Additional Document Information
-                </div>
-                <button type="button" onClick={addDocument} className="bg-[#2B4399] text-white p-1.5 rounded-md hover:bg-[#203378] transition-colors shadow-sm">
-                  <Plus size={16} />
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                {documents.map((doc, index) => (
-                  <div key={doc.id} className="flex items-center gap-4">
-                    <div className="flex-[2]">
-                      <Select
-                        className={inputClass}
-                        value={doc.other_document_name}
-                        onChange={(e: any) => updateDocument(doc.id, 'other_document_name', e.target.value)}
+            <div className="space-y-5">
+              {riders.map((rider, index) => (
+                <div key={rider.id} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
+                  <div>
+                    <label className={labelClass}>Rider Name</label>
+                    <Select
+                      className={selectClass}
+                      value={rider.riders_id}
+                      onChange={(e: any) => updateRider(rider.id, 'riders_id', e.target.value)}
+                    >
+                      <option value="">Select Rider</option>
+                      {riderListOptions.map((rd: any) => {
+                        const rId = rd.id || rd.rider_id;
+                        const rName = rd.name || rd.rider_name || `Rider #${rId}`;
+                        return (
+                          <option key={rId} value={rId}>
+                            {rName}
+                          </option>
+                        );
+                      })}
+                    </Select>
+                  </div>
+                  <div>
+                    <label className={labelClass}>Rider Amount</label>
+                    <Input
+                      name={`riders_amount_${rider.id}`}
+                      placeholder="Enter Amount"
+                      value={rider.riders_amount}
+                      onChange={(e: any) => updateRider(rider.id, 'riders_amount', e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Note</label>
+                    <Input
+                      name={`riders_note_${rider.id}`}
+                      placeholder="Enter Note"
+                      value={rider.riders_note}
+                      onChange={(e: any) => updateRider(rider.id, 'riders_note', e.target.value)}
+                    />
+                  </div>
+                  <div className="flex items-center">
+                    {index === 0 ? (
+                      <button
+                        type="button"
+                        onClick={addRider}
+                        className="w-[42px] h-[42px] bg-[#2B4399] hover:bg-[#203378] text-white rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
+                        title="Add Rider"
                       >
-                        <option value="">Select Other Document Name</option>
-                        {documentListOptions.map((dc: any) => {
-                          const dId = dc.id || dc.document_id;
-                          const dName = dc.name || dc.document_name || `Doc #${dId}`;
-                          return (
-                            <option key={dId} value={dId}>
-                              {dName}
-                            </option>
-                          );
-                        })}
-                      </Select>
-                    </div>
-                    <div className="flex-1 flex flex-col">
-                      <input
-                        type="file"
-                        onChange={(e: any) => updateDocument(doc.id, 'other_document_image', e.target.files?.[0] || null)}
-                        className="border border-gray-300 rounded-lg text-sm px-4 py-1.5 w-full file:mr-4 file:py-1.5 file:px-4 file:rounded file:border-0 file:text-sm file:font-bold file:bg-gray-100 hover:file:bg-gray-200 cursor-pointer shadow-sm bg-white"
-                      />
-                      {(doc as any).existing_image_url && !(doc.other_document_image) && (
-                        <a href={(doc as any).existing_image_url} target="_blank" rel="noreferrer" className="text-xs text-[#2B4399] font-bold mt-1 underline">
-                          View Uploaded Document
-                        </a>
-                      )}
-                    </div>
-                    {index > 0 && (
-                      <button type="button" onClick={() => removeDocument(doc.id)} className="bg-[#cf3838] text-white p-2.5 rounded-lg hover:bg-[#a12828] transition-colors shrink-0 shadow-sm">
-                        <Minus size={18} />
+                        <Plus size={20} />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => removeRider(rider.id)}
+                        className="w-[42px] h-[42px] bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
+                        title="Remove Rider"
+                      >
+                        <Minus size={20} />
                       </button>
                     )}
                   </div>
-                ))}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Options */}
+          <div className="bg-white rounded-2xl border border-gray-200/80 p-5 sm:p-6 shadow-2xs">
+            <div className={sectionHeaderClass}>
+              <div className="flex items-center gap-2">
+                <Settings size={18} />
+                <span>Options</span>
+              </div>
+            </div>
+            <Input
+              as="checkbox"
+              name="regenerate_installments"
+              label="Mark All Installments As Paid"
+              helperText="Check To Mark All Installments Up To Today's Date As Paid On Save."
+              checked={formData.regenerate_installments}
+              onChange={(e: any) => handleChange('regenerate_installments', e.target.checked)}
+              checkboxColor="#2B4399"
+            />
+          </div>
+
+          {/* Nominee Details (Exact 4 Columns Row with Square Icon Button) */}
+          <div className="bg-white rounded-2xl border border-gray-200/80 p-5 sm:p-6 shadow-2xs">
+            <div className={sectionHeaderClass}>
+              <div className="flex items-center gap-2">
+                <Users size={18} />
+                <span>Nominee Details</span>
               </div>
             </div>
 
-          </form>
-        </div>
+            <div className="space-y-5">
+              {nominees.map((nominee, index) => (
+                <div key={nominee.id} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
+                  <div>
+                    <label className={labelClass}>Nominee Name <span className="text-red-500">*</span></label>
+                    <Input
+                      name={`nomainee_name_${nominee.id}`}
+                      placeholder="Nominee Name *"
+                      value={nominee.nomainee_name}
+                      onChange={(e: any) => updateNominee(nominee.id, 'nomainee_name', e.target.value)}
+                      error={errors.nomainee_name && !nominee.nomainee_name ? errors.nomainee_name : undefined}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Relationship</label>
+                    <Select
+                      className={selectClass}
+                      value={nominee.nomainee_relationship}
+                      onChange={(e: any) => updateNominee(nominee.id, 'nomainee_relationship', e.target.value)}
+                    >
+                      <option value="">Select Relationship</option>
+                      {relationshipOptions.map((rel: any) => (
+                        <option key={rel.id} value={rel.id}>
+                          {rel.name}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
+                  <div>
+                    <label className={labelClass}>Percentage (%)</label>
+                    <Input
+                      name={`nomainee_per_${nominee.id}`}
+                      placeholder="Percentage (%)"
+                      value={nominee.nomainee_per}
+                      onChange={(e: any) => updateNominee(nominee.id, 'nomainee_per', e.target.value)}
+                    />
+                  </div>
+                  <div className="flex items-center">
+                    {index === 0 ? (
+                      <button
+                        type="button"
+                        onClick={addNominee}
+                        className="w-[42px] h-[42px] bg-[#2B4399] hover:bg-[#203378] text-white rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
+                        title="Add Nominee"
+                      >
+                        <Plus size={20} />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => removeNominee(nominee.id)}
+                        className="w-[42px] h-[42px] bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
+                        title="Remove Nominee"
+                      >
+                        <Minus size={20} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Note Details */}
+          <div className="bg-white rounded-2xl border border-gray-200/80 p-5 sm:p-6 shadow-2xs">
+            <div className={sectionHeaderClass}>
+              <div className="flex items-center gap-2">
+                <BookOpen size={18} />
+                <span>Note Details</span>
+              </div>
+            </div>
+            <div>
+              <label className={labelClass}>Note</label>
+              <Input
+                as="textarea"
+                name="note"
+                placeholder="Enter Note"
+                value={formData.note}
+                onChange={(e: any) => handleChange('note', e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Bank Details IN Policy (Exact 4 Columns Row Grid) */}
+          <div className="bg-white rounded-2xl border border-gray-200/80 p-5 sm:p-6 shadow-2xs">
+            <div className={sectionHeaderClass}>
+              <div className="flex items-center gap-2">
+                <Building2 size={18} />
+                <span>Bank Details IN Policy</span>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div>
+                <label className={labelClass}>Bank Name</label>
+                <Input
+                  name="bank_name"
+                  placeholder="Enter Bank Name"
+                  value={formData.bank_name}
+                  onChange={(e: any) => handleChange('bank_name', e.target.value)}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Account Type</label>
+                <Input
+                  name="account_type"
+                  placeholder="Enter Account Type"
+                  value={formData.account_type}
+                  onChange={(e: any) => handleChange('account_type', e.target.value)}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Account Number</label>
+                <Input
+                  name="account_number"
+                  placeholder="Enter Account Number"
+                  value={formData.account_number}
+                  onChange={(e: any) => handleChange('account_number', e.target.value)}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>IFSC CODE</label>
+                <Input
+                  name="ifsc_code"
+                  placeholder="Enter IFSC CODE"
+                  value={formData.ifsc_code}
+                  onChange={(e: any) => handleChange('ifsc_code', e.target.value)}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Account Holder Name</label>
+                <Input
+                  name="account_holder_name"
+                  placeholder="Enter Account Holder Name"
+                  value={formData.account_holder_name}
+                  onChange={(e: any) => handleChange('account_holder_name', e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Additional Document Information (Exact 4 Columns Row with Square Icon Button) */}
+          <div className="bg-white rounded-2xl border border-gray-200/80 p-5 sm:p-6 shadow-2xs">
+            <div className={sectionHeaderClass}>
+              <div className="flex items-center gap-2">
+                <FileText size={18} />
+                <span>Additional Document Information</span>
+              </div>
+            </div>
+
+            <div className="space-y-5">
+              {documents.map((doc, index) => (
+                <div key={doc.id} className="flex flex-col sm:flex-row items-end gap-4">
+                  <div className="w-full sm:w-1/3">
+                    <label className={labelClass}>Document Name</label>
+                    <Select
+                      className={selectClass}
+                      value={doc.other_document_name}
+                      onChange={(e: any) => updateDocument(doc.id, 'other_document_name', e.target.value)}
+                    >
+                      <option value="">Select Document Name</option>
+                      {documentListOptions.map((dc: any) => {
+                        const dId = dc.id || dc.document_id;
+                        const dName = dc.name || dc.document_name || `Doc #${dId}`;
+                        return (
+                          <option key={dId} value={dId}>
+                            {dName}
+                          </option>
+                        );
+                      })}
+                    </Select>
+                  </div>
+                  <div className="flex-1 w-full">
+                    <FileUpload
+                      label="Upload Image/Document"
+                      name={`other_document_image_${doc.id}`}
+                      file={doc.other_document_image}
+                      existingUrl={(doc as any).existing_image_url}
+                      onChange={(file) => updateDocument(doc.id, 'other_document_image', file)}
+                      placeholder="Click or drag image to upload"
+                    />
+                  </div>
+                  <div className="shrink-0 pb-[2px]">
+                    {index === 0 ? (
+                      <button
+                        type="button"
+                        onClick={addDocument}
+                        className="w-[42px] h-[42px] bg-[#2B4399] hover:bg-[#203378] text-white rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
+                        title="Add Document"
+                      >
+                        <Plus size={20} />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => removeDocument(doc.id)}
+                        className="w-[42px] h-[42px] bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
+                        title="Remove Document"
+                      >
+                        <Minus size={20} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+        </form>
       </div>
     </div>
   );
-}
-
-// Icons
-function UserIcon() {
-  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>;
-}
-function FileIcon() {
-  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" /></svg>;
-}
-function ShieldIcon() {
-  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>;
-}
-function SettingsIcon() {
-  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="9" y1="3" x2="9" y2="21" /></svg>;
-}
-function UsersIcon() {
-  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>;
-}
-function BanknoteIcon() {
-  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="6" width="20" height="12" rx="2" /><circle cx="12" cy="12" r="2" /><path d="M6 12h.01M18 12h.01" /></svg>;
-}
-function NoteIcon() {
-  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>;
-}
-function BankIcon() {
-  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="9" y1="21" x2="9" y2="9" /></svg>;
 }

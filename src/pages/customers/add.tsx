@@ -1,15 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
-import { Plus, Minus } from 'lucide-react';
+import { Plus, Minus, ArrowLeft, User, MapPin, FileText } from 'lucide-react';
 import { useRouter } from 'next/router';
+import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import DatePicker from '@/components/ui/DatePicker';
-import PageHeader from '@/components/ui/PageHeader';
+import FileUpload from '@/components/ui/FileUpload';
 import { useCustomerDropdowns } from '@/hooks/useCustomerDropdowns';
 import { api } from '@/utils/axiosInstance';
 import endPointApi from '@/utils/endPointApi';
 import { toast } from 'react-toastify';
 import { validateCustomer } from '@/utils/validation';
+
+interface CustomerDocItem {
+  id: number;
+  documentId: string;
+  file: File | null;
+  existing_image_url?: string | null;
+}
 
 export default function AddCustomer() {
   const router = useRouter();
@@ -44,9 +52,10 @@ export default function AddCustomer() {
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [customerImage, setCustomerImage] = useState<File | null>(null);
+  const [existingCustomerImageUrl, setExistingCustomerImageUrl] = useState<string>('');
 
-  const [documents, setDocuments] = useState<{ id: number; documentId: string; file: File | null }[]>([
-    { id: 1, documentId: '', file: null }
+  const [documents, setDocuments] = useState<CustomerDocItem[]>([
+    { id: 1, documentId: '', file: null, existing_image_url: null }
   ]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -112,11 +121,17 @@ export default function AddCustomer() {
             address: item.address || '',
           });
 
+          const imgUrl = item.customer_image || item.image || item.image_url || item.profile_image;
+          if (imgUrl) {
+            setExistingCustomerImageUrl(String(imgUrl));
+          }
+
           if (item.documents && Array.isArray(item.documents) && item.documents.length > 0) {
             setDocuments(item.documents.map((d: any, idx: number) => ({
               id: idx + 1,
               documentId: String(d.document_id || d.id || ''),
-              file: null
+              file: null,
+              existing_image_url: d.document_image || d.image || d.file || d.path || null
             })));
           }
         }
@@ -148,13 +163,15 @@ export default function AddCustomer() {
 
   const addDocument = () => {
     if (documents.length < 5) {
-      setDocuments([...documents, { id: Date.now(), documentId: '', file: null }]);
+      setDocuments(prev => [...prev, { id: Date.now(), documentId: '', file: null, existing_image_url: null }]);
+    } else {
+      toast.warning('Maximum 5 documents allowed');
     }
   };
 
   const removeDocument = (id: number) => {
     if (documents.length > 1) {
-      setDocuments(documents.filter(doc => doc.id !== id));
+      setDocuments(prev => prev.filter(doc => doc.id !== id));
     }
   };
 
@@ -166,8 +183,8 @@ export default function AddCustomer() {
     setDocuments(docs => docs.map(doc => doc.id === id ? { ...doc, file } : doc));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
 
     if (!validateForm()) {
       return;
@@ -234,51 +251,59 @@ export default function AddCustomer() {
     }
   };
 
-  const sectionHeaderClass = "bg-[#EEF1FA] text-[#2B4399] px-5 py-3 text-[15px] font-bold rounded-lg flex justify-between items-center mb-5";
+  const sectionHeaderClass = "bg-[#EEF1FA] text-[#2B4399] px-5 py-3 text-[15px] font-bold rounded-xl flex items-center justify-between gap-2 mb-6 border-l-4 border-[#2B4399]";
   const labelClass = "text-[13px] font-bold text-gray-700 mb-1.5 block";
-  const inputClass = "w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#2D3591]/20 focus:border-[#2D3591] transition-all bg-white shadow-sm placeholder:text-gray-400";
-  const getInputClass = (fieldName: string) =>
-    `${inputClass} ${errors[fieldName] ? '!border-red-500 ring-2 ring-red-500/20' : ''}`;
+  const selectClass = "w-full h-[42px] px-3.5 py-2 border border-gray-300 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#2B4399]/20 focus:border-[#2B4399] transition-all bg-white shadow-2xs";
 
   return (
-    <div className="bg-[#f8fafc] min-h-[calc(100vh-72px-56px)] p-6">
+    <div className="bg-[#f8fafc] min-h-screen p-4 sm:p-6 lg:p-0">
       <Head>
         <title>{id ? 'Edit Customer' : 'Add Customer'} - Insuraa</title>
-        <style>{`
-          body {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-          }
-          body::-webkit-scrollbar {
-            display: none;
-          }
-        `}</style>
       </Head>
 
-      <div className="w-full mx-auto animate-in fade-in duration-500 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+      <div className="w-full mx-auto animate-in fade-in duration-500 bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-gray-200/80">
 
         {/* Page Header */}
-        <PageHeader
-          title={id ? 'Edit Customer' : 'Add Customer'}
-          onSubmit={handleSubmit}
-          isSubmitting={isSubmitting}
-          submitText={id ? 'Update Customer' : 'Save Customer'}
-        />
+        <div className="sticky top-0 z-40 backdrop-blur-md bg-white/90 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200/80 pb-5 mb-8 pt-4 -mt-6 -mx-6 px-6 rounded-t-2xl">
+          <div className="flex items-center gap-3 font-bold text-gray-900">
+            <button onClick={() => router.back()} type="button" className="p-2 border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors shadow-2xs" title="Go Back">
+              <ArrowLeft size={18} />
+            </button>
+            <h1 className="text-xl font-bold tracking-tight text-gray-900">{id ? 'Edit Customer' : 'Add Customer'}</h1>
+          </div>
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <button type="button" onClick={() => router.back()} className="flex-1 sm:flex-none px-5 py-2.5 border border-gray-300 rounded-xl text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors shadow-2xs">
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSubmit()}
+              disabled={isSubmitting}
+              className="flex-1 sm:flex-none bg-[#2B4399] text-white px-7 py-2.5 rounded-xl text-sm font-bold hover:bg-[#203378] transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {isSubmitting ? 'Saving...' : id ? 'Update Customer' : 'Save Customer'}
+            </button>
+          </div>
+        </div>
 
         {/* Form Content */}
-        <form onSubmit={handleSubmit} className="space-y-8 bg-white">
+        <form onSubmit={handleSubmit} className="space-y-9 bg-white">
 
-          {/* Customer Information */}
-          <div>
+          {/* Customer Information (Strict 4 Fields Per Row Grid) */}
+          <div className="bg-white rounded-2xl border border-gray-200/80 p-5 sm:p-6 shadow-2xs">
             <div className={sectionHeaderClass}>
-              <div className="flex items-center gap-2"><UserIcon /> Customer Information</div>
+              <div className="flex items-center gap-2">
+                <User size={18} />
+                <span>Customer Information</span>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-x-6 gap-y-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {/* Row 1 */}
               <div>
                 <label className={labelClass}>Customer Type <span className="text-red-500">*</span></label>
                 <Select
-                  className={getInputClass('customerType')}
+                  className={`${selectClass} ${errors.customerType ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
                   value={formValues.customerType}
                   onChange={(e: any) => handleChange('customerType', e.target.value)}
                 >
@@ -290,28 +315,25 @@ export default function AddCustomer() {
                   ))}
                 </Select>
                 {errors.customerType && (
-                  <p className="text-xs text-red-500 mt-1 font-medium">{errors.customerType}</p>
+                  <p className="text-xs text-red-500 font-semibold mt-1">{errors.customerType}</p>
                 )}
               </div>
-              <div className="hidden md:block md:col-span-3"></div>
 
               <div>
                 <label className={labelClass}>First Name <span className="text-red-500">*</span></label>
-                <input
-                  type="text"
-                  className={getInputClass('firstName')}
+                <Input
+                  name="firstName"
                   placeholder="Enter First Name"
                   value={formValues.firstName}
                   onChange={(e: any) => handleChange('firstName', e.target.value)}
+                  error={errors.firstName}
                 />
-                {errors.firstName && <p className="text-xs text-red-500 mt-1 font-medium">{errors.firstName}</p>}
               </div>
 
               <div>
                 <label className={labelClass}>Middle Name</label>
-                <input
-                  type="text"
-                  className={inputClass}
+                <Input
+                  name="middleName"
                   placeholder="Enter Middle Name"
                   value={formValues.middleName}
                   onChange={(e: any) => handleChange('middleName', e.target.value)}
@@ -320,43 +342,44 @@ export default function AddCustomer() {
 
               <div>
                 <label className={labelClass}>Last Name <span className="text-red-500">*</span></label>
-                <input
-                  type="text"
-                  className={getInputClass('lastName')}
+                <Input
+                  name="lastName"
                   placeholder="Enter Last Name"
                   value={formValues.lastName}
                   onChange={(e: any) => handleChange('lastName', e.target.value)}
+                  error={errors.lastName}
                 />
-                {errors.lastName && <p className="text-xs text-red-500 mt-1 font-medium">{errors.lastName}</p>}
               </div>
 
+              {/* Row 2 */}
               <div>
                 <label className={labelClass}>Phone Number <span className="text-red-500">*</span></label>
-                <input
-                  type="text"
-                  className={getInputClass('customerNumber')}
+                <Input
+                  name="customerNumber"
                   placeholder="Enter Phone Number"
                   value={formValues.customerNumber}
                   onChange={(e: any) => handleChange('customerNumber', e.target.value)}
+                  error={errors.customerNumber}
                 />
-                {errors.customerNumber && <p className="text-xs text-red-500 mt-1 font-medium">{errors.customerNumber}</p>}
               </div>
 
               <div>
-                <label className={labelClass}>Customer Image</label>
-                <input
-                  type="file"
+                <FileUpload
+                  label="Customer Image"
+                  name="customer_image"
                   accept="image/*"
-                  onChange={(e: any) => setCustomerImage(e.target.files?.[0] || null)}
-                  className="h-[46px] border border-gray-300 rounded-lg text-sm px-4 py-2.5 w-full file:mr-4 file:py-1 file:px-4 file:rounded file:border-0 file:text-sm file:font-bold file:bg-gray-100 hover:file:bg-gray-200 cursor-pointer shadow-sm bg-white"
+                  file={customerImage}
+                  existingUrl={existingCustomerImageUrl}
+                  onChange={(file) => setCustomerImage(file)}
+                  placeholder="Click or drag image to upload"
                 />
               </div>
 
               <div>
                 <label className={labelClass}>Email</label>
-                <input
+                <Input
                   type="email"
-                  className={inputClass}
+                  name="email"
                   placeholder="Enter Email"
                   value={formValues.email}
                   onChange={(e: any) => handleChange('email', e.target.value)}
@@ -365,19 +388,19 @@ export default function AddCustomer() {
 
               <div>
                 <label className={labelClass}>Reference By</label>
-                <input
-                  type="text"
-                  className={inputClass}
+                <Input
+                  name="referenceBy"
                   placeholder="Reference By"
                   value={formValues.referenceBy}
                   onChange={(e: any) => handleChange('referenceBy', e.target.value)}
                 />
               </div>
 
+              {/* Row 3 */}
               <div>
                 <label className={labelClass}>Date Of Birth</label>
                 <DatePicker
-                  className={inputClass}
+                  className={selectClass}
                   value={formValues.dob}
                   onChange={(dateStr: string) => handleChange('dob', dateStr)}
                   placeholder="Select Date Of Birth"
@@ -386,9 +409,8 @@ export default function AddCustomer() {
 
               <div>
                 <label className={labelClass}>Year ( Age )</label>
-                <input
-                  type="text"
-                  className={inputClass}
+                <Input
+                  name="age"
                   placeholder="Enter Year ( Age )"
                   value={formValues.age}
                   onChange={(e: any) => handleChange('age', e.target.value)}
@@ -398,7 +420,7 @@ export default function AddCustomer() {
               <div>
                 <label className={labelClass}>Gender</label>
                 <Select
-                  className={inputClass}
+                  className={selectClass}
                   value={formValues.gender}
                   onChange={(e: any) => handleChange('gender', e.target.value)}
                 >
@@ -410,22 +432,22 @@ export default function AddCustomer() {
                   ))}
                 </Select>
               </div>
+
               <div>
                 <label className={labelClass}>Height</label>
-                <input
-                  type="text"
-                  className={inputClass}
+                <Input
+                  name="height"
                   placeholder="Enter Height"
                   value={formValues.height}
                   onChange={(e: any) => handleChange('height', e.target.value)}
                 />
               </div>
 
+              {/* Row 4 */}
               <div>
                 <label className={labelClass}>Weight</label>
-                <input
-                  type="text"
-                  className={inputClass}
+                <Input
+                  name="weight"
                   placeholder="Enter Weight"
                   value={formValues.weight}
                   onChange={(e: any) => handleChange('weight', e.target.value)}
@@ -435,7 +457,7 @@ export default function AddCustomer() {
               <div>
                 <label className={labelClass}>Marital Status</label>
                 <Select
-                  className={inputClass}
+                  className={selectClass}
                   value={formValues.maritalStatus}
                   onChange={(e: any) => handleChange('maritalStatus', e.target.value)}
                 >
@@ -451,7 +473,7 @@ export default function AddCustomer() {
               <div>
                 <label className={labelClass}>Anniversary Date</label>
                 <DatePicker
-                  className={inputClass}
+                  className={selectClass}
                   value={formValues.anniversaryDate}
                   onChange={(dateStr: string) => handleChange('anniversaryDate', dateStr)}
                   placeholder="Select Anniversary Date"
@@ -461,7 +483,7 @@ export default function AddCustomer() {
               <div>
                 <label className={labelClass}>Education</label>
                 <Select
-                  className={inputClass}
+                  className={selectClass}
                   value={formValues.education}
                   onChange={(e: any) => handleChange('education', e.target.value)}
                 >
@@ -474,11 +496,11 @@ export default function AddCustomer() {
                 </Select>
               </div>
 
+              {/* Row 5 */}
               <div>
                 <label className={labelClass}>Adhar Card Number</label>
-                <input
-                  type="text"
-                  className={inputClass}
+                <Input
+                  name="adharCardNo"
                   placeholder="Enter Adhar Card Number"
                   value={formValues.adharCardNo}
                   onChange={(e: any) => handleChange('adharCardNo', e.target.value)}
@@ -487,9 +509,8 @@ export default function AddCustomer() {
 
               <div>
                 <label className={labelClass}>Pancard Number</label>
-                <input
-                  type="text"
-                  className={inputClass}
+                <Input
+                  name="pancardNo"
                   placeholder="Enter Pancard Number"
                   value={formValues.pancardNo}
                   onChange={(e: any) => handleChange('pancardNo', e.target.value)}
@@ -499,29 +520,30 @@ export default function AddCustomer() {
           </div>
 
           {/* Address Information */}
-          <div>
+          <div className="bg-white rounded-2xl border border-gray-200/80 p-5 sm:p-6 shadow-2xs">
             <div className={sectionHeaderClass}>
-              <div className="flex items-center gap-2"><MapPinIcon /> Address Information</div>
+              <div className="flex items-center gap-2">
+                <MapPin size={18} />
+                <span>Address Information</span>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-x-6 gap-y-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               <div>
                 <label className={labelClass}>Pincode <span className="text-red-500">*</span></label>
-                <input
-                  type="text"
-                  className={getInputClass('pincode')}
+                <Input
+                  name="pincode"
                   placeholder="Enter Pincode"
                   value={formValues.pincode}
                   onChange={(e: any) => handleChange('pincode', e.target.value)}
+                  error={errors.pincode}
                 />
-                {errors.pincode && <p className="text-xs text-red-500 mt-1 font-medium">{errors.pincode}</p>}
               </div>
 
               <div>
                 <label className={labelClass}>Nationality</label>
-                <input
-                  type="text"
-                  className={inputClass}
+                <Input
+                  name="nationality"
                   placeholder="Nationality"
                   value={formValues.nationality}
                   onChange={(e: any) => handleChange('nationality', e.target.value)}
@@ -530,9 +552,8 @@ export default function AddCustomer() {
 
               <div>
                 <label className={labelClass}>State</label>
-                <input
-                  type="text"
-                  className={inputClass}
+                <Input
+                  name="state"
                   placeholder="State"
                   value={formValues.state}
                   onChange={(e: any) => handleChange('state', e.target.value)}
@@ -541,20 +562,18 @@ export default function AddCustomer() {
 
               <div>
                 <label className={labelClass}>City</label>
-                <input
-                  type="text"
-                  className={inputClass}
+                <Input
+                  name="city"
                   placeholder="City"
                   value={formValues.city}
                   onChange={(e: any) => handleChange('city', e.target.value)}
                 />
               </div>
 
-              <div>
+              <div className="lg:col-span-2">
                 <label className={labelClass}>Home Address</label>
-                <input
-                  type="text"
-                  className={inputClass}
+                <Input
+                  name="address"
                   placeholder="Enter Home Address"
                   value={formValues.address}
                   onChange={(e: any) => handleChange('address', e.target.value)}
@@ -563,30 +582,22 @@ export default function AddCustomer() {
             </div>
           </div>
 
-          {/* Document Information */}
-          <div>
+          {/* Document Information (Clean Tight Flex Container) */}
+          <div className="bg-white rounded-2xl border border-gray-200/80 p-5 sm:p-6 shadow-2xs">
             <div className={sectionHeaderClass}>
-              <div className="flex items-center gap-2"><FileIcon /> Document Information</div>
-              <button
-                type="button"
-                onClick={addDocument}
-                disabled={documents.length >= 5}
-                className={`p-1.5 rounded transition-colors flex items-center gap-1 text-xs font-semibold ${documents.length >= 5
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-[#2B4399] text-white hover:bg-[#203378]'
-                  }`}
-                title={documents.length >= 5 ? 'Maximum 5 documents allowed' : 'Add Document'}
-              >
-                <Plus size={16} strokeWidth={3} />
-              </button>
+              <div className="flex items-center gap-2">
+                <FileText size={18} />
+                <span>Document Information</span>
+              </div>
             </div>
 
-            <div className="space-y-4">
-              {documents.map((doc) => (
-                <div key={doc.id} className="flex flex-col md:flex-row items-start md:items-center gap-4">
-                  <div className="flex-1 w-full">
+            <div className="space-y-5">
+              {documents.map((doc, index) => (
+                <div key={doc.id} className="flex flex-col sm:flex-row items-end gap-4">
+                  <div className="w-full sm:w-1/3">
+                    <label className={labelClass}>Document Name</label>
                     <Select
-                      className={inputClass}
+                      className={selectClass}
                       value={doc.documentId}
                       onChange={(e: any) => handleDocumentChange(doc.id, e.target.value)}
                     >
@@ -599,21 +610,36 @@ export default function AddCustomer() {
                     </Select>
                   </div>
                   <div className="flex-1 w-full">
-                    <input
-                      type="file"
-                      onChange={(e: any) => handleDocumentFileChange(doc.id, e.target.files?.[0] || null)}
-                      className="border border-gray-300 rounded-lg text-sm px-4 py-2 w-full file:mr-4 file:py-1 file:px-4 file:rounded file:border-0 file:text-sm file:font-bold file:bg-gray-100 hover:file:bg-gray-200 cursor-pointer shadow-sm bg-white"
+                    <FileUpload
+                      label="Upload Image/Document"
+                      name={`document_file_${doc.id}`}
+                      file={doc.file}
+                      existingUrl={doc.existing_image_url}
+                      onChange={(file) => handleDocumentFileChange(doc.id, file)}
+                      placeholder="Click or drag image to upload"
                     />
                   </div>
-
-                  <button
-                    type="button"
-                    onClick={() => removeDocument(doc.id)}
-                    className="bg-[#ff0000b3] text-white p-1 rounded-sm transition-colors mt-1 md:mt-0 shadow-sm shrink-0 flex items-center justify-center"
-                    title="Remove"
-                  >
-                    <Minus size={20} strokeWidth={3} />
-                  </button>
+                  <div className="shrink-0 pb-[2px]">
+                    {index === 0 ? (
+                      <button
+                        type="button"
+                        onClick={addDocument}
+                        className="w-[42px] h-[42px] bg-[#2B4399] hover:bg-[#203378] text-white rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
+                        title="Add Document"
+                      >
+                        <Plus size={20} />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => removeDocument(doc.id)}
+                        className="w-[42px] h-[42px] bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
+                        title="Remove Document"
+                      >
+                        <Minus size={20} />
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -623,15 +649,4 @@ export default function AddCustomer() {
       </div>
     </div>
   );
-}
-
-// Minimal Icons for section headers
-function UserIcon() {
-  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
-}
-function MapPinIcon() {
-  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" /><circle cx="12" cy="10" r="3" /></svg>
-}
-function FileIcon() {
-  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /></svg>
 }

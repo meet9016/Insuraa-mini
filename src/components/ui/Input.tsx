@@ -58,29 +58,26 @@ const FormInput: React.FC<FormInputProps> = ({
 
   const getInputClasses = () => {
     let base = `
-      w-full px-3 py-2.5 rounded-xl
-      bg-white/90 backdrop-blur-sm
-      text-gray-800 text-sm outline-none transition-all duration-200
-      border-2
+      w-full h-[42px] px-3.5 py-2 rounded-xl
+      bg-white text-gray-900 text-sm outline-none transition-all duration-200
+      border border-gray-300 shadow-2xs
     `;
 
     if (disabled) {
       base += " bg-gray-50 cursor-not-allowed opacity-70";
     } else {
-      base += " hover:shadow-sm";
+      base += " hover:border-gray-400";
     }
 
     if (icon) base += " pl-10";
     if (isPassword) base += " pr-10";
 
     if (hasError) {
-      base += " border-red-700 ring-2 ring-red-300 focus:border-red-700 focus:ring-red-300";
+      base += " !border-red-500 ring-2 ring-red-500/20 focus:!border-red-500 focus:ring-red-500/20";
     } else if (showSuccess) {
-      base += " border-green-700 ring-2 ring-green-300 focus:border-green-700 focus:ring-green-300";
+      base += " !border-emerald-500 ring-2 ring-emerald-500/20 focus:!border-emerald-500 focus:ring-emerald-500/20";
     } else if (isFocused) {
-      base += " border-blue-700 ring-2 ring-blue-300";
-    } else {
-      base += " border-gray-500 hover:border-gray-700";
+      base += " !border-[#2B4399] ring-2 ring-[#2B4399]/20";
     }
 
     return `${base} ${className}`;
@@ -236,13 +233,7 @@ const FormInput: React.FC<FormInputProps> = ({
             )}
 
             {hasError && (
-              <div className="mt-1 flex items-center gap-1.5">
-                <AlertCircle
-                  size={12}
-                  className="text-red-700 flex-shrink-0"
-                />
-                <p className="text-red-700 text-xs">{error}</p>
-              </div>
+              <p className="text-xs text-red-500 font-semibold mt-1">{error}</p>
             )}
           </div>
         </div>
@@ -251,7 +242,7 @@ const FormInput: React.FC<FormInputProps> = ({
   }
 
   return (
-    <div className="w-full mb-4">
+    <div className="w-full">
       {/* Label */}
       {label && (
         <div className="flex items-center justify-between mb-2">
@@ -336,12 +327,9 @@ const FormInput: React.FC<FormInputProps> = ({
         )}
       </div>
 
-      {/* Error Message with Icon */}
+      {/* Error Message */}
       {hasError && (
-        <div className="mt-2 flex items-center gap-1.5">
-          <AlertCircle size={14} className="text-red-700 flex-shrink-0" />
-          <p className="text-red-700 text-xs">{error}</p>
-        </div>
+        <p className="text-xs text-red-500 font-semibold mt-1">{error}</p>
       )}
 
       {/* Success Message */}

@@ -187,7 +187,7 @@ export default function GeneralAgencyCodeList() {
           searchPlaceholder="Search agency code..."
           searchValue={search}
           onSearchChange={handleSearchChange}
-          buttonText="Add General Agency Code"
+          buttonText="Add General Agency Code "
           onButtonClick={handleOpenAddModal}
         />
 

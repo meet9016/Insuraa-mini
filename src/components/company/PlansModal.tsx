@@ -37,7 +37,7 @@ export default function PlansModal({
 
         <TableHeader
           title="Company Plans"
-          buttonText="Add Plan"
+          buttonText="Add Plan "
           onButtonClick={onAddPlanClick}
           showSearch={false}
         />
