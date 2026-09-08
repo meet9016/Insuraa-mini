@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, Children, isValidElement } from 'react';
 import { ChevronDown, Search, Check } from 'lucide-react';
 
-export default function Select({ children, className, onChange, value, ...props }: any) {
+export default function Select({ children, className, onChange, value, error, ...props }: any) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -70,13 +70,18 @@ export default function Select({ children, className, onChange, value, ...props 
       {/* Trigger Button (Identical height to standard inputs) */}
       <div
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center justify-between cursor-pointer ${className || 'w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-sm'} ${isOpen ? '!border-[var(--primary)] ring-2 ring-[var(--primary)]/20' : ''
-          }`}
+        className={`w-full h-[42px] px-3.5 py-2 bg-white border rounded-xl text-sm flex items-center justify-between cursor-pointer transition-all shadow-2xs ${
+          error
+            ? 'border-red-500 ring-2 ring-red-500/20'
+            : isOpen
+            ? 'border-[#2B4399] ring-2 ring-[#2B4399]/20'
+            : 'border-gray-300 hover:border-gray-400'
+        } ${className || ''}`}
       >
         <span className={selectedOption ? 'text-gray-900 font-semibold' : 'text-gray-400'}>
           {displayLabel}
         </span>
-        <ChevronDown size={18} className={`transition-transform duration-200 ${isOpen ? 'rotate-180 text-[var(--primary)]' : 'text-gray-500'}`} />
+        <ChevronDown size={18} className={`transition-transform duration-200 ${isOpen ? 'rotate-180 text-[#2B4399]' : 'text-gray-500'}`} />
       </div>
 
       {/* Dropdown Menu (Matches the reference image layout) */}

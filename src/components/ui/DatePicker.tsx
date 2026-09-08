@@ -6,6 +6,7 @@ interface DatePickerProps {
   onChange?: (date: string) => void;
   className?: string;
   placeholder?: string;
+  error?: string;
 }
 
 const MONTHS = [
@@ -36,7 +37,7 @@ const parseDateString = (val?: string): Date | null => {
   return isNaN(parsed.getTime()) ? null : parsed;
 };
 
-export default function DatePicker({ value, onChange, className, placeholder = "Select Date" }: DatePickerProps) {
+export default function DatePicker({ value, onChange, className, placeholder = "Select Date", error }: DatePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(parseDateString(value));
   const [currentDate, setCurrentDate] = useState<Date>(parseDateString(value) || new Date());
@@ -124,9 +125,9 @@ export default function DatePicker({ value, onChange, className, placeholder = "
           onClick={(e) => { e.preventDefault(); handleDateClick(i); }}
           className={`w-8 h-8 flex items-center justify-center rounded-full text-[13px] font-medium transition-all duration-200
             ${isSelected
-              ? 'bg-[var(--primary)] text-white shadow-md transform scale-110'
+              ? 'bg-[#2B4399] text-white shadow-md transform scale-110'
               : isToday
-                ? 'bg-blue-50 text-[var(--primary)] font-bold border border-[var(--primary)]/30'
+                ? 'bg-blue-50 text-[#2B4399] font-bold border border-[#2B4399]/30'
                 : 'text-gray-700 hover:bg-gray-100'
             }
           `}
@@ -151,14 +152,20 @@ export default function DatePicker({ value, onChange, className, placeholder = "
     <div className="relative w-full text-[14px]" ref={dropdownRef}>
       <div
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center justify-between cursor-pointer ${className || 'w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-sm'} ${isOpen ? '!border-[var(--primary)] ring-2 ring-[var(--primary)]/20' : ''
-          }`}
+        className={`w-full h-[42px] px-3.5 py-2 bg-white border rounded-xl text-sm flex items-center justify-between cursor-pointer transition-all shadow-2xs ${
+          error
+            ? 'border-red-500 ring-2 ring-red-500/20'
+            : isOpen
+            ? 'border-[#2B4399] ring-2 ring-[#2B4399]/20'
+            : 'border-gray-300 hover:border-gray-400'
+        } ${className || ''}`}
       >
         <span className={selectedDate ? 'text-gray-900 font-semibold' : 'text-gray-400'}>
           {selectedDate ? formatDate(selectedDate) : placeholder}
         </span>
-        <CalendarIcon size={18} className={`transition-colors duration-200 ${isOpen ? 'text-[var(--primary)]' : 'text-gray-500'}`} />
+        <CalendarIcon size={18} className={`transition-colors duration-200 ${isOpen ? 'text-[#2B4399]' : 'text-gray-500'}`} />
       </div>
+      {error && <p className="text-xs text-red-500 font-semibold mt-1">{error}</p>}
 
       {isOpen && (
         <div className="absolute z-[9999] w-[280px] mt-2 bg-white border border-[#d2d6f0] rounded-2xl shadow-xl overflow-hidden flex flex-col p-4 right-0 lg:right-auto animate-in fade-in zoom-in-95 duration-200">

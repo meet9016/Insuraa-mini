@@ -1,368 +1,776 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
-import { Plus, Minus, ArrowLeft } from 'lucide-react';
-import Link from 'next/link';
+import { Plus, Minus, ArrowLeft, Sparkles, User, FileText, Shield, Notebook } from 'lucide-react';
 import { useRouter } from 'next/router';
+import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import DatePicker from '@/components/ui/DatePicker';
+import FileUpload from '@/components/ui/FileUpload';
+import { toast } from 'react-toastify';
+import { api } from '@/utils/axiosInstance';
+import endPointApi from '@/utils/endPointApi';
+import { validateMotorInsurance } from '@/utils/validation';
+import { useCustomerList } from '@/hooks/useCustomerApi';
+import { useMotorInsuranceMasterData, useMotorInsuranceCompanyPlansAndAgency, useMotorInsuranceActions } from '@/hooks/useMotorInsuranceApi';
 
 export default function AddMotorInsurance() {
   const router = useRouter();
-  const [documents, setDocuments] = useState([{ id: 1 }]);
+  const editId = router.query.id ? String(router.query.id) : '';
+  const isEdit = Boolean(editId);
+  const { insertMotorInsurance } = useMotorInsuranceActions();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
-  const addDocument = () => setDocuments([...documents, { id: Date.now() }]);
-  const removeDocument = (id: number) => setDocuments(documents.filter(d => d.id !== id));
+  // Fetch API master data & dropdowns
+  const { data: masterData } = useMotorInsuranceMasterData();
+  const { data: customerRes } = useCustomerList({ page: 1, limit: 1000 });
 
-  const sectionHeaderClass = "bg-[#EEF1FA] text-[#2B4399] px-5 py-3 text-[15px] font-bold rounded-lg flex items-center gap-2 mb-5";
+  const customerList = customerRes?.customerList || [];
+  const companyList = masterData?.companies || [];
+  const planTypeList = masterData?.plan_type || [];
+  const vehicleTypeList = masterData?.vehicle_type || [];
+  const classOfVehicleList = masterData?.class_of_vehicle || [];
+  const insuranceTypeList = masterData?.insurance_type || [];
+  const ncbOptionsList = masterData?.ncb_options || [];
+  const documentNameList = masterData?.document_name || [];
+  const maxDocs = masterData?.max_documents_allowed || 5;
+
+  // Form State
+  const [formData, setFormData] = useState({
+    motor_insurance_id: '',
+    // Customer Information
+    customer_id: '',
+
+    // Insurance Information
+    companies_id: '',
+    plan_name: '',
+    companies_agency_code: '',
+    plan_type: '',
+    vehicle_type: '',
+    class_of_vehicle: '',
+    insurance_type: '',
+    registration_number_rto: '',
+    engine_number: '',
+    chasis_no: '',
+    policy_number: '',
+    policy_login_date: '',
+    policy_start_date: '',
+    policy_end_date: '',
+    mfy_year_of_manufacture: '',
+    make_model_variant: '',
+    ncb: '',
+    cng_value: '',
+    vehicle_value: '',
+    own_damage_premimum: '',
+    tp_premium: '',
+    net_premium: '',
+    gst_amount: '',
+    total_premium: '',
+
+    // Note
+    note: '',
+  });
+
+  // Fetch existing details on Edit mode
+  useEffect(() => {
+    if (!router.isReady || !editId) return;
+
+    setFormData(prev => ({ ...prev, motor_insurance_id: editId }));
+
+    const fetchDetail = async () => {
+      try {
+        const reqData = new FormData();
+        reqData.append('motor_insurance_id', editId);
+
+        let item: any = null;
+
+        try {
+          const viewResponse = await api.post(endPointApi.MOTOR_INSURANCE.VIEW_MOTOR_INSURANCE, reqData);
+          const viewResData = viewResponse?.data;
+          item = viewResData?.data || viewResData;
+        } catch (e) {
+          console.warn('View endpoint failed, falling back to list endpoint', e);
+        }
+
+        if (!item || (!item.customer_id && !item.policy_number && !item.companies_id)) {
+          const listFormData = new FormData();
+          listFormData.append('page', '1');
+          listFormData.append('limit', '100');
+          listFormData.append('search', editId);
+
+          const response = await api.post(endPointApi.MOTOR_INSURANCE.MOTOR_INSURANCE_LIST, listFormData);
+          const resData = response?.data;
+          const list = resData?.data || resData?.motor_insurance_list || [];
+          if (Array.isArray(list)) {
+            item = list.find((c: any) => String(c.id || c.motor_insurance_id) === editId) || list[0];
+          }
+        }
+
+        if (item) {
+          setFormData({
+            motor_insurance_id: String(item.motor_insurance_id || item.id || editId).trim(),
+            customer_id: String(item.customer_id || '').trim(),
+            companies_id: String(item.companies_id || '').trim(),
+            plan_name: String(item.plan_name || '').trim(),
+            companies_agency_code: String(item.companies_agency_code || '').trim(),
+            plan_type: String(item.plan_type || '').trim(),
+            vehicle_type: String(item.vehicle_type || '').trim(),
+            class_of_vehicle: String(item.class_of_vehicle || '').trim(),
+            insurance_type: String(item.insurance_type || '').trim(),
+            registration_number_rto: String(item.registration_number_rto || '').trim(),
+            engine_number: String(item.engine_number || '').trim(),
+            chasis_no: String(item.chasis_no || '').trim(),
+            policy_number: String(item.policy_number || '').trim(),
+            policy_login_date: String(item.policy_login_date || '').trim(),
+            policy_start_date: String(item.policy_start_date || '').trim(),
+            policy_end_date: String(item.policy_end_date || '').trim(),
+            mfy_year_of_manufacture: String(item.mfy_year_of_manufacture || '').trim(),
+            make_model_variant: String(item.make_model_variant || '').trim(),
+            ncb: String(item.ncb || '').trim(),
+            cng_value: String(item.cng_value || '').trim(),
+            vehicle_value: String(item.vehicle_value || '').trim(),
+            own_damage_premimum: String(item.own_damage_premimum || '').trim(),
+            tp_premium: String(item.tp_premium || '').trim(),
+            net_premium: String(item.net_premium || '').trim(),
+            gst_amount: String(item.gst_amount || '').trim(),
+            total_premium: String(item.total_premium || '').trim(),
+            note: String(item.note || '').trim(),
+          });
+
+          if (item.policy_pdf) {
+            setExistingPolicyPdfUrl(String(item.policy_pdf).trim());
+          }
+
+          const docData = item.documents || item.other_documents || [];
+          if (Array.isArray(docData) && docData.length > 0) {
+            setDocuments(docData.map((d: any, idx: number) => ({
+              id: Date.now() + idx,
+              other_document_name: String(d.other_document_name || d.document_name_id || d.id || '').trim(),
+              other_document_image: null,
+              existing_image_url: d.other_document_image || d.image || d.file_url || (typeof d === 'string' ? d : null),
+            })));
+          }
+        }
+      } catch (err) {
+        toast.error('Failed to load motor insurance details');
+      }
+    };
+
+    fetchDetail();
+  }, [router.isReady, editId]);
+
+  // Dynamic Company Plans & Agency Codes based on selected company_id
+  const { data: plansAndAgencyRes } = useMotorInsuranceCompanyPlansAndAgency(formData.companies_id);
+  const companyPlans = plansAndAgencyRes?.plan_list || [];
+  const agencyCodeList = plansAndAgencyRes?.agency_code || [];
+
+  // Policy PDF file state
+  const [policyPdf, setPolicyPdf] = useState<File | null>(null);
+  const [existingPolicyPdfUrl, setExistingPolicyPdfUrl] = useState<string>('');
+
+  // Additional Documents State
+  const [documents, setDocuments] = useState<Array<{ id: number; other_document_name: string; other_document_image: File | null; existing_image_url?: string | null }>>([
+    { id: 1, other_document_name: '', other_document_image: null }
+  ]);
+
+  const handleChange = (field: string, value: any) => {
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+    setFormData(prev => {
+      const updated = { ...prev, [field]: value };
+
+      // Auto-calculate Net Premium & Total Premium if OD or TP or GST changes
+      if (['own_damage_premimum', 'tp_premium', 'gst_amount'].includes(field)) {
+        const od = parseFloat(field === 'own_damage_premimum' ? value : prev.own_damage_premimum) || 0;
+        const tp = parseFloat(field === 'tp_premium' ? value : prev.tp_premium) || 0;
+        const gst = parseFloat(field === 'gst_amount' ? value : prev.gst_amount) || 0;
+
+        const net = od + tp;
+        const total = net + gst;
+
+        if (field === 'own_damage_premimum' || field === 'tp_premium') {
+          updated.net_premium = String(net);
+          updated.total_premium = String(total);
+          if (errors.net_premium) setErrors(e => ({ ...e, net_premium: '' }));
+          if (errors.total_premium) setErrors(e => ({ ...e, total_premium: '' }));
+        } else if (field === 'gst_amount') {
+          const currentNet = parseFloat(prev.net_premium) || net;
+          updated.total_premium = String(currentNet + gst);
+          if (errors.total_premium) setErrors(e => ({ ...e, total_premium: '' }));
+        }
+      }
+
+      return updated;
+    });
+  };
+
+  const addDocument = () => {
+    if (documents.length < maxDocs) {
+      setDocuments(prev => [...prev, { id: Date.now(), other_document_name: '', other_document_image: null }]);
+    } else {
+      toast.warning(`Maximum ${maxDocs} documents allowed`);
+    }
+  };
+
+  const removeDocument = (id: number) => {
+    if (documents.length > 1) {
+      setDocuments(prev => prev.filter(d => d.id !== id));
+    }
+  };
+
+  const updateDocument = (id: number, field: 'other_document_name' | 'other_document_image', value: any) => {
+    setDocuments(prev => prev.map(d => d.id === id ? { ...d, [field]: value } : d));
+  };
+
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+
+    const { isValid, errors: validationErrors } = validateMotorInsurance(formData);
+    if (!isValid) {
+      setErrors(validationErrors);
+      return;
+    }
+    setErrors({});
+
+    setIsSubmitting(true);
+
+    try {
+      const payload = {
+        ...formData,
+        policy_pdf: policyPdf,
+        other_documents: documents
+          .filter(d => d.other_document_name)
+          .map(d => ({
+            other_document_name: d.other_document_name,
+            other_document_image: d.other_document_image
+          }))
+      };
+
+      const res = await insertMotorInsurance(payload);
+      if (res?.success) {
+        router.push('/insurance/motor');
+      }
+    } catch (err: any) {
+      toast.error('Failed to submit form');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const sectionHeaderClass = "bg-[#EEF1FA] text-[#2B4399] px-5 py-3 text-[15px] font-bold rounded-xl flex items-center justify-between gap-2 mb-6 border-l-4 border-[#2B4399]";
   const labelClass = "text-[13px] font-bold text-gray-700 mb-1.5 block";
-  const inputClass = "w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#2D3591]/20 focus:border-[#2D3591] transition-all bg-white shadow-sm";
+  const selectClass = "w-full h-[42px] px-3.5 py-2 border border-gray-300 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#2B4399]/20 focus:border-[#2B4399] transition-all bg-white shadow-2xs";
 
   return (
-    <div className="bg-[#f8fafc] min-h-[calc(100vh-72px-56px)] p-6">
+    <div className="bg-[#f8fafc] min-h-screen p-4 sm:p-6 lg:p-0">
       <Head>
-        <title>Add Motor Insurance - Insuraa</title>
-        <style>{`
-          body {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-          }
-          body::-webkit-scrollbar {
-            display: none;
-          }
-        `}</style>
+        <title>{isEdit ? 'Edit Motor Insurance' : 'Add Motor Insurance'} - Insuraa</title>
       </Head>
 
-      <div className="w-full mx-auto animate-in fade-in duration-500 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+      <div className="w-full mx-auto animate-in fade-in duration-500 bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-gray-200/80">
 
         {/* Page Header */}
-        <div className="sticky top-0 z-40 bg-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200 pb-5 mb-8 pt-6 -mt-6 -mx-6 px-6 rounded-t-xl">
+        <div className="sticky top-0 z-40 backdrop-blur-md bg-white/90 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200/80 pb-5 mb-8 pt-4 -mt-6 -mx-6 px-6 rounded-t-2xl">
           <div className="flex items-center gap-3 font-bold text-gray-900">
-            <button onClick={() => router.back()} type="button" className="p-2 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors" title="Go Back">
+            <button onClick={() => router.back()} type="button" className="p-2 border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors shadow-2xs" title="Go Back">
               <ArrowLeft size={18} />
             </button>
-            <h1 className="text-xl">Add Motor Insurance</h1>
+            <h1 className="text-xl font-bold tracking-tight text-gray-900">{isEdit ? 'Edit Motor Insurance' : 'Add Motor Insurance'}</h1>
           </div>
           <div className="flex items-center gap-3 w-full sm:w-auto">
-            <button type="button" onClick={() => router.back()} className="flex-1 sm:flex-none px-5 py-2.5 border border-gray-300 rounded-lg text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors">
+            <button type="button" onClick={() => router.back()} className="flex-1 sm:flex-none px-5 py-2.5 border border-gray-300 rounded-xl text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors shadow-2xs">
               Cancel
             </button>
-            <button type="button" className="flex-1 sm:flex-none bg-[#2B4399] text-white px-6 py-2.5 rounded-lg text-sm font-bold hover:bg-[#203378] transition-colors shadow-sm">
-              Save Insurance
+            <button
+              type="button"
+              onClick={() => handleSubmit()}
+              disabled={isSubmitting}
+              className="flex-1 sm:flex-none bg-[#2B4399] text-white px-7 py-2.5 rounded-xl text-sm font-bold hover:bg-[#203378] transition-colors shadow-sm flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {isSubmitting ? (isEdit ? 'Updating...' : 'Saving...') : (isEdit ? 'Update Insurance' : 'Save Insurance')}
             </button>
           </div>
         </div>
 
         {/* Form Content */}
-        <form className="space-y-8 bg-white">
+        <form className="space-y-9 bg-white" onSubmit={handleSubmit}>
 
-          {/* Customer Information */}
-          <div>
+          {/* Customer Information Section Card */}
+          <div className="bg-white rounded-2xl border border-gray-200/80 p-5 sm:p-6 shadow-2xs">
             <div className={sectionHeaderClass}>
-              <UserIcon /> Customer Information
+              <div className="flex items-center gap-2">
+                <User size={18} />
+                <span>Customer Information</span>
+              </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-5">
-              <div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="lg:col-span-2">
                 <div className="flex justify-between items-center mb-1.5">
-                  <label className="text-[13px] font-bold text-gray-700">Customer Name <span className="text-red-500">*</span></label>
-                  <button type="button" className="text-xs text-[#2B4399] font-bold hover:underline">Add Customer</button>
+                  <label className={labelClass}>Customer Name <span className="text-red-500">*</span></label>
+                  <button type="button" onClick={() => router.push('/customers/add')} className="text-xs text-[#2B4399] font-bold hover:underline">Add Customer</button>
                 </div>
-                <Select className={inputClass}>
-                  <option>Select Customer Name</option>
+                <Select
+                  className={`${selectClass} ${errors.customer_id ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
+                  value={formData.customer_id}
+                  onChange={(e: any) => handleChange('customer_id', e.target.value)}
+                >
+                  <option value="">Select Customer Name</option>
+                  {customerList.map((cust: any) => {
+                    const id = cust.customer_id || cust.id;
+                    const name = cust.full_name || `Customer #${id}`;
+                    const phone = cust.number || '';
+                    return (
+                      <option key={id} value={id}>
+                        {phone ? `${name} (${phone})` : name}
+                      </option>
+                    );
+                  })}
                 </Select>
-              </div>
-              <div>
-                <label className={labelClass}>Policy Holder</label>
-                <input type="text" placeholder="Select Policy Holder" className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass}>Agent</label>
-                <Select className={inputClass}>
-                  <option>Select Agent</option>
-                </Select>
+                {errors.customer_id && <p className="text-xs text-red-500 font-semibold mt-1">{errors.customer_id}</p>}
               </div>
             </div>
           </div>
 
-          {/* Policy PDF Details */}
-          <div>
+          {/* Policy PDF Details Section Card */}
+          <div className="bg-white rounded-2xl border border-gray-200/80 p-5 sm:p-6 shadow-2xs">
             <div className={sectionHeaderClass}>
-              <FileIcon /> Policy PDF Details
+              <div className="flex items-center gap-2">
+                <FileText size={18} />
+                <span>Policy PDF Details</span>
+              </div>
             </div>
             <div className="space-y-4">
               <div>
-                <label className={labelClass}>Upload Policy</label>
+                <label className={labelClass}>Upload Policy PDF</label>
                 <div className="flex items-center gap-4">
-                  <input type="file" className="h-[46px] border border-gray-300 rounded-lg text-sm px-4 py-2.5 w-full max-w-md file:mr-4 file:py-1 file:px-4 file:rounded file:border-0 file:text-sm file:font-bold file:bg-gray-100 hover:file:bg-gray-200 cursor-pointer shadow-sm" />
-                  <button type="button" className="h-[46px] bg-[var(--primary)] text-white px-10 rounded-lg text-sm font-bold hover:bg-[#203378] transition-colors shadow-sm flex items-center justify-center">AI</button>
+                  <div className="flex-1 max-w-xl">
+                    <FileUpload
+                      name="policy_pdf"
+                      accept=".pdf,.doc,.docx,image/*"
+                      file={policyPdf}
+                      existingUrl={existingPolicyPdfUrl}
+                      onChange={(file) => setPolicyPdf(file)}
+                      placeholder="Click or drag Policy PDF file to upload"
+                    />
+                  </div>
+                  <button type="button" className="h-[46px] bg-[#2B4399] text-white px-6 rounded-xl text-sm font-bold hover:bg-[#203378] transition-colors shadow-2xs flex items-center justify-center gap-2 shrink-0">
+                    <Sparkles size={16} />
+                    <span>AI</span>
+                  </button>
                 </div>
               </div>
-              <div className="bg-red-50 text-[#cf3838] p-4 rounded-lg text-xs border border-red-100 font-semibold leading-relaxed">
+              <div className="bg-red-50/70 text-[#cf3838] p-4 rounded-xl text-xs border border-red-100 font-semibold leading-relaxed">
                 Note: After Uploading The Policy PDF And Clicking The AI Button, The Form Will Be Auto-Filled. Please Review And Verify All Details Carefully, As AI-Generated Data May Not Be Fully Accurate, Before Saving Or Submitting.
               </div>
             </div>
           </div>
 
-          {/* Insurance Information */}
-          <div>
+          {/* Insurance Information Section Card */}
+          <div className="bg-white rounded-2xl border border-gray-200/80 p-5 sm:p-6 shadow-2xs">
             <div className={sectionHeaderClass}>
-              <ShieldIcon /> Insurance Information
+              <div className="flex items-center gap-2">
+                <Shield size={18} />
+                <span>Insurance Information</span>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
 
               <div>
                 <label className={labelClass}>Insurance Company Name <span className="text-red-500">*</span></label>
-                <Select className={inputClass}><option>Select Insurance Company Name</option></Select>
+                <Select
+                  className={`${selectClass} ${errors.companies_id ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
+                  value={formData.companies_id}
+                  onChange={(e: any) => handleChange('companies_id', e.target.value)}
+                >
+                  <option value="">Select Insurance Company Name</option>
+                  {companyList.map((comp: any) => (
+                    <option key={comp.id} value={comp.id}>
+                      {comp.name}
+                    </option>
+                  ))}
+                </Select>
+                {errors.companies_id && <p className="text-xs text-red-500 font-semibold mt-1">{errors.companies_id}</p>}
               </div>
+
               <div>
                 <label className={labelClass}>Plan Name <span className="text-red-500">*</span></label>
-                <Select className={inputClass}><option>Select Company Plan Name</option></Select>
+                <Select
+                  className={`${selectClass} ${errors.plan_name ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
+                  value={formData.plan_name}
+                  onChange={(e: any) => handleChange('plan_name', e.target.value)}
+                >
+                  <option value="">Select Company Plan Name</option>
+                  {companyPlans.map((plan: any) => {
+                    const pId = plan.plan_id || plan.id;
+                    const pName = plan.plan_name || plan.name || `Plan #${pId}`;
+                    return (
+                      <option key={pId} value={pId}>
+                        {pName}
+                      </option>
+                    );
+                  })}
+                </Select>
+                {errors.plan_name && <p className="text-xs text-red-500 font-semibold mt-1">{errors.plan_name}</p>}
               </div>
+
               <div>
-                <label className={labelClass}>Branch</label>
-                <Select className={inputClass}><option>Select Branch</option></Select>
+                <label className={labelClass}>Agency Code</label>
+                <Select
+                  className={selectClass}
+                  value={formData.companies_agency_code}
+                  onChange={(e: any) => handleChange('companies_agency_code', e.target.value)}
+                >
+                  <option value="">Select Agency Code</option>
+                  {agencyCodeList.map((ac: any) => {
+                    const id = ac.agency_code_id || ac.id || ac.code;
+                    const label = ac.code ? (ac.name ? `${ac.code} - ${ac.name}` : ac.code) : (ac.name || `Code #${id}`);
+                    return (
+                      <option key={id} value={id}>
+                        {label}
+                      </option>
+                    );
+                  })}
+                </Select>
               </div>
 
               <div>
                 <label className={labelClass}>Plan Type <span className="text-red-500">*</span></label>
-                <Select className={inputClass}><option>Select Plan Type</option></Select>
+                <Select
+                  className={`${selectClass} ${errors.plan_type ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
+                  value={formData.plan_type}
+                  onChange={(e: any) => handleChange('plan_type', e.target.value)}
+                >
+                  <option value="">Select Plan Type</option>
+                  {planTypeList.map((pt: any) => (
+                    <option key={pt.id} value={pt.id}>
+                      {pt.name}
+                    </option>
+                  ))}
+                </Select>
+                {errors.plan_type && <p className="text-xs text-red-500 font-semibold mt-1">{errors.plan_type}</p>}
               </div>
+
               <div>
                 <label className={labelClass}>Vehicle Type <span className="text-red-500">*</span></label>
-                <Select className={inputClass}><option>Select Vehicle Type</option></Select>
+                <Select
+                  className={`${selectClass} ${errors.vehicle_type ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
+                  value={formData.vehicle_type}
+                  onChange={(e: any) => handleChange('vehicle_type', e.target.value)}
+                >
+                  <option value="">Select Vehicle Type</option>
+                  {vehicleTypeList.map((vt: any) => (
+                    <option key={vt.id} value={vt.id}>
+                      {vt.name}
+                    </option>
+                  ))}
+                </Select>
+                {errors.vehicle_type && <p className="text-xs text-red-500 font-semibold mt-1">{errors.vehicle_type}</p>}
               </div>
+
               <div>
                 <label className={labelClass}>Class Of Vehicle <span className="text-red-500">*</span></label>
-                <Select className={inputClass}><option>Select Class of vehicle</option></Select>
+                <Select
+                  className={`${selectClass} ${errors.class_of_vehicle ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
+                  value={formData.class_of_vehicle}
+                  onChange={(e: any) => handleChange('class_of_vehicle', e.target.value)}
+                >
+                  <option value="">Select Class of vehicle</option>
+                  {classOfVehicleList.map((cov: any) => (
+                    <option key={cov.id} value={cov.id}>
+                      {cov.name}
+                    </option>
+                  ))}
+                </Select>
+                {errors.class_of_vehicle && <p className="text-xs text-red-500 font-semibold mt-1">{errors.class_of_vehicle}</p>}
               </div>
 
               <div>
                 <label className={labelClass}>Insurance Type <span className="text-red-500">*</span></label>
-                <Select className={inputClass}>
-                  <option>Package</option>
+                <Select
+                  className={`${selectClass} ${errors.insurance_type ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
+                  value={formData.insurance_type}
+                  onChange={(e: any) => handleChange('insurance_type', e.target.value)}
+                >
+                  <option value="">Select Insurance Type</option>
+                  {insuranceTypeList.map((it: any) => (
+                    <option key={it.id} value={it.id}>
+                      {it.name}
+                    </option>
+                  ))}
                 </Select>
-              </div>
-              <div>
-                <label className={labelClass}>Registration Number/RTO <span className="text-red-500">*</span></label>
-                <input type="text" placeholder="Enter Registration Number/RTO" className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass}>Engine Number</label>
-                <input type="text" placeholder="Enter Engine Number" className={inputClass} />
+                {errors.insurance_type && <p className="text-xs text-red-500 font-semibold mt-1">{errors.insurance_type}</p>}
               </div>
 
               <div>
-                <label className={labelClass}>Chasis No</label>
-                <input type="text" placeholder="Enter Chasis No" className={inputClass} />
+                <Input
+                  label={<>Registration Number/RTO <span className="text-red-500">*</span></>}
+                  name="registration_number_rto"
+                  value={formData.registration_number_rto}
+                  onChange={(e: any) => handleChange('registration_number_rto', e.target.value)}
+                  placeholder="Enter Registration Number/RTO"
+                  error={errors.registration_number_rto}
+                />
               </div>
+
               <div>
-                <label className={labelClass}>Policy Number <span className="text-red-500">*</span></label>
-                <input type="text" placeholder="Enter Policy Number" className={inputClass} />
+                <Input
+                  label="Engine Number"
+                  name="engine_number"
+                  value={formData.engine_number}
+                  onChange={(e: any) => handleChange('engine_number', e.target.value)}
+                  placeholder="Enter Engine Number"
+                />
               </div>
+
+              <div>
+                <Input
+                  label="Chasis No"
+                  name="chasis_no"
+                  value={formData.chasis_no}
+                  onChange={(e: any) => handleChange('chasis_no', e.target.value)}
+                  placeholder="Enter Chasis No"
+                />
+              </div>
+
+              <div>
+                <Input
+                  label={<>Policy Number <span className="text-red-500">*</span></>}
+                  name="policy_number"
+                  value={formData.policy_number}
+                  onChange={(e: any) => handleChange('policy_number', e.target.value)}
+                  placeholder="Enter Policy Number"
+                  error={errors.policy_number}
+                />
+              </div>
+
               <div>
                 <label className={labelClass}>Policy Login Date <span className="text-red-500">*</span></label>
-                <DatePicker className={inputClass} value="2026-08-11" />
+                <DatePicker
+                  value={formData.policy_login_date}
+                  onChange={(date) => handleChange('policy_login_date', date)}
+                  placeholder="Select Login Date"
+                  error={errors.policy_login_date}
+                />
               </div>
 
               <div>
                 <label className={labelClass}>Policy Start Date <span className="text-red-500">*</span></label>
-                <DatePicker className={inputClass} value="2026-08-11" />
+                <DatePicker
+                  value={formData.policy_start_date}
+                  onChange={(date) => handleChange('policy_start_date', date)}
+                  placeholder="Select Start Date"
+                  error={errors.policy_start_date}
+                />
               </div>
+
               <div>
                 <label className={labelClass}>Policy End Date <span className="text-red-500">*</span></label>
-                <DatePicker className={inputClass} value="2027-08-11" />
-              </div>
-              <div>
-                <label className={labelClass}>MFY (Year Of Manufacture)</label>
-                <input type="text" placeholder="Enter MFY ( Year of manufacture )" className={inputClass} />
+                <DatePicker
+                  value={formData.policy_end_date}
+                  onChange={(date) => handleChange('policy_end_date', date)}
+                  placeholder="Select End Date"
+                  error={errors.policy_end_date}
+                />
               </div>
 
               <div>
-                <label className={labelClass}>Make/Model/variant</label>
-                <input type="text" placeholder="Enter Make/model/variant" className={inputClass} />
+                <Input
+                  label="MFY (Year Of Manufacture)"
+                  name="mfy_year_of_manufacture"
+                  value={formData.mfy_year_of_manufacture}
+                  onChange={(e: any) => handleChange('mfy_year_of_manufacture', e.target.value)}
+                  placeholder="Enter MFY ( Year of manufacture )"
+                />
               </div>
+
+              <div>
+                <Input
+                  label="Make/Model/variant"
+                  name="make_model_variant"
+                  value={formData.make_model_variant}
+                  onChange={(e: any) => handleChange('make_model_variant', e.target.value)}
+                  placeholder="Enter Make/model/variant"
+                />
+              </div>
+
               <div>
                 <label className={labelClass}>NCB %</label>
-                <Select className={inputClass}><option>Select NCB</option></Select>
-              </div>
-              <div>
-                <label className={labelClass}>CNG Value</label>
-                <input type="text" placeholder="Enter CNG Value" className={inputClass} />
-              </div>
-
-              <div>
-                <label className={labelClass}>Vehicle Value (IDV)</label>
-                <input type="text" placeholder="Enter Vehicle Value (IDV)" className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass}>Own Damage Premium</label>
-                <input type="text" placeholder="Enter Own Damage Premium" className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass}>TP Premium</label>
-                <input type="text" placeholder="Enter TP Premium" className={inputClass} />
+                <Select
+                  className={selectClass}
+                  value={formData.ncb}
+                  onChange={(e: any) => handleChange('ncb', e.target.value)}
+                >
+                  <option value="">Select NCB</option>
+                  {ncbOptionsList.map((ncbItem: any) => (
+                    <option key={ncbItem.id} value={ncbItem.id}>
+                      {ncbItem.name}
+                    </option>
+                  ))}
+                </Select>
               </div>
 
               <div>
-                <label className={labelClass}>Net Premium <span className="text-red-500">*</span></label>
-                <input type="text" value="0" className={inputClass} />
+                <Input
+                  label="CNG Value"
+                  name="cng_value"
+                  value={formData.cng_value}
+                  onChange={(e: any) => handleChange('cng_value', e.target.value)}
+                  placeholder="Enter CNG Value"
+                />
               </div>
+
               <div>
-                <label className={labelClass}>GST Amount</label>
-                <input type="text" value="0" className={inputClass} />
+                <Input
+                  label="Vehicle Value (IDV)"
+                  name="vehicle_value"
+                  value={formData.vehicle_value}
+                  onChange={(e: any) => handleChange('vehicle_value', e.target.value)}
+                  placeholder="Enter Vehicle Value (IDV)"
+                />
               </div>
+
               <div>
-                <label className={labelClass}>Total Premium <span className="text-red-500">*</span></label>
-                <input type="text" value="0" className={inputClass} />
+                <Input
+                  label="Own Damage Premium"
+                  name="own_damage_premimum"
+                  value={formData.own_damage_premimum}
+                  onChange={(e: any) => handleChange('own_damage_premimum', e.target.value)}
+                  placeholder="Enter Own Damage Premium"
+                />
+              </div>
+
+              <div>
+                <Input
+                  label="TP Premium"
+                  name="tp_premium"
+                  value={formData.tp_premium}
+                  onChange={(e: any) => handleChange('tp_premium', e.target.value)}
+                  placeholder="Enter TP Premium"
+                />
+              </div>
+
+              <div>
+                <Input
+                  label={<>Net Premium <span className="text-red-500">*</span></>}
+                  name="net_premium"
+                  value={formData.net_premium}
+                  onChange={(e: any) => handleChange('net_premium', e.target.value)}
+                  placeholder="Enter Net Premium"
+                  error={errors.net_premium}
+                />
+              </div>
+
+              <div>
+                <Input
+                  label="GST Amount"
+                  name="gst_amount"
+                  value={formData.gst_amount}
+                  onChange={(e: any) => handleChange('gst_amount', e.target.value)}
+                  placeholder="Enter GST Amount"
+                />
+              </div>
+
+              <div>
+                <Input
+                  label={<>Total Premium <span className="text-red-500">*</span></>}
+                  name="total_premium"
+                  value={formData.total_premium}
+                  onChange={(e: any) => handleChange('total_premium', e.target.value)}
+                  placeholder="Enter Total Premium"
+                  error={errors.total_premium}
+                />
               </div>
             </div>
           </div>
 
-          {/* Commission Information */}
-          <div>
+          {/* Note Details Section Card */}
+          <div className="bg-white rounded-2xl border border-gray-200/80 p-5 sm:p-6 shadow-2xs">
             <div className={sectionHeaderClass}>
-              <BanknoteIcon /> Commission Information
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div>
-                <label className={labelClass}>Company Expected Commission</label>
-                <input type="text" placeholder="Enter Company Commission" className={inputClass} />
+              <div className="flex items-center gap-2">
+                <Notebook size={18} />
+                <span>Note Details</span>
               </div>
-              <div>
-                <label className={labelClass}>Company TDS Amount</label>
-                <input type="text" placeholder="Enter Company TDS Amount" className={inputClass} />
-              </div>
-            </div>
-          </div>
-
-          {/* Vehicle Documents Validity Information */}
-          <div>
-            <div className={sectionHeaderClass}>
-              <CarIcon /> Vehicle Documents Validity Information
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div>
-                <label className={labelClass}>State Permit Start Date</label>
-                <DatePicker className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass}>State Permit End Date</label>
-                <DatePicker className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass}>National Permit Start Date</label>
-                <DatePicker className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass}>National Permit End Date</label>
-                <DatePicker className={inputClass} />
-              </div>
-
-              <div>
-                <label className={labelClass}>Fitness Start Date</label>
-                <DatePicker className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass}>Fitness End Date</label>
-                <DatePicker className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass}>PUC Start Date</label>
-                <DatePicker className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass}>PUC End Date</label>
-                <DatePicker className={inputClass} />
-              </div>
-
-              <div>
-                <label className={labelClass}>RC Start Date</label>
-                <DatePicker className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass}>RC End Date</label>
-                <DatePicker className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass}>RTO Tax Start Date</label>
-                <DatePicker className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass}>RTO Tax End Date</label>
-                <DatePicker className={inputClass} />
-              </div>
-            </div>
-          </div>
-
-          {/* Note Details */}
-          <div>
-            <div className={sectionHeaderClass}>
-              <NoteIcon /> Note Details
             </div>
             <div>
-              <label className={labelClass}>Note</label>
-              <textarea rows={4} className={inputClass}></textarea>
+              <Input
+                as="textarea"
+                label="Note"
+                name="note"
+                value={formData.note}
+                onChange={(e: any) => handleChange('note', e.target.value)}
+                placeholder="Enter Note"
+                className="min-h-[100px]"
+              />
             </div>
           </div>
 
-          {/* Additional Document Information */}
-          <div>
-            <div className="flex items-center justify-between bg-[#EEF1FA] text-[#2B4399] px-5 py-3 rounded-lg mb-5">
-              <div className="flex items-center gap-2 text-[15px] font-bold">
-                <FileIcon /> Additional Document Information
+          {/* Additional Document Information Section Card */}
+          <div className="bg-white rounded-2xl border border-gray-200/80 p-5 sm:p-6 shadow-2xs">
+            <div className={sectionHeaderClass}>
+              <div className="flex items-center gap-2">
+                <FileText size={18} />
+                <span>Additional Document Information</span>
               </div>
-              <button type="button" onClick={addDocument} className="bg-[#2B4399] text-white p-1.5 rounded-md hover:bg-[#203378] transition-colors shadow-sm">
-                <Plus size={16} />
-              </button>
             </div>
 
             <div className="space-y-4">
               {documents.map((doc, index) => (
-                <div key={doc.id} className="flex items-center gap-4">
-                  <div className="flex-[2]">
-                    <input type="text" placeholder="Select Other Document Name" className={inputClass} />
+                <div key={doc.id} className="flex items-start gap-4">
+                  <div className="w-1/3">
+                    <label className={labelClass}>Document Name</label>
+                    <Select
+                      className={selectClass}
+                      value={doc.other_document_name}
+                      onChange={(e: any) => updateDocument(doc.id, 'other_document_name', e.target.value)}
+                    >
+                      <option value="">Select Document Name</option>
+                      {documentNameList.map((d: any) => (
+                        <option key={d.id} value={d.id}>
+                          {d.name}
+                        </option>
+                      ))}
+                    </Select>
                   </div>
                   <div className="flex-1">
-                    <input type="file" className="border border-gray-300 rounded-lg text-sm px-4 py-1.5 w-full file:mr-4 file:py-1.5 file:px-4 file:rounded file:border-0 file:text-sm file:font-bold file:bg-gray-100 hover:file:bg-gray-200 cursor-pointer shadow-sm bg-white" />
+                    <label className={labelClass}>Upload Image/Document</label>
+                    <FileUpload
+                      name={`other_document_image[${index}]`}
+                      file={doc.other_document_image}
+                      existingUrl={doc.existing_image_url}
+                      onChange={(file) => updateDocument(doc.id, 'other_document_image', file)}
+                      placeholder="Click or drag image to upload"
+                    />
                   </div>
-                  {index === 0 ? (
-                    <button type="button" onClick={() => removeDocument(doc.id)} className="bg-[#cf3838] text-white p-2.5 rounded-lg hover:bg-[#a12828] transition-colors shrink-0 shadow-sm invisible">
-                      <Minus size={18} />
-                    </button>
-                  ) : (
-                    <button type="button" onClick={() => removeDocument(doc.id)} className="bg-[#cf3838] text-white p-2.5 rounded-lg hover:bg-[#a12828] transition-colors shrink-0 shadow-sm">
-                      <Minus size={18} />
-                    </button>
-                  )}
+                  <div className="pt-7 shrink-0">
+                    {index === 0 ? (
+                      <button
+                        type="button"
+                        onClick={addDocument}
+                        className="bg-[#2B4399] text-white p-3 rounded-xl hover:bg-[#203378] transition-colors shadow-2xs flex items-center justify-center"
+                        title="Add Document"
+                      >
+                        <Plus size={18} />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => removeDocument(doc.id)}
+                        className="bg-[#FFF5F5] text-[#EF4444] border border-[#FCA5A5] p-3 rounded-xl hover:bg-red-100 transition-colors shadow-2xs flex items-center justify-center"
+                        title="Remove Document"
+                      >
+                        <Minus size={18} />
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Footer / Save Button removed and placed at top */}
-
         </form>
       </div>
     </div>
   );
-}
-
-// Minimal Icons to match the screenshot section headers
-function UserIcon() {
-  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
-}
-function FileIcon() {
-  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" /></svg>
-}
-function ShieldIcon() {
-  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
-}
-function BanknoteIcon() {
-  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="6" width="20" height="12" rx="2" /><circle cx="12" cy="12" r="2" /><path d="M6 12h.01M18 12h.01" /></svg>
-}
-function NoteIcon() {
-  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
-}
-function CarIcon() {
-  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" /><circle cx="7" cy="17" r="2" /><path d="M9 17h6" /><circle cx="17" cy="17" r="2" /></svg>
 }

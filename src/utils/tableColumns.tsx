@@ -975,4 +975,183 @@ export const getHealthInsuranceColumns = ({ onView, onEdit, onDelete }: HealthIn
   },
 ];
 
+export interface MotorInsuranceColumnProps {
+  onView?: (data: any) => void;
+  onEdit?: (data: any) => void;
+  onDelete?: (data: any) => void;
+}
+
+export const getMotorInsuranceColumns = ({ onView, onEdit, onDelete }: MotorInsuranceColumnProps) => [
+  {
+    headerName: "Customer Name",
+    field: "customer_name",
+    minWidth: 200,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      const data = params.data;
+      const rawCustName = data.customer_name || (data.first_name ? `${data.first_name || ''} ${data.last_name || ''}`.trim() : (data.name || 'N/A'));
+      const custName = String(rawCustName).replace(/,/g, '').replace(/\s+/g, ' ').trim() || 'N/A';
+      const rawMobile = data.customer_number || data.customer_mobile || data.mobile || 'N/A';
+      const mobile = String(rawMobile).replace(/,/g, '').replace(/\s+/g, ' ').trim() || 'N/A';
+      const code = data.customer_group_code || data.customer_code || data.code || (data.customer_id ? `C${data.customer_id}` : 'N/A');
+
+      return (
+        <div className="flex flex-col justify-center h-full py-1 leading-snug">
+          <span className="font-bold text-gray-900 text-sm leading-snug truncate">{custName}</span>
+          <span className="text-[11px] text-gray-500">Mo: {mobile}</span>
+          <span className="text-[10px] bg-blue-50 text-[#2B4399] px-1.5 py-0.5 rounded w-fit font-bold my-0.5">Code: {code}</span>
+        </div>
+      );
+    },
+  },
+  {
+    headerName: "Company",
+    field: "companies_name",
+    minWidth: 180,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      const company = params.data.companies_name || params.data.company_name || params.data.company || '-';
+      return <div className="flex items-center h-full font-semibold text-gray-700">{company}</div>;
+    },
+  },
+  {
+    headerName: "Plan Name",
+    field: "plan_name_text",
+    minWidth: 160,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      const planName = params.data.plan_name_text || params.data.plan_name || params.value || '-';
+      return <div className="flex items-center h-full text-gray-700">{planName}</div>;
+    },
+  },
+  {
+    headerName: "Plan Type",
+    field: "plan_type",
+    minWidth: 130,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      const rawType = String(params.data.plan_type_name || params.data.plan_type || params.value || '').trim();
+      let displayType = rawType;
+      if (rawType === '1') displayType = 'Fresh';
+      else if (rawType === '2') displayType = 'Port';
+      else if (rawType === '3') displayType = 'Renewal';
+
+      let badgeColor = "bg-blue-50 text-blue-600";
+      if (displayType === 'Port') badgeColor = "bg-amber-50 text-amber-600";
+      if (displayType === 'Renewal') badgeColor = "bg-emerald-50 text-emerald-600";
+      return (
+        <div className="flex items-center h-full">
+          <span className={`text-xs font-bold px-2.5 py-1 rounded-md ${badgeColor}`}>{displayType || 'Fresh'}</span>
+        </div>
+      );
+    },
+  },
+  {
+    headerName: "Policy Number",
+    field: "policy_number",
+    minWidth: 160,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      const pNum = String(params.value || '').trim();
+      return <div className="flex items-center h-full font-bold text-gray-900">{pNum || '-'}</div>;
+    },
+  },
+  {
+    headerName: "Vehicle Details",
+    field: "registration_number_rto",
+    minWidth: 200,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      const d = params.data;
+      const classVehicle = d.class_of_vehicle_name || d.vehicle_type || '';
+      const regNo = String(d.registration_number_rto || '').trim();
+      const engNo = String(d.engine_number || '').trim();
+      const chasisNo = String(d.chasis_no || '').trim();
+
+      return (
+        <div className="flex flex-col justify-center h-full text-xs text-gray-600 font-bold py-1 leading-tight gap-0.5">
+          {classVehicle && <span className="text-[#2B4399] font-bold">{classVehicle}</span>}
+          {regNo && <span>Reg: {regNo}</span>}
+          {engNo && <span className="text-[11px] text-gray-500 font-normal">Eng: {engNo}</span>}
+          {chasisNo && <span className="text-[11px] text-gray-500 font-normal">Cha: {chasisNo}</span>}
+        </div>
+      );
+    },
+  },
+  {
+    headerName: "MFY",
+    field: "mfy_year_of_manufacture",
+    minWidth: 100,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      return <div className="flex items-center h-full font-bold text-gray-900">{String(params.value || '-').trim()}</div>;
+    },
+  },
+  {
+    headerName: "NCB %",
+    field: "ncb",
+    minWidth: 100,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      return <div className="flex items-center h-full font-bold text-gray-900">{String(params.value || '-').trim()}</div>;
+    },
+  },
+  {
+    headerName: "Premium Details",
+    field: "total_premium",
+    minWidth: 190,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      const d = params.data;
+      return (
+        <div className="flex flex-col justify-center h-full text-xs py-1 gap-0.5 leading-tight">
+          <div className="flex justify-between gap-2"><span className="text-gray-500">OD:</span><span className="font-semibold text-gray-800">₹{d.own_damage_premimum || 0}</span></div>
+          <div className="flex justify-between gap-2"><span className="text-gray-500">TP:</span><span className="font-semibold text-gray-800">₹{d.tp_premium || 0}</span></div>
+          <div className="flex justify-between gap-2"><span className="text-gray-500">Net:</span><span className="font-semibold text-gray-800">₹{d.net_premium || 0}</span></div>
+          <div className="flex justify-between gap-2 border-t border-gray-100 pt-0.5"><span className="text-[#059669] font-bold">Total:</span><span className="font-bold text-[#059669]">₹{d.total_premium || 0}</span></div>
+        </div>
+      );
+    },
+  },
+  {
+    headerName: "Policy Date",
+    field: "policy_login_date",
+    minWidth: 200,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      const data = params.data;
+      return (
+        <div className="flex flex-col justify-center h-full gap-0.5 text-[11px] py-1 leading-tight">
+          <div className="flex items-center gap-2"><span className="text-gray-500 font-medium min-w-[75px]">Start Date:</span> <span className="font-bold text-gray-900">{data.policy_start_date || '-'}</span></div>
+          <div className="flex items-center gap-2"><span className="text-gray-500 font-medium min-w-[75px]">End Date:</span> <span className="font-bold text-gray-900">{data.policy_end_date || '-'}</span></div>
+          {data.policy_login_date && (
+            <div className="flex items-center gap-2"><span className="text-gray-500 font-medium min-w-[75px]">Login Date:</span> <span className="font-bold text-gray-900">{data.policy_login_date}</span></div>
+          )}
+        </div>
+      );
+    },
+  },
+  {
+    headerName: "Action",
+    field: "id",
+    minWidth: 140,
+    sortable: false,
+    filter: false,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      return (
+        <div className="flex items-center h-full">
+          <TableActions
+            data={params.data}
+            onView={onView}
+            onEdit={onEdit}
+            onDelete={onDelete}
+          />
+        </div>
+      );
+    },
+  },
+];
+
+
 

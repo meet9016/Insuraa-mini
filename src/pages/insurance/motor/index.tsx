@@ -1,304 +1,161 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import DataTable, { Column } from '@/components/ui/DataTable';
-import { FileEdit, Trash2, Send, User, Car, Settings, Hash, Barcode, Eye } from 'lucide-react';
-
-interface MotorInsuranceRecord {
-  id: string;
-  customerName: string;
-  mobile: string;
-  customerCode: string;
-  addedBy: string;
-  agent: string;
-  agentAddedBy: string;
-  company: string;
-  planName: string;
-  planType: string;
-  policyNumber: string;
-  vehicleType: string;
-  registrationNumber: string;
-  engineNumber: string;
-  chassisNumber: string;
-  mfy: string;
-  ncb: string;
-  odPremium: string;
-  tpPremium: string;
-  netPremium: string;
-  gstAmount: string;
-  totalPremium: string;
-  loginDate: string;
-  startDate: string;
-  endDate: string;
-  status: string;
-}
-
-const mockData: MotorInsuranceRecord[] = [
-  {
-    id: "1",
-    customerName: "Shopno",
-    mobile: "1234567899",
-    customerCode: "S7899",
-    addedBy: "Self",
-    agent: "Self",
-    agentAddedBy: "Insuraa",
-    company: "Bajaj Life Insurance Limited",
-    planName: "Bajaj Life iSecure",
-    planType: "Port",
-    policyNumber: "369852",
-    vehicleType: "Motorcycle",
-    registrationNumber: "MH-12-AB-1234",
-    engineNumber: "123654",
-    chassisNumber: "1252",
-    mfy: "2010",
-    ncb: "18%",
-    odPremium: "₹1,233.00",
-    tpPremium: "₹12.00",
-    netPremium: "₹1,245.00",
-    gstAmount: "₹0.00",
-    totalPremium: "₹1,245.00",
-    loginDate: "28-07-2026",
-    startDate: "28-07-2026",
-    endDate: "28-07-2027",
-    status: "Active"
-  },
-  {
-    id: "2",
-    customerName: "Shopno",
-    mobile: "1234567899",
-    customerCode: "S7899",
-    addedBy: "Self",
-    agent: "Self",
-    agentAddedBy: "Insuraa",
-    company: "Bajaj Life Insurance Limited",
-    planName: "Bajaj Life ETouch II",
-    planType: "Fresh",
-    policyNumber: "369852",
-    vehicleType: "Scooter",
-    registrationNumber: "MH-14-CD-5678",
-    engineNumber: "123654",
-    chassisNumber: "1252",
-    mfy: "2010",
-    ncb: "15%",
-    odPremium: "₹1,233.00",
-    tpPremium: "₹12.00",
-    netPremium: "₹1,245.00",
-    gstAmount: "₹18.00",
-    totalPremium: "₹1,263.00",
-    loginDate: "28-07-2026",
-    startDate: "28-07-2026",
-    endDate: "28-07-2027",
-    status: "Active"
-  },
-  {
-    id: "3",
-    customerName: "PANKAJ MURLIDHAR POREDDIWAR",
-    mobile: "9850185241",
-    customerCode: "PMP5241",
-    addedBy: "Self",
-    agent: "Self",
-    agentAddedBy: "Junaid Shaikh",
-    company: "Royal Sundaram General Insurance Company Limited",
-    planName: "Royal Sundaram Car Insurance",
-    planType: "Fresh",
-    policyNumber: "VPT1117200000100",
-    vehicleType: "Private Car",
-    registrationNumber: "MH-20-CH-6939",
-    engineNumber: "JHD4C37946",
-    chassisNumber: "MA1YA2JHKD2C34212",
-    mfy: "2013",
-    ncb: "-",
-    odPremium: "₹0.00",
-    tpPremium: "₹7,947.00",
-    netPremium: "₹7,947.00",
-    gstAmount: "₹715.23",
-    totalPremium: "₹9,377.46",
-    loginDate: "20-07-2026",
-    startDate: "04-04-2026",
-    endDate: "03-04-2027",
-    status: "Active"
-  },
-  {
-    id: "4",
-    customerName: "TEST Test",
-    mobile: "9441901190",
-    customerCode: "TT1190",
-    addedBy: "Self",
-    agent: "Self",
-    agentAddedBy: "Bhavesh Bhai",
-    company: "Bajaj General Insurance Limited",
-    planName: "Bajaj Allianz Two Wheeler Insurance",
-    planType: "Fresh",
-    policyNumber: "12-1806-0010374635-00",
-    vehicleType: "Two Wheeler",
-    registrationNumber: "GJ-32-P-4543",
-    engineNumber: "ME4JCBS2GLD033515",
-    chassisNumber: "JC8SED0056140",
-    mfy: "2020",
-    ncb: "-",
-    odPremium: "₹0.00",
-    tpPremium: "₹714.00",
-    netPremium: "₹714.00",
-    gstAmount: "₹129.00",
-    totalPremium: "₹843.00",
-    loginDate: "16-07-2026",
-    startDate: "18-07-2026",
-    endDate: "17-07-2026",
-    status: "Lapsed"
-  }
-];
+import AgGridTable from '@/components/ui/tableaggrid/AgGridTable';
+import TableHeader from '@/components/ui/TableHeader';
+import DeleteConfirmationModal from '@/components/ui/DeleteConfirmationModal';
+import MotorInsuranceViewModal from '@/components/insurance/MotorInsuranceViewModal';
+import { useMotorInsuranceList, useMotorInsuranceActions } from '@/hooks/useMotorInsuranceApi';
+import { getMotorInsuranceColumns } from '@/utils/tableColumns';
 
 export default function MotorInsuranceList() {
   const router = useRouter();
+  const { deleteMotorInsurance } = useMotorInsuranceActions();
 
-  const columns: Column<MotorInsuranceRecord>[] = [
-    {
-      key: "select",
-      label: "",
-      render: () => (
-        <input type="checkbox" className="rounded border-gray-300 text-[#2B4399] focus:ring-[#2D3591]" />
-      )
-    },
-    {
-      key: "customerName",
-      label: "Customer Name",
-      render: (row) => (
-        <div className="flex flex-col">
-          <span className="font-bold text-gray-900">{row.customerName}</span>
-          <span className="text-xs text-gray-500">Mo: {row.mobile}</span>
-          <span className="text-[10px] bg-blue-50 text-[#2B4399] px-1.5 py-0.5 rounded w-fit mt-0.5">Code: {row.customerCode}</span>
-          <div className="flex items-center gap-1 mt-1 text-xs text-gray-500">
-            <User size={12} className="text-[#2B4399]" /> Added by {row.addedBy}
-          </div>
-        </div>
-      )
-    },
-    {
-      key: "agent",
-      label: "Agent",
-      render: (row) => (
-        <div className="flex flex-col">
-          <span className="font-semibold text-gray-700">{row.agent}</span>
-          <span className="text-[10px] bg-blue-50 text-[#2B4399] px-1.5 py-0.5 rounded w-fit mt-0.5">Added: {row.agentAddedBy}</span>
-        </div>
-      )
-    },
-    {
-      key: "company",
-      label: "Companies",
-      render: (row) => <div className="font-semibold text-gray-700 min-w-[140px] max-w-[200px] whitespace-normal">{row.company}</div>
-    },
-    {
-      key: "planName",
-      label: "Plan Name",
-      render: (row) => <div className="text-gray-700 min-w-[120px] max-w-[160px] whitespace-normal">{row.planName}</div>
-    },
-    {
-      key: "planType",
-      label: "Plan Type",
-      render: (row) => {
-        let badgeColor = "bg-blue-50 text-blue-600"; // Fresh
-        if (row.planType === 'Port') badgeColor = "bg-amber-50 text-amber-600";
-        if (row.planType === 'Renewal') badgeColor = "bg-emerald-50 text-emerald-600";
-        return <span className={`text-xs font-bold px-2.5 py-1 rounded-md ${badgeColor}`}>{row.planType}</span>;
-      }
-    },
-    {
-      key: "policyNumber",
-      label: "Policy Number",
-      render: (row) => <span className="text-[#2B4399] font-mono text-[11px] font-bold bg-[#2B4399]/5 px-2 py-1 rounded block max-w-28 break-all">{row.policyNumber}</span>
-    },
-    {
-      key: "vehicleDetails",
-      label: "Vehicle Details",
-      render: (row) => (
-        <div className="flex flex-col gap-1.5 text-xs text-gray-600 font-bold min-w-[160px]">
-          <div className="flex items-center gap-2"><Car size={14} className="text-gray-400" /> {row.vehicleType}</div>
-          <div className="flex items-center gap-2"><Hash size={14} className="text-gray-400" /> {row.registrationNumber}</div>
-          <div className="flex items-center gap-2"><Settings size={14} className="text-gray-400" /> {row.engineNumber}</div>
-          <div className="flex items-center gap-2"><Barcode size={14} className="text-gray-400" /> {row.chassisNumber}</div>
-        </div>
-      )
-    },
-    {
-      key: "mfy",
-      label: "MFY",
-      render: (row) => <span className="text-gray-900 text-sm font-bold">{row.mfy}</span>
-    },
-    {
-      key: "ncb",
-      label: "NCB %",
-      render: (row) => <span className="text-gray-900 text-sm font-bold">{row.ncb}</span>
-    },
-    {
-      key: "premiumDetails",
-      label: "Premium Details",
-      render: (row) => (
-        <div className="flex flex-col gap-1.5 text-xs min-w-[180px]">
-          <div className="flex justify-between items-center gap-2"><span className="text-gray-500 font-medium flex items-center gap-1.5"><FileEdit size={12} className="text-gray-400" /> OD Premium</span> <span className="font-bold text-gray-900">{row.odPremium}</span></div>
-          <div className="flex justify-between items-center gap-2"><span className="text-gray-500 font-medium flex items-center gap-1.5"><FileEdit size={12} className="text-gray-400" /> TP Premium</span> <span className="font-bold text-gray-900">{row.tpPremium}</span></div>
-          <div className="flex justify-between items-center gap-2"><span className="text-gray-500 font-medium flex items-center gap-1.5"><FileEdit size={12} className="text-gray-400" /> Net Premium</span> <span className="font-bold text-gray-900">{row.netPremium}</span></div>
-          <div className="flex justify-between items-center gap-2"><span className="text-gray-500 font-medium flex items-center gap-1.5"><FileEdit size={12} className="text-gray-400" /> GST Amount</span> <span className="font-bold text-gray-900">{row.gstAmount}</span></div>
-          <div className="flex justify-between items-center gap-2 pt-1 mt-0.5"><span className="text-[#059669] font-bold flex items-center gap-1.5"><FileEdit size={12} className="text-[#059669]" /> Total</span> <span className="font-bold text-[#059669]">{row.totalPremium}</span></div>
-        </div>
-      )
-    },
-    {
-      key: "policyDate",
-      label: "Policy Date",
-      render: (row) => (
-        <div className="flex flex-col gap-1.5 text-xs min-w-[160px]">
-          <div className="flex justify-between items-center gap-3"><span className="text-gray-500 font-medium">Login Date:</span> <span className="font-bold text-gray-900">{row.loginDate}</span></div>
-          <div className="flex justify-between items-center gap-3"><span className="text-gray-500 font-medium">Start Date:</span> <span className="font-bold text-gray-900">{row.startDate}</span></div>
-          <div className="flex justify-between items-center gap-3"><span className="text-gray-500 font-medium">End Date:</span> <span className="font-bold text-gray-900">{row.endDate}</span></div>
-        </div>
-      )
-    },
-    {
-      key: "status",
-      label: "Status",
-      render: (row) => {
-        let badgeClass = "bg-gray-100 text-gray-700";
-        if (row.status === 'Active') badgeClass = "bg-emerald-100 text-emerald-700";
-        if (row.status === 'Lapsed') badgeClass = "bg-rose-100 text-rose-700";
+  const [page, setPage] = useState<number>(1);
+  const [limit, setLimit] = useState<number>(10);
+  const [search, setSearch] = useState<string>('');
+  const [debouncedSearch, setDebouncedSearch] = useState<string>('');
 
-        return <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${badgeClass}`}>{row.status}</span>;
-      }
-    },
-    {
-      key: "action",
-      label: "Action",
-      render: () => (
-        <div className="flex items-center gap-1.5">
-          <button className="p-1.5 bg-[#0ea5e9] text-white rounded hover:bg-[#0284c7] transition-colors" title="View">
-            <Eye size={14} />
-          </button>
-          <button className="p-1.5 bg-[#10b981] text-white rounded hover:bg-[#059669] transition-colors" title="Edit">
-            <FileEdit size={14} />
-          </button>
-          <button className="p-1.5 bg-[#f43f5e] text-white rounded hover:bg-[#e11d48] transition-colors" title="Delete">
-            <Trash2 size={14} />
-          </button>
-        </div>
-      )
+  // View Modal state
+  const [viewId, setViewId] = useState<string | null>(null);
+
+  // Delete Modal state
+  const [deleteModalState, setDeleteModalState] = useState<{
+    isOpen: boolean;
+    id: string;
+    name: string;
+    isDeleting: boolean;
+  }>({
+    isOpen: false,
+    id: '',
+    name: '',
+    isDeleting: false,
+  });
+
+  // Debounce search input (500ms delay)
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // Fetch motor insurance list using API hook with debounced search
+  const { data: resData, isLoading } = useMotorInsuranceList({ page, limit, search: debouncedSearch });
+  const insuranceList = resData?.motorInsuranceList || [];
+  const totalRecords = resData?.totalRecords ?? insuranceList.length ?? 0;
+
+  const handleSearchChange = (val: string) => {
+    setSearch(val);
+  };
+
+  const handlePaginationChanged = (params: any) => {
+    if (!params || !params.api) return;
+    const newPage = params.api.paginationGetCurrentPage() + 1;
+    const newLimit = params.api.paginationGetPageSize();
+
+    if (newLimit !== limit) {
+      setLimit(newLimit);
+      setPage(1);
+    } else if (newPage !== page) {
+      setPage(newPage);
     }
-  ];
+  };
+
+  const fullRowData = useMemo(() => {
+    if (!totalRecords || totalRecords <= insuranceList.length) return insuranceList;
+    const padded = new Array(totalRecords).fill(null).map((_, idx) => ({ id: `placeholder-${idx}` }));
+    const startIndex = (page - 1) * limit;
+    insuranceList.forEach((item: any, i: number) => {
+      if (startIndex + i < totalRecords) {
+        padded[startIndex + i] = item;
+      }
+    });
+    return padded;
+  }, [insuranceList, totalRecords, page, limit]);
+
+  const handleDeleteClick = (data: any) => {
+    const targetId = data?.motor_insurance_id || data?.id;
+    const displayName = data?.policy_number ? `Policy #${String(data.policy_number).trim()}` : (data?.customer_name || 'Motor Insurance Record');
+    setDeleteModalState({
+      isOpen: true,
+      id: String(targetId),
+      name: displayName,
+      isDeleting: false,
+    });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteModalState.id) return;
+    setDeleteModalState(prev => ({ ...prev, isDeleting: true }));
+    const success = await deleteMotorInsurance(deleteModalState.id);
+    setDeleteModalState(prev => ({ ...prev, isDeleting: false }));
+    if (success) {
+      setDeleteModalState({ isOpen: false, id: '', name: '', isDeleting: false });
+    }
+  };
+
+  const columnDefs = useMemo(
+    () =>
+      getMotorInsuranceColumns({
+        onView: (data: any) => setViewId(String(data?.motor_insurance_id || data?.id)),
+        onEdit: (data: any) => router.push(`/insurance/motor/add?id=${data?.motor_insurance_id || data?.id}`),
+        onDelete: handleDeleteClick,
+      }),
+    [router]
+  );
 
   return (
-    <div className="bg-[#f8fafc] min-h-[calc(100vh-72px-56px)] ">
+    <div className="bg-[#f8fafc] flex flex-col">
       <Head>
-        <title>Motor Insurance - Insuraa</title>
+        <title>Motor Insurance Management - Insuraa</title>
       </Head>
 
-      <div className="w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <DataTable
+      <div className="w-full bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-gray-200 overflow-hidden flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <TableHeader
           title="Motor Insurance Management"
-          columns={columns}
-          data={mockData}
-          addLabel="Add Motor Insurance"
-          onAdd={() => router.push('/insurance/motor/add')}
+          subtitle="Manage and view your motor insurance records"
+          searchPlaceholder="Search motor insurance..."
+          searchValue={search}
+          onSearchChange={handleSearchChange}
+          buttonText="Add Motor Insurance"
+          onButtonClick={() => router.push('/insurance/motor/add')}
         />
+
+        <div className="w-full">
+          <AgGridTable
+            rowData={fullRowData}
+            columnDefs={columnDefs as any}
+            loading={isLoading}
+            rowHeight={85}
+            pagination={true}
+            paginationPageSize={limit}
+            onPaginationChanged={handlePaginationChanged}
+          />
+        </div>
       </div>
+
+      {/* View Policy Modal */}
+      <MotorInsuranceViewModal
+        isOpen={Boolean(viewId)}
+        onClose={() => setViewId(null)}
+        motorInsuranceId={viewId}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={deleteModalState.isOpen}
+        onClose={() => setDeleteModalState({ isOpen: false, id: '', name: '', isDeleting: false })}
+        onConfirm={handleConfirmDelete}
+        title="Delete Motor Insurance Record"
+        itemName={deleteModalState.name}
+        isDeleting={deleteModalState.isDeleting}
+      />
     </div>
   );
 }
+
+

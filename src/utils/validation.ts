@@ -321,3 +321,84 @@ export const validateDocumentMaster = (name: string) => {
   }
   return '';
 };
+
+// Motor Insurance Form Joi Validation Schema
+export const motorInsuranceSchema = Joi.object({
+  customer_id: Joi.string().required().messages({
+    'string.empty': 'Please select Customer Name',
+  }),
+
+  companies_id: Joi.string().required().messages({
+    'string.empty': 'Please select Insurance Company Name',
+  }),
+
+  plan_name: Joi.string().required().messages({
+    'string.empty': 'Please select Plan Name',
+  }),
+
+  plan_type: Joi.string().required().messages({
+    'string.empty': 'Please select Plan Type',
+  }),
+
+  vehicle_type: Joi.string().required().messages({
+    'string.empty': 'Please select Vehicle Type',
+  }),
+
+  class_of_vehicle: Joi.string().required().messages({
+    'string.empty': 'Please select Class Of Vehicle',
+  }),
+
+  insurance_type: Joi.string().required().messages({
+    'string.empty': 'Please select Insurance Type',
+  }),
+
+  registration_number_rto: Joi.string().trim().required().messages({
+    'string.empty': 'Please enter Registration Number/RTO',
+  }),
+
+  policy_number: Joi.string().trim().required().messages({
+    'string.empty': 'Please enter Policy Number',
+  }),
+
+  policy_login_date: Joi.string().required().messages({
+    'string.empty': 'Please select Policy Login Date',
+  }),
+
+  policy_start_date: Joi.string().required().messages({
+    'string.empty': 'Please select Policy Start Date',
+  }),
+
+  policy_end_date: Joi.string().required().messages({
+    'string.empty': 'Please select Policy End Date',
+  }),
+
+  net_premium: Joi.string().trim().required().messages({
+    'string.empty': 'Please enter Net Premium',
+  }),
+
+  total_premium: Joi.string().trim().required().messages({
+    'string.empty': 'Please enter Total Premium',
+  }),
+});
+
+// Helper function to validate Motor Insurance form data using Joi
+export const validateMotorInsurance = (formData: any) => {
+  const errors: Record<string, string> = {};
+
+  const { error } = motorInsuranceSchema.validate(formData, { abortEarly: false, allowUnknown: true });
+
+  if (error) {
+    error.details.forEach((detail) => {
+      const key = detail.path[0] as string;
+      if (key && !errors[key]) {
+        errors[key] = detail.message;
+      }
+    });
+  }
+
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors,
+  };
+};
+
