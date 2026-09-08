@@ -19,6 +19,28 @@ import {
   LifeInsurancePayload
 } from '@/hooks/useLifeInsuranceApi';
 
+const parseDateStr = (str: string): Date | null => {
+  if (!str) return null;
+  const cleanStr = String(str).trim().split(' ')[0].split('T')[0];
+  if (/^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/.test(cleanStr)) {
+    const parts = cleanStr.split(/[-/]/).map(Number);
+    return new Date(parts[0], parts[1] - 1, parts[2]);
+  }
+  if (/^\d{1,2}[-/]\d{1,2}[-/]\d{4}$/.test(cleanStr)) {
+    const parts = cleanStr.split(/[-/]/).map(Number);
+    return new Date(parts[2], parts[1] - 1, parts[0]);
+  }
+  const d = new Date(cleanStr);
+  return isNaN(d.getTime()) ? null : d;
+};
+
+const formatDateStr = (date: Date): string => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
+
 export default function AddLifeInsurance() {
   const router = useRouter();
   const { insertLifeInsurance } = useLifeInsuranceActions();
@@ -57,6 +79,7 @@ export default function AddLifeInsurance() {
     plan_type: '',
     sum_assured: '',
     net_premium: '',
+    total_net_premium: '',
     fy_gst: '18',
     gst_amount: '',
     total_premium: '',
@@ -161,6 +184,7 @@ export default function AddLifeInsurance() {
             plan_type: String(item.plan_type || item.plan_type_id || ''),
             sum_assured: String(item.sum_assured ?? ''),
             net_premium: String(item.net_premium ?? item.total_premium ?? ''),
+            total_net_premium: String(item.total_net_premium ?? item.net_premium ?? ''),
             gst_amount: String(item.gst_amount ?? ''),
             total_premium: String(item.total_premium ?? ''),
             customer_payment_mode: String(item.customer_payment_mode || ''),
@@ -214,6 +238,135 @@ export default function AddLifeInsurance() {
     fetchDetail();
   }, [router.isReady, router.query.id]);
 
+  // Auto-calculate Policy End Date & Maturity Date based on Start Date, Premium Term, Policy Term & Payment Mode
+  useEffect(() => {
+    if (!formData.policy_start_date) return;
+
+    const startDate = parseDateStr(formData.policy_start_date);
+    const premiumTerm = parseInt(String(formData.policy_premium_term), 10) || 0;
+    const policyTerm = parseInt(String(formData.policy_term), 10) || 0;
+
+    const pmObj = paymentModes.find(
+      (pm: any) => String(pm.id) === String(formData.payment_mode) || String(pm.name) === String(formData.payment_mode)
+    );
+    const paymentModeName = (pmObj?.name || String(formData.payment_mode || '')).toLowerCase().trim();
+
+    let computedEndDate = '';
+    let computedMaturityDate = '';
+
+    // ── Premium End Date Calculation ──
+    if (startDate && premiumTerm > 0 && paymentModeName) {
+      const premiumEnd = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+
+      if (paymentModeName.includes('yearly') && !paymentModeName.includes('half')) {
+        premiumEnd.setFullYear(premiumEnd.getFullYear() + premiumTerm - 1);
+      } else if (paymentModeName.includes('half')) {
+        premiumEnd.setFullYear(premiumEnd.getFullYear() + premiumTerm);
+        premiumEnd.setMonth(premiumEnd.getMonth() - 6);
+      } else if (paymentModeName.includes('quarter')) {
+        premiumEnd.setFullYear(premiumEnd.getFullYear() + premiumTerm);
+        premiumEnd.setMonth(premiumEnd.getMonth() - 3);
+      } else if (paymentModeName.includes('month')) {
+        premiumEnd.setFullYear(premiumEnd.getFullYear() + premiumTerm);
+        premiumEnd.setMonth(premiumEnd.getMonth() - 1);
+      } else {
+        premiumEnd.setFullYear(premiumEnd.getFullYear() + premiumTerm - 1);
+      }
+
+      computedEndDate = formatDateStr(premiumEnd);
+    }
+
+    // ── Maturity / Term End Date Calculation ──
+    if (startDate && policyTerm > 0) {
+      const maturityDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+      maturityDate.setFullYear(maturityDate.getFullYear() + policyTerm);
+      computedMaturityDate = formatDateStr(maturityDate);
+    }
+
+    setFormData(prev => {
+      let changed = false;
+      const update: any = {};
+
+      if (computedEndDate && computedEndDate !== prev.policy_end_date) {
+        update.policy_end_date = computedEndDate;
+        changed = true;
+      }
+      if (computedMaturityDate && computedMaturityDate !== prev.policy_maturity_date) {
+        update.policy_maturity_date = computedMaturityDate;
+        changed = true;
+      }
+
+      return changed ? { ...prev, ...update } : prev;
+    });
+  }, [
+    formData.policy_start_date,
+    formData.policy_premium_term,
+    formData.policy_term,
+    formData.payment_mode,
+    paymentModes
+  ]);
+
+  // Auto-clear validation errors as soon as data gets filled in formData
+  useEffect(() => {
+    setErrors(prev => {
+      let hasChange = false;
+      const newErrors = { ...prev };
+      Object.keys(newErrors).forEach(key => {
+        const val = formData[key as keyof typeof formData];
+        if (newErrors[key] && val !== undefined && val !== null && String(val).trim() !== '') {
+          delete newErrors[key];
+          hasChange = true;
+        }
+      });
+      return hasChange ? newErrors : prev;
+    });
+  }, [formData]);
+
+  // ── Auto Calculate Total Net Premium and Total Premium ──
+  const calculateTotals = (netPrem: string, gstAmt: string, riderList: typeof riders, totalNetPrem?: string) => {
+    const net = parseFloat(String(netPrem || '0')) || 0;
+    const gst = parseFloat(String(gstAmt || '0')) || 0;
+    const riderTotal = riderList.reduce((sum, r) => sum + (parseFloat(String(r.riders_amount || '0')) || 0), 0);
+
+    const hasNetInput = netPrem !== '' || riderTotal > 0 || riderList.some(r => String(r.riders_amount || '').trim() !== '');
+
+    let netPlusRiders = '';
+    if (hasNetInput) {
+      netPlusRiders = String(net + riderTotal);
+    } else if (totalNetPrem !== undefined && totalNetPrem !== '') {
+      netPlusRiders = totalNetPrem;
+    }
+
+    const netSumVal = parseFloat(netPlusRiders || '0') || 0;
+    const hasGstInput = gstAmt !== '';
+    const grandTotal = (netPlusRiders !== '' || hasGstInput) ? String(netSumVal + gst) : '';
+
+    return {
+      computedTotalNet: netPlusRiders,
+      computedTotal: grandTotal
+    };
+  };
+
+  useEffect(() => {
+    const { computedTotalNet, computedTotal } = calculateTotals(
+      formData.net_premium,
+      formData.gst_amount,
+      riders,
+      formData.total_net_premium
+    );
+
+    setFormData(prev => {
+      if (prev.total_net_premium === computedTotalNet && prev.total_premium === computedTotal) {
+        return prev;
+      }
+      return {
+        ...prev,
+        total_net_premium: computedTotalNet,
+        total_premium: computedTotal
+      };
+    });
+  }, [formData.net_premium, formData.gst_amount, riders]);
+
   const addRider = () => setRiders(prev => [...prev, { id: Date.now(), riders_id: '', riders_amount: '', riders_note: '' }]);
   const removeRider = (id: number) => setRiders(prev => prev.filter(r => r.id !== id));
   const updateRider = (id: number, field: string, value: string) => {
@@ -240,7 +393,23 @@ export default function AddLifeInsurance() {
   };
 
   const handleChange = (field: string, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => {
+      const updated = { ...prev, [field]: value };
+
+      if (field === 'net_premium' || field === 'gst_amount' || field === 'total_net_premium') {
+        const { computedTotalNet, computedTotal } = calculateTotals(
+          field === 'net_premium' ? value : prev.net_premium,
+          field === 'gst_amount' ? value : prev.gst_amount,
+          riders,
+          field === 'total_net_premium' ? value : prev.total_net_premium
+        );
+        updated.total_net_premium = computedTotalNet;
+        updated.total_premium = computedTotal;
+      }
+
+      return updated;
+    });
+
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
@@ -279,8 +448,10 @@ export default function AddLifeInsurance() {
       maturity_amount: formData.maturity_amount,
       sum_assured: formData.sum_assured,
       net_premium: formData.net_premium,
+      total_net_premium: formData.total_net_premium,
       fy_gst: formData.fy_gst,
       gst_amount: formData.gst_amount,
+      total_premium: formData.total_premium,
       note: formData.note,
       bank_name: formData.bank_name,
       account_type: formData.account_type,
@@ -673,7 +844,83 @@ export default function AddLifeInsurance() {
                 />
               </div>
 
+              {/* Dynamic Riders Fields */}
+              <div className="col-span-1 sm:col-span-2 lg:col-span-4 space-y-5">
+                {riders.map((rider, index) => (
+                  <div key={rider.id} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
+                    <div>
+                      <label className={labelClass}>Rider Name</label>
+                      <Select
+                        className={selectClass}
+                        value={rider.riders_id}
+                        onChange={(e: any) => updateRider(rider.id, 'riders_id', e.target.value)}
+                      >
+                        <option value="">Select Rider</option>
+                        {riderListOptions.map((rd: any) => {
+                          const rId = rd.id || rd.rider_id;
+                          const rName = rd.name || rd.rider_name || `Rider #${rId}`;
+                          return (
+                            <option key={rId} value={rId}>
+                              {rName}
+                            </option>
+                          );
+                        })}
+                      </Select>
+                    </div>
+                    <div>
+                      <label className={labelClass}>Rider Amount</label>
+                      <Input
+                        name={`riders_amount_${rider.id}`}
+                        placeholder="Enter Amount"
+                        value={rider.riders_amount}
+                        onChange={(e: any) => updateRider(rider.id, 'riders_amount', e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Note</label>
+                      <Input
+                        name={`riders_note_${rider.id}`}
+                        placeholder="Enter Note"
+                        value={rider.riders_note}
+                        onChange={(e: any) => updateRider(rider.id, 'riders_note', e.target.value)}
+                      />
+                    </div>
+                    <div className="flex items-center">
+                      {index === 0 ? (
+                        <button
+                          type="button"
+                          onClick={addRider}
+                          className="w-[42px] h-[42px] bg-[#2B4399] hover:bg-[#203378] text-white rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
+                          title="Add Rider"
+                        >
+                          <Plus size={20} />
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => removeRider(rider.id)}
+                          className="w-[42px] h-[42px] bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
+                          title="Remove Rider"
+                        >
+                          <Minus size={20} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
               {/* Row 5 */}
+              <div>
+                <label className={labelClass}>Total Net Premium</label>
+                <Input
+                  name="total_net_premium"
+                  placeholder="Total Net Premium"
+                  value={formData.total_net_premium}
+                  onChange={(e: any) => handleChange('total_net_premium', e.target.value)}
+                  readOnly
+                />
+              </div>
               <div>
                 <label className={labelClass}>Total Premium</label>
                 <Input
@@ -681,6 +928,7 @@ export default function AddLifeInsurance() {
                   placeholder="Total Premium"
                   value={formData.total_premium}
                   onChange={(e: any) => handleChange('total_premium', e.target.value)}
+                  readOnly
                 />
               </div>
               <div>
@@ -710,80 +958,6 @@ export default function AddLifeInsurance() {
                   <option value="60">60 Days</option>
                 </Select>
               </div>
-            </div>
-          </div>
-
-          {/* Dynamic Riders Section (Exact 4 Columns Row with Square Icon Button) */}
-          <div className="bg-white rounded-2xl border border-gray-200/80 p-5 sm:p-6 shadow-2xs">
-            <div className={sectionHeaderClass}>
-              <div className="flex items-center gap-2">
-                <Shield size={18} />
-                <span>Dynamic Riders</span>
-              </div>
-            </div>
-            <div className="space-y-5">
-              {riders.map((rider, index) => (
-                <div key={rider.id} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
-                  <div>
-                    <label className={labelClass}>Rider Name</label>
-                    <Select
-                      className={selectClass}
-                      value={rider.riders_id}
-                      onChange={(e: any) => updateRider(rider.id, 'riders_id', e.target.value)}
-                    >
-                      <option value="">Select Rider</option>
-                      {riderListOptions.map((rd: any) => {
-                        const rId = rd.id || rd.rider_id;
-                        const rName = rd.name || rd.rider_name || `Rider #${rId}`;
-                        return (
-                          <option key={rId} value={rId}>
-                            {rName}
-                          </option>
-                        );
-                      })}
-                    </Select>
-                  </div>
-                  <div>
-                    <label className={labelClass}>Rider Amount</label>
-                    <Input
-                      name={`riders_amount_${rider.id}`}
-                      placeholder="Enter Amount"
-                      value={rider.riders_amount}
-                      onChange={(e: any) => updateRider(rider.id, 'riders_amount', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label className={labelClass}>Note</label>
-                    <Input
-                      name={`riders_note_${rider.id}`}
-                      placeholder="Enter Note"
-                      value={rider.riders_note}
-                      onChange={(e: any) => updateRider(rider.id, 'riders_note', e.target.value)}
-                    />
-                  </div>
-                  <div className="flex items-center">
-                    {index === 0 ? (
-                      <button
-                        type="button"
-                        onClick={addRider}
-                        className="w-[42px] h-[42px] bg-[#2B4399] hover:bg-[#203378] text-white rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
-                        title="Add Rider"
-                      >
-                        <Plus size={20} />
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => removeRider(rider.id)}
-                        className="w-[42px] h-[42px] bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
-                        title="Remove Rider"
-                      >
-                        <Minus size={20} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
 

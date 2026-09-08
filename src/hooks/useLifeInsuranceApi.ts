@@ -111,8 +111,10 @@ export interface LifeInsurancePayload {
   maturity_amount?: string | number;
   sum_assured: string | number;
   net_premium: string | number;
+  total_net_premium?: string | number;
   fy_gst?: string | number;
   gst_amount?: string | number;
+  total_premium?: string | number;
   note?: string;
   bank_name?: string;
   account_type?: string;
@@ -188,8 +190,10 @@ export const useLifeInsuranceActions = () => {
       formData.append('maturity_amount', String(payload.maturity_amount ?? ''));
       formData.append('sum_assured', String(payload.sum_assured ?? ''));
       formData.append('net_premium', String(payload.net_premium ?? ''));
+      formData.append('total_net_premium', String(payload.total_net_premium ?? ''));
       formData.append('fy_gst', String(payload.fy_gst ?? ''));
       formData.append('gst_amount', String(payload.gst_amount ?? ''));
+      formData.append('total_premium', String(payload.total_premium ?? ''));
       formData.append('note', String(payload.note ?? ''));
       formData.append('bank_name', String(payload.bank_name ?? ''));
       formData.append('account_type', String(payload.account_type ?? ''));

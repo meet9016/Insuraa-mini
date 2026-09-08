@@ -15,6 +15,7 @@ interface FormInputProps {
   accept?: string;
   required?: boolean;
   disabled?: boolean;
+  readOnly?: boolean;
   success?: boolean;
   helperText?: string;
   icon?: React.ReactNode;
@@ -38,6 +39,7 @@ const FormInput: React.FC<FormInputProps> = ({
   accept,
   required = false,
   disabled = false,
+  readOnly = false,
   success = false,
   helperText,
   icon,
@@ -303,6 +305,7 @@ const FormInput: React.FC<FormInputProps> = ({
             onFocus={() => setIsFocused(true)}
             placeholder={placeholder}
             disabled={disabled}
+            readOnly={readOnly}
             className={getInputClasses()}
           />
         )}
