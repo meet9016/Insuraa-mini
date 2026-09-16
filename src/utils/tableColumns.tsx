@@ -1,5 +1,5 @@
 import React from 'react';
-import { Building2, List, User, Eye, FileEdit, Trash2, Calendar, Clock } from 'lucide-react';
+import { Building2, List, User, Eye, FileEdit, Trash2, Calendar, Clock, Car, Bike, Hash, Settings, Barcode, Shield, Wallet, CreditCard } from 'lucide-react';
 import { TableActions } from '../components/ui/tableaggrid/TableActions';
 
 export const claimColumns = [
@@ -1067,13 +1067,38 @@ export const getMotorInsuranceColumns = ({ onView, onEdit, onDelete }: MotorInsu
       const regNo = String(d.registration_number_rto || '').trim();
       const engNo = String(d.engine_number || '').trim();
       const chasisNo = String(d.chasis_no || '').trim();
+      const isTwoWheeler = /two wheeler|bike|scooter|moped|cycle/i.test(classVehicle);
 
       return (
         <div className="flex flex-col justify-center h-full text-xs text-gray-600 font-bold py-1 leading-tight gap-0.5">
-          {classVehicle && <span className="text-[#2B4399] font-bold">{classVehicle}</span>}
-          {regNo && <span>Reg: {regNo}</span>}
-          {engNo && <span className="text-[11px] text-gray-500 font-normal">Eng: {engNo}</span>}
-          {chasisNo && <span className="text-[11px] text-gray-500 font-normal">Cha: {chasisNo}</span>}
+          {classVehicle && (
+            <div className="flex items-center gap-1.5 text-[#2B4399] font-bold truncate">
+              {isTwoWheeler ? (
+                <Bike size={13} className="shrink-0 text-[#2B4399]" />
+              ) : (
+                <Car size={13} className="shrink-0 text-[#2B4399]" />
+              )}
+              <span className="truncate">{classVehicle}</span>
+            </div>
+          )}
+          {regNo && (
+            <div className="flex items-center gap-1.5 text-gray-700 font-semibold truncate">
+              <Hash size={12} className="shrink-0 text-gray-400" />
+              <span className="truncate">Reg: {regNo}</span>
+            </div>
+          )}
+          {engNo && (
+            <div className="flex items-center gap-1.5 text-[11px] text-gray-500 font-normal truncate">
+              <Settings size={12} className="shrink-0 text-gray-400" />
+              <span className="truncate">Eng: {engNo}</span>
+            </div>
+          )}
+          {chasisNo && (
+            <div className="flex items-center gap-1.5 text-[11px] text-gray-500 font-normal truncate">
+              <Barcode size={12} className="shrink-0 text-gray-400" />
+              <span className="truncate">Cha: {chasisNo}</span>
+            </div>
+          )}
         </div>
       );
     },
@@ -1105,10 +1130,28 @@ export const getMotorInsuranceColumns = ({ onView, onEdit, onDelete }: MotorInsu
       const d = params.data;
       return (
         <div className="flex flex-col justify-center h-full text-xs py-1 gap-0.5 leading-tight">
-          <div className="flex justify-between gap-2"><span className="text-gray-500">OD:</span><span className="font-semibold text-gray-800">₹{d.own_damage_premimum || 0}</span></div>
-          <div className="flex justify-between gap-2"><span className="text-gray-500">TP:</span><span className="font-semibold text-gray-800">₹{d.tp_premium || 0}</span></div>
-          <div className="flex justify-between gap-2"><span className="text-gray-500">Net:</span><span className="font-semibold text-gray-800">₹{d.net_premium || 0}</span></div>
-          <div className="flex justify-between gap-2 border-t border-gray-100 pt-0.5"><span className="text-[#059669] font-bold">Total:</span><span className="font-bold text-[#059669]">₹{d.total_premium || 0}</span></div>
+          <div className="flex justify-between items-center gap-2">
+            <span className="text-gray-500 flex items-center gap-1">
+              <Shield size={12} className="shrink-0 text-blue-500" />
+              OD:
+            </span>
+            <span className="font-semibold text-gray-800">₹{d.own_damage_premimum || 0}</span>
+          </div>
+          {/* <div className="flex justify-between items-center gap-2"><span className="text-gray-500">TP:</span><span className="font-semibold text-gray-800">₹{d.tp_premium || 0}</span></div> */}
+          <div className="flex justify-between items-center gap-2">
+            <span className="text-gray-500 flex items-center gap-1">
+              <Wallet size={12} className="shrink-0 text-amber-500" />
+              Net:
+            </span>
+            <span className="font-semibold text-gray-800">₹{d.net_premium || 0}</span>
+          </div>
+          <div className="flex justify-between items-center gap-2 border-t border-gray-100 pt-0.5">
+            <span className="text-[#059669] font-bold flex items-center gap-1">
+              <CreditCard size={12} className="shrink-0 text-[#059669]" />
+              Total:
+            </span>
+            <span className="font-bold text-[#059669]">₹{d.total_premium || 0}</span>
+          </div>
         </div>
       );
     },

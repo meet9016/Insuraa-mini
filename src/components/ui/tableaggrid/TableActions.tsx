@@ -12,6 +12,25 @@ interface TableActionsProps {
   editIcon?: 'edit' | 'file-edit';
 }
 
+const btnBase = "p-1.5 rounded-md border cursor-pointer transition-all duration-200 ease-out hover:scale-110 hover:-rotate-3 active:scale-95";
+
+const btnStyles = {
+  default: {
+    view: `${btnBase} bg-blue-100 text-blue-600 border-blue-300 hover:bg-blue-200 hover:text-blue-800 hover:border-blue-400 hover:shadow-[0_0_10px_rgba(59,130,246,0.35)]`,
+    notes: `${btnBase} bg-blue-100 text-blue-600 border-blue-300 hover:bg-blue-200 hover:text-blue-800 hover:border-blue-400 hover:shadow-[0_0_10px_rgba(59,130,246,0.35)]`,
+    reminders: `${btnBase} bg-amber-100 text-amber-600 border-amber-300 hover:bg-amber-200 hover:text-amber-800 hover:border-amber-400 hover:shadow-[0_0_10px_rgba(245,158,11,0.35)]`,
+    edit: `${btnBase} bg-emerald-100 text-emerald-600 border-emerald-300 hover:bg-emerald-200 hover:text-emerald-800 hover:border-emerald-400 hover:shadow-[0_0_10px_rgba(16,185,129,0.35)]`,
+    delete: `${btnBase} bg-rose-100 text-rose-500 border-rose-300 hover:bg-rose-200 hover:text-rose-700 hover:border-rose-400 hover:shadow-[0_0_10px_rgba(244,63,94,0.35)]`,
+  },
+  light: {
+    view: `${btnBase} bg-sky-100 text-sky-700 border-sky-300 hover:bg-sky-200 hover:text-sky-800 hover:border-sky-400 hover:shadow-[0_0_10px_rgba(14,165,233,0.35)]`,
+    notes: `${btnBase} bg-sky-100 text-sky-700 border-sky-300 hover:bg-sky-200 hover:text-sky-800 hover:border-sky-400 hover:shadow-[0_0_10px_rgba(14,165,233,0.35)]`,
+    reminders: `${btnBase} bg-amber-100 text-amber-700 border-amber-300 hover:bg-amber-200 hover:text-amber-800 hover:border-amber-400 hover:shadow-[0_0_10px_rgba(245,158,11,0.35)]`,
+    edit: `${btnBase} bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-200 hover:text-emerald-800 hover:border-emerald-400 hover:shadow-[0_0_10px_rgba(16,185,129,0.35)]`,
+    delete: `${btnBase} bg-rose-100 text-rose-600 border-rose-300 hover:bg-rose-200 hover:text-rose-700 hover:border-rose-400 hover:shadow-[0_0_10px_rgba(244,63,94,0.35)]`,
+  },
+};
+
 export const TableActions: React.FC<TableActionsProps> = ({
   data,
   onView,
@@ -22,51 +41,37 @@ export const TableActions: React.FC<TableActionsProps> = ({
   variant = 'default',
   editIcon = 'edit'
 }) => {
-  const getBtnClass = (type: 'view' | 'notes' | 'reminders' | 'edit' | 'delete') => {
-    if (variant === 'light') {
-      if (type === 'edit') return "bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white border border-emerald-200 hover:border-emerald-500 p-1.5 rounded transition-all";
-      if (type === 'delete') return "bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white border border-rose-200 hover:border-rose-500 p-1.5 rounded transition-all";
-      if (type === 'view' || type === 'notes') return "bg-sky-50 text-sky-600 hover:bg-sky-500 hover:text-white border border-sky-200 hover:border-sky-500 p-1.5 rounded transition-all";
-      if (type === 'reminders') return "bg-amber-50 text-amber-600 hover:bg-amber-500 hover:text-white border border-amber-200 hover:border-amber-500 p-1.5 rounded transition-all";
-    }
-
-    // Default
-    if (type === 'view' || type === 'notes') return "p-1.5 bg-[#2B4399] text-white rounded hover:bg-[#203378] transition-colors shadow-sm";
-    if (type === 'reminders') return "p-1.5 bg-amber-500 text-white rounded hover:bg-amber-600 transition-colors shadow-sm";
-    if (type === 'edit') return "bg-emerald-500 hover:bg-emerald-600 text-white p-1.5 rounded transition-colors shadow-sm";
-    if (type === 'delete') return "bg-rose-500 hover:bg-rose-600 text-white p-1.5 rounded transition-colors shadow-sm";
-
-    return "";
-  };
+  const styles = btnStyles[variant];
 
   return (
     <div className="flex items-center gap-1.5 h-full py-1">
       {onNotes !== undefined && (
-        <button onClick={() => onNotes(data)} className={getBtnClass('notes')} title="Notes & Remarks">
+        <button onClick={() => onNotes(data)} className={styles.notes} title="Notes & Remarks">
           <FileText size={14} strokeWidth={2.5} />
         </button>
       )}
       {onReminders !== undefined && (
-        <button onClick={() => onReminders(data)} className={getBtnClass('reminders')} title="Reminders">
+        <button onClick={() => onReminders(data)} className={styles.reminders} title="Reminders">
           <Bell size={14} strokeWidth={2.5} />
         </button>
       )}
       {onView !== undefined && (
-        <button onClick={() => onView(data)} className={getBtnClass('view')} title="View">
+        <button onClick={() => onView(data)} className={styles.view} title="View">
           <Eye size={14} strokeWidth={2.5} />
         </button>
       )}
       {onEdit !== undefined && (
-        <button onClick={() => onEdit(data)} className={getBtnClass('edit')} title="Edit">
+        <button onClick={() => onEdit(data)} className={styles.edit} title="Edit">
           {editIcon === 'file-edit' ? <FileEdit size={14} strokeWidth={2.5} /> : <Edit size={14} strokeWidth={2.5} />}
         </button>
       )}
       {onDelete !== undefined && (
-        <button onClick={() => onDelete(data)} className={getBtnClass('delete')} title="Delete">
+        <button onClick={() => onDelete(data)} className={styles.delete} title="Delete">
           <Trash2 size={14} strokeWidth={2.5} />
         </button>
       )}
     </div>
   );
 };
+
 
