@@ -466,6 +466,14 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   font-family: var(--font-poppins), 'Poppins', sans-serif !important;
 }
 
+.ag-theme-alpine .ag-overlay-no-rows-center,
+.ag-theme-quartz .ag-overlay-no-rows-center {
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
 
 
 .ag-theme-alpine .ag-header,
@@ -598,12 +606,6 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .ag-grid-scrolling-cells:before {
   background-color: #F2F7FF !important;
 }
-
-
-
-
-
-
 
 .ag-theme-alpine .ag-row-selected,
 .ag-theme-quartz .ag-row-selected,

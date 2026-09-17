@@ -40,6 +40,28 @@ interface AgGridTableProps<T = any> {
   onPaginationChanged?: (event: any) => void;
 }
 
+const CustomNoRowsOverlay = () => {
+  return (
+    <div className="flex flex-col items-center justify-center p-4 text-center">
+      <img
+        src="/images/no-data.png"
+        alt="No Data Found"
+        className="w-72 sm:w-80 h-auto max-w-full object-contain mb-2"
+      />
+      <h3 className="text-base font-bold text-gray-800">No Data Available</h3>
+      <p className="text-xs text-gray-400 mt-1 max-w-xs">There are no records to display at the moment.</p>
+    </div>
+  );
+};
+
+const overlayNoRowsTemplate = `
+  <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 16px; text-align:center;">
+    <img src="/images/no-data.png" alt="No Data Available" style="width:280px; height:auto; max-width:100%; object-fit:contain; margin-bottom:8px; margin-left:auto; margin-right:auto;" />
+    <span style="font-size:16px; font-weight:700; color:#1e293b; display:block;">No Data Available</span>
+    <span style="font-size:12px; color:#94A3B8; margin-top:4px; display:block;">There are no records to display at the moment.</span>
+  </div>
+`;
+
 export default function AgGridTable<T = any>({
   rowData,
   columnDefs,
@@ -76,6 +98,8 @@ export default function AgGridTable<T = any>({
     };
   }, []);
 
+  const noRowsOverlayComponent = useMemo(() => CustomNoRowsOverlay, []);
+
   return (
     <AgGridProvider modules={modules}>
       <div style={containerStyle}>
@@ -92,6 +116,8 @@ export default function AgGridTable<T = any>({
             paginationPageSize={paginationPageSize}
             paginationPageSizeSelector={paginationPageSizeSelector}
             onPaginationChanged={onPaginationChanged}
+            noRowsOverlayComponent={noRowsOverlayComponent}
+            overlayNoRowsTemplate={overlayNoRowsTemplate}
           />
         </div>
       </div>

@@ -18,25 +18,29 @@ import {
   X,
   LogOut,
   ShieldCheck,
-  ExternalLink
+  ExternalLink,
+  HeartPulse,
+  Stethoscope,
+  Car,
+  Umbrella
 } from 'lucide-react';
 
 const NAV_LINKS = [
   { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
   {
     name: 'Insurance', path: '#', icon: Shield, items: [
-      { name: 'Life Insurance', path: '/insurance/life', icon: Shield },
-      { name: 'Health Insurance', path: '/insurance/health', icon: Shield },
-      { name: 'Motor Insurance', path: '/insurance/motor', icon: Shield },
-      { name: 'Other Insurance', path: '/insurance/other', icon: Shield },
+      { name: 'Life Insurance', path: '/insurance/life', icon: HeartPulse },
+      { name: 'Health Insurance', path: '/insurance/health', icon: Stethoscope },
+      { name: 'Motor Insurance', path: '/insurance/motor', icon: Car },
+      { name: 'Other Insurance', path: '/insurance/other', icon: Umbrella },
     ]
   },
   { name: 'Claim', path: '/claim', icon: FileText },
   { name: 'Customers', path: '/customers', icon: Users },
   {
     name: 'Quotation', path: '#', icon: Calculator, items: [
-      { name: 'Health Quotation', path: '/quotation/health', icon: Calculator },
-      { name: 'Motor Quotation', path: '/quotation/motor', icon: Calculator },
+      { name: 'Health Quotation', path: '/quotation/health', icon: Stethoscope },
+      { name: 'Motor Quotation', path: '/quotation/motor', icon: Car },
     ]
   },
   { name: 'Manage Leads', path: '/manage-leads', icon: PhoneCall },
@@ -311,9 +315,9 @@ export default function Header() {
                     : 'text-gray-700 hover:bg-emerald-50 hover:text-[#00A389] border border-transparent'
                     }`}
                 >
-                  <Icon size={16} className={`transition-transform duration-300 group-hover:scale-110 ${isActive ? 'text-[#2F439D]' : 'text-gray-500 group-hover:text-[#00A389]'}`} />
+                  <Icon size={16} className={`transition-transform duration-300 group-hover:scale-125 group-hover:-rotate-6 ${isActive ? 'text-[#2F439D]' : 'text-gray-500 group-hover:text-[#00A389]'}`} />
                   {link.name}
-                  {hasItems && <ChevronDown size={14} className={`ml-0.5 opacity-60 group-hover:opacity-100 transition-transform ${activeDropdown === idx ? 'rotate-180 text-[#2F439D]' : 'group-hover:rotate-180 group-hover:text-[#00A389]'}`} />}
+                  {hasItems && <ChevronDown size={14} className={`ml-0.5 opacity-60 group-hover:opacity-100 transition-transform duration-300 ${activeDropdown === idx ? 'rotate-180 text-[#2F439D]' : 'group-hover:rotate-180 group-hover:text-[#00A389]'}`} />}
                 </Link>
 
                 {/* Active Underline */}
@@ -342,13 +346,13 @@ export default function Header() {
                   <Link
                     key={subIdx}
                     href={subLink.path}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-bold transition-colors ${isSubActive
+                    className={`group/sub flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-bold transition-all duration-200 ${isSubActive
                       ? 'bg-blue-50/80 text-[#2F439D]'
                       : 'text-gray-600 hover:bg-emerald-50 hover:text-[#00A389]'
                       }`}
                     onClick={() => setActiveDropdown(null)}
                   >
-                    <SubIcon size={16} className={isSubActive ? 'text-[#2F439D]' : 'text-gray-400'} />
+                    <SubIcon size={17} className={`transition-transform duration-300 group-hover/sub:scale-125 group-hover/sub:-rotate-6 ${isSubActive ? 'text-[#2F439D]' : 'text-gray-400 group-hover/sub:text-[#00A389]'}`} />
                     {subLink.name}
                   </Link>
                 );

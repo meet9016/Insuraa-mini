@@ -120,7 +120,7 @@ export default function AgencyCodeModal({
               ))}
             </Select>
             {errors.company_id && (
-              <p className="text-xs text-red-500 mt-1 font-medium px-0.5">{errors.company_id}</p>
+              <p className="text-xs text-red-500 font-semibold mt-1 px-0.5">{errors.company_id}</p>
             )}
           </div>
 

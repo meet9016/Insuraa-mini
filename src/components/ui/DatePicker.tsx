@@ -152,15 +152,14 @@ export default function DatePicker({ value, onChange, className, placeholder = "
     <div className="relative w-full text-[14px]" ref={dropdownRef}>
       <div
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full h-[42px] px-3.5 py-2 bg-white border rounded-xl text-sm flex items-center justify-between cursor-pointer transition-all shadow-2xs ${
-          error
+        className={`w-full h-[42px] px-3.5 py-2 bg-white border rounded-xl text-sm flex items-center justify-between cursor-pointer transition-all shadow-2xs ${error
             ? 'border-red-500 ring-2 ring-red-500/20'
             : isOpen
-            ? 'border-[#2B4399] ring-2 ring-[#2B4399]/20'
-            : 'border-gray-300 hover:border-gray-400'
-        } ${className || ''}`}
+              ? 'border-[#2B4399] ring-2 ring-[#2B4399]/20'
+              : 'border-gray-300 hover:border-gray-400'
+          } ${className || ''}`}
       >
-        <span className={selectedDate ? 'text-gray-900 font-semibold' : 'text-gray-400'}>
+        <span className={selectedDate ? 'text-gray-900 ' : 'text-gray-400'}>
           {selectedDate ? formatDate(selectedDate) : placeholder}
         </span>
         <CalendarIcon size={18} className={`transition-colors duration-200 ${isOpen ? 'text-[#2B4399]' : 'text-gray-500'}`} />

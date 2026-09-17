@@ -70,15 +70,14 @@ export default function Select({ children, className, onChange, value, error, ..
       {/* Trigger Button (Identical height to standard inputs) */}
       <div
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full h-[42px] px-3.5 py-2 bg-white border rounded-xl text-sm flex items-center justify-between cursor-pointer transition-all shadow-2xs ${
-          error
+        className={`w-full h-[42px] px-3.5 py-2 bg-white border rounded-xl text-sm flex items-center justify-between cursor-pointer transition-all shadow-2xs ${error
             ? 'border-red-500 ring-2 ring-red-500/20'
             : isOpen
-            ? 'border-[#2B4399] ring-2 ring-[#2B4399]/20'
-            : 'border-gray-300 hover:border-gray-400'
-        } ${className || ''}`}
+              ? 'border-[#2B4399] ring-2 ring-[#2B4399]/20'
+              : 'border-gray-300 hover:border-gray-400'
+          } ${className || ''}`}
       >
-        <span className={selectedOption ? 'text-gray-900 font-semibold' : 'text-gray-400'}>
+        <span className={selectedOption ? 'text-gray-900' : 'text-gray-400'}>
           {displayLabel}
         </span>
         <ChevronDown size={18} className={`transition-transform duration-200 ${isOpen ? 'rotate-180 text-[#2B4399]' : 'text-gray-500'}`} />

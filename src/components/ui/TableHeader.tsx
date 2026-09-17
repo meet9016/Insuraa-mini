@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Plus } from 'lucide-react';
+import { Search, Plus, X } from 'lucide-react';
 
 interface TableHeaderProps {
   title: string;
@@ -42,10 +42,20 @@ export default function TableHeader({
             <input
               type="text"
               placeholder={searchPlaceholder}
-              value={searchValue}
+              value={searchValue || ''}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="w-full sm:w-[240px] pl-9 pr-4 py-2 bg-white border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#2D3591]/20 focus:border-[#2D3591] transition-all"
+              className="w-full sm:w-[240px] pl-9 pr-8 py-2 bg-white border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#2D3591]/20 focus:border-[#2D3591] transition-all"
             />
+            {searchValue && (
+              <button
+                type="button"
+                onClick={() => onSearchChange('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                title="Clear search"
+              >
+                <X size={14} />
+              </button>
+            )}
           </div>
         )}
         {extraActions}
