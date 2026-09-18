@@ -1325,5 +1325,113 @@ export const getHealthQuotationColumns = ({ onView, onEdit, onDelete }: HealthQu
   },
 ];
 
+export interface MotorQuotationColumnProps {
+  onView?: (data: any) => void;
+  onEdit?: (data: any) => void;
+  onDelete?: (data: any) => void;
+}
+
+export const getMotorQuotationColumns = ({ onView, onEdit, onDelete }: MotorQuotationColumnProps) => [
+  {
+    headerName: "Quotation No",
+    field: "quotation_no",
+    minWidth: 160,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      const qNo = params.data.quotation_no || (params.data.quotation_id ? `MOT-${String(params.data.quotation_id).padStart(4, '0')}` : (params.data.quotationNo || '-'));
+      return <span className="font-bold text-gray-900">{qNo}</span>;
+    },
+  },
+  {
+    headerName: "Customer Name",
+    field: "insured_name",
+    minWidth: 200,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      const data = params.data;
+      const name = data.insured_name || data.customer_name || data.customerName || '-';
+      const mobile = data.mobile || data.customer_mobile || '';
+      return (
+        <div className="flex flex-col justify-center h-full py-1 leading-snug">
+          <span className="font-bold text-gray-900 text-sm leading-snug truncate">{name}</span>
+          {mobile && (
+            <div className="flex items-center gap-1.5 text-[11px] text-gray-500 mt-0.5">
+              <Phone size={12} className="text-[#2B4399] shrink-0" />
+              <span>Mo: {mobile}</span>
+            </div>
+          )}
+        </div>
+      );
+    },
+  },
+  {
+    headerName: "Vehicle",
+    field: "make",
+    minWidth: 180,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      const data = params.data;
+      const vehicleName = data.make || data.vehicle || data.vehicle_type || '-';
+      const regNo = data.registration_no || data.vehicleNumber || '';
+      return (
+        <div className="flex flex-col justify-center h-full py-1 leading-snug">
+          <span className="text-gray-900 font-semibold text-sm">{vehicleName}</span>
+          {regNo && (
+            <span className="text-[11px] text-gray-500">{regNo}</span>
+          )}
+        </div>
+      );
+    },
+  },
+  {
+    headerName: "Quotes",
+    field: "item_count",
+    minWidth: 140,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      const rawCount = params.data.item_count ?? params.data.total_quotes ?? (Array.isArray(params.data.quotes) ? params.data.quotes.length : params.data.quotes);
+      const count = typeof rawCount === 'number' ? rawCount : (parseInt(String(rawCount)) || 0);
+      const displayStr = typeof rawCount === 'string' && rawCount.includes('Quote') ? rawCount : `${count} ${count === 1 ? 'Quote' : 'Quotes'}`;
+      return (
+        <div className="flex items-center h-full whitespace-nowrap text-gray-700 font-medium">
+          {displayStr}
+        </div>
+      );
+    },
+  },
+  {
+    headerName: "Lowest Premium",
+    field: "lowest_premium",
+    minWidth: 150,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      const premium = params.data.lowest_premium ?? params.data.lowestPremium;
+      if (premium === undefined || premium === null || premium === '') return <span className="text-gray-400">-</span>;
+      const formatted = typeof premium === 'number' ? `₹${premium.toLocaleString('en-IN')}` : String(premium).startsWith('₹') ? premium : `₹${premium}`;
+      return <span className="font-bold text-gray-900">{formatted}</span>;
+    },
+  },
+  {
+    headerName: "Action",
+    field: "id",
+    minWidth: 140,
+    sortable: false,
+    filter: false,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      return (
+        <div className="flex items-center h-full">
+          <TableActions
+            data={params.data}
+            onEdit={onEdit}
+            onDelete={onDelete}
+          />
+        </div>
+      );
+    },
+  },
+];
+
+
 
 
