@@ -1,5 +1,5 @@
 import React from 'react';
-import { Building2, List, User, Eye, FileEdit, Trash2, Calendar, Clock, Car, Bike, Hash, Settings, Barcode, Shield, Wallet, CreditCard } from 'lucide-react';
+import { Building2, List, User, Eye, FileEdit, Trash2, Calendar, Clock, Car, Bike, Hash, Settings, Barcode, Shield, Wallet, CreditCard, Phone } from 'lucide-react';
 import { TableActions } from '../components/ui/tableaggrid/TableActions';
 
 export const claimColumns = [
@@ -1187,6 +1187,135 @@ export const getMotorInsuranceColumns = ({ onView, onEdit, onDelete }: MotorInsu
           <TableActions
             data={params.data}
             onView={onView}
+            onEdit={onEdit}
+            onDelete={onDelete}
+          />
+        </div>
+      );
+    },
+  },
+];
+
+export interface HealthQuotationColumnProps {
+  onView?: (data: any) => void;
+  onEdit?: (data: any) => void;
+  onDelete?: (data: any) => void;
+}
+
+export const getHealthQuotationColumns = ({ onView, onEdit, onDelete }: HealthQuotationColumnProps) => [
+  {
+    headerName: "Quotation No",
+    field: "quotation_no",
+    minWidth: 160,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      const qNo = params.data.quotation_no || (params.data.quotation_id ? `HQ${String(params.data.quotation_id).padStart(6, '0')}` : '-');
+      return <span className="font-bold text-gray-900">{qNo}</span>;
+    },
+  },
+  {
+    headerName: "Customer Name",
+    field: "insured_name",
+    minWidth: 200,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      const data = params.data;
+      const name = data.insured_name || data.customer_name || '-';
+      const mobile = data.mobile || data.customer_mobile || '';
+      return (
+        <div className="flex flex-col justify-center h-full py-1 leading-snug">
+          <span className="font-bold text-gray-900 text-sm leading-snug truncate">{name}</span>
+          {mobile && (
+            <div className="flex items-center gap-1.5 text-[11px] text-gray-500 mt-0.5">
+              <Phone size={12} className="text-[#2B4399] shrink-0" />
+              <span>Mo: {mobile}</span>
+            </div>
+          )}
+        </div>
+      );
+    },
+  },
+  {
+    headerName: "Plan Opted",
+    field: "plan_opted_name",
+    minWidth: 180,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      const data = params.data;
+      const planName = data.plan_opted_name || data.plan_opted_text || data.plan_opted || '-';
+      const familySize = data.family_size_name || data.family_size || '';
+      return (
+        <div className="flex flex-col justify-center h-full py-1 leading-snug">
+          <span className="text-gray-900 font-semibold text-sm">{planName}</span>
+          {familySize && (
+            <span className="text-[11px] text-gray-500">({familySize})</span>
+          )}
+        </div>
+      );
+    },
+  },
+  {
+    headerName: "Quotes",
+    field: "item_count",
+    minWidth: 140,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      const count = params.data.item_count ?? params.data.total_quotes ?? (Array.isArray(params.data.quotes) ? params.data.quotes.length : 0);
+      return (
+        <div className="flex items-center h-full whitespace-nowrap text-gray-700 font-medium">
+          {count} {count === 1 ? 'Quote' : 'Quotes'}
+        </div>
+      );
+    },
+  },
+  {
+    headerName: "Members",
+    field: "member_count",
+    minWidth: 140,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      const count = params.data.member_count ?? params.data.total_members ?? (Array.isArray(params.data.members) ? params.data.members.length : 0);
+      return (
+        <div className="flex items-center h-full whitespace-nowrap text-gray-700 font-medium">
+          {count} {count === 1 ? 'Member' : 'Members'}
+        </div>
+      );
+    },
+  },
+  {
+    headerName: "Lowest Premium",
+    field: "lowest_premium",
+    minWidth: 150,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      const premium = params.data.lowest_premium;
+      if (premium === undefined || premium === null || premium === '') return <span className="text-gray-400">-</span>;
+      const formatted = typeof premium === 'number' ? premium.toLocaleString('en-IN') : String(premium);
+      return <span className="font-bold text-gray-900">₹{formatted}</span>;
+    },
+  },
+  {
+    headerName: "Created On",
+    field: "created_at",
+    minWidth: 150,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      const date = params.data.created_at || params.data.createdOn || '-';
+      return <span className="text-gray-700 font-medium">{date}</span>;
+    },
+  },
+  {
+    headerName: "Action",
+    field: "id",
+    minWidth: 140,
+    sortable: false,
+    filter: false,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      return (
+        <div className="flex items-center h-full">
+          <TableActions
+            data={params.data}
             onEdit={onEdit}
             onDelete={onDelete}
           />

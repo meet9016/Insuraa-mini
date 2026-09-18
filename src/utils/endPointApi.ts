@@ -92,6 +92,14 @@ export interface EndPointApi {
     DELETE_MOTOR_INSURANCE: string;
     VIEW_MOTOR_INSURANCE: string;
   };
+  HEALTH_QUOTATION: {
+    HEALTH_QUOTATION_MASTER_DATA: string;
+    INSERT_HEALTH_QUOTATION: string;
+    HEALTH_QUOTATION_PRODUCT_LIST_DROPDOWN: string;
+    HEALTH_QUOTATION_LIST: string;
+    DELETE_HEALTH_QUOTATION: string;
+    HEALTH_QUOTATION_EDIT: string;
+  };
 }
 
 // Define and export the standard API endpoint object
@@ -188,6 +196,14 @@ const endPointApi: EndPointApi = {
     MOTOR_INSURANCE_LIST: 'motor_insurance_list',
     DELETE_MOTOR_INSURANCE: 'delete_motor_insurance',
     VIEW_MOTOR_INSURANCE: 'view_motor_insurance',
+  },
+  HEALTH_QUOTATION: {
+    HEALTH_QUOTATION_MASTER_DATA: 'health_quotation_master_data',
+    INSERT_HEALTH_QUOTATION: 'insert_health_quotation',
+    HEALTH_QUOTATION_PRODUCT_LIST_DROPDOWN: 'health_quotation_product_list_dropdown',
+    HEALTH_QUOTATION_LIST: 'health_insurance_qution_list',
+    DELETE_HEALTH_QUOTATION: 'delete_health_quotation',
+    HEALTH_QUOTATION_EDIT: 'health_quotation_edit',
   },
 };
 
