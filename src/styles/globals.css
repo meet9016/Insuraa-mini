@@ -670,8 +670,302 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   color: #2B4399 !important;
 }
 
+
 .ag-menu-separator {
   border-bottom: 1px solid #f1f5f9 !important;
   margin: 4px 0 !important;
   height: 1px !important;
+}
+
+/* ==========================================
+   Semantic Header Icon Hover Animations
+   ========================================== */
+
+/* 1. Heartbeat Pulse (Life Insurance) */
+@keyframes heartbeat {
+  0% {
+    transform: scale(1);
+  }
+
+  14% {
+    transform: scale(1.35);
+  }
+
+  28% {
+    transform: scale(1);
+  }
+
+  42% {
+    transform: scale(1.25);
+  }
+
+  70% {
+    transform: scale(1);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* 2. Phone Ringing Shake (Manage Leads) */
+@keyframes phoneRing {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  12% {
+    transform: rotate(18deg);
+  }
+
+  24% {
+    transform: rotate(-16deg);
+  }
+
+  36% {
+    transform: rotate(18deg);
+  }
+
+  48% {
+    transform: rotate(-16deg);
+  }
+
+  60% {
+    transform: rotate(12deg);
+  }
+
+  72% {
+    transform: rotate(-12deg);
+  }
+
+  84% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+/* 3. Car Driving Rumble (Motor Insurance / Quotation) */
+@keyframes carDrive {
+  0% {
+    transform: translateX(0) translateY(0);
+  }
+
+  25% {
+    transform: translateX(3px) translateY(-1px);
+  }
+
+  50% {
+    transform: translateX(6px) translateY(0);
+  }
+
+  75% {
+    transform: translateX(3px) translateY(-1px);
+  }
+
+  100% {
+    transform: translateX(0) translateY(0);
+  }
+}
+
+/* 4. Stethoscope Pulse (Health Insurance / Quotation) */
+@keyframes stethoscopePulse {
+  0% {
+    transform: scale(1) translateY(0);
+  }
+
+  30% {
+    transform: scale(1.2) translateY(-2px);
+  }
+
+  60% {
+    transform: scale(0.95) translateY(1px);
+  }
+
+  100% {
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* 5. Umbrella Floating / Sway (Other Insurance) */
+@keyframes umbrellaFloat {
+  0% {
+    transform: translateY(0) rotate(0deg);
+  }
+
+  30% {
+    transform: translateY(-3px) rotate(-10deg);
+  }
+
+  60% {
+    transform: translateY(-1px) rotate(8deg);
+  }
+
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+}
+
+/* 6. Shield Pulse Glow (Insurance) */
+@keyframes shieldPulse {
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.22);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* 7. File Floating (Claim) */
+@keyframes fileFloat {
+  0% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-3.5px);
+  }
+
+  100% {
+    transform: translateY(0);
+  }
+}
+
+/* 8. Users Bounce (Customers) */
+@keyframes usersBounce {
+  0% {
+    transform: scale(1);
+  }
+
+  30% {
+    transform: scale(1.18) translateX(-2px);
+  }
+
+  60% {
+    transform: scale(1.18) translateX(2px);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* 9. Calculator Pressing (Quotation) */
+@keyframes calcTap {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+
+  25% {
+    transform: translateY(2px) scale(0.9);
+  }
+
+  50% {
+    transform: translateY(-2px) scale(1.15);
+  }
+
+  75% {
+    transform: translateY(1px) scale(0.96);
+  }
+
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* 10. Database Bounce (Masters) */
+@keyframes databaseBounce {
+  0% {
+    transform: translateY(0) scaleY(1);
+  }
+
+  30% {
+    transform: translateY(-4px) scaleY(1.12);
+  }
+
+  60% {
+    transform: translateY(1px) scaleY(0.94);
+  }
+
+  100% {
+    transform: translateY(0) scaleY(1);
+  }
+}
+
+/* 11. Dashboard Grid Pulse (Dashboard) */
+@keyframes dashboardPulse {
+  0% {
+    transform: scale(1) rotate(0deg);
+  }
+
+  50% {
+    transform: scale(1.2) rotate(6deg);
+  }
+
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+/* Trigger classes on hover of main nav container (.group) or dropdown item (.group/sub) */
+.group:hover .animate-icon-heartbeat,
+.group\/sub:hover .animate-icon-heartbeat {
+  animation: heartbeat 1.1s infinite ease-in-out;
+}
+
+.group:hover .animate-icon-phone,
+.group\/sub:hover .animate-icon-phone {
+  animation: phoneRing 0.8s infinite ease-in-out;
+}
+
+.group:hover .animate-icon-car,
+.group\/sub:hover .animate-icon-car {
+  animation: carDrive 0.8s infinite ease-in-out;
+}
+
+.group:hover .animate-icon-stethoscope,
+.group\/sub:hover .animate-icon-stethoscope {
+  animation: stethoscopePulse 1.2s infinite ease-in-out;
+}
+
+.group:hover .animate-icon-umbrella,
+.group\/sub:hover .animate-icon-umbrella {
+  animation: umbrellaFloat 1.4s infinite ease-in-out;
+}
+
+.group:hover .animate-icon-shield,
+.group\/sub:hover .animate-icon-shield {
+  animation: shieldPulse 1.2s infinite ease-in-out;
+}
+
+.group:hover .animate-icon-file,
+.group\/sub:hover .animate-icon-file {
+  animation: fileFloat 1.2s infinite ease-in-out;
+}
+
+.group:hover .animate-icon-users,
+.group\/sub:hover .animate-icon-users {
+  animation: usersBounce 1.2s infinite ease-in-out;
+}
+
+.group:hover .animate-icon-calc,
+.group\/sub:hover .animate-icon-calc {
+  animation: calcTap 1s infinite ease-in-out;
+}
+
+.group:hover .animate-icon-database,
+.group\/sub:hover .animate-icon-database {
+  animation: databaseBounce 1.2s infinite ease-in-out;
+}
+
+.group:hover .animate-icon-dashboard,
+.group\/sub:hover .animate-icon-dashboard {
+  animation: dashboardPulse 1.2s infinite ease-in-out;
 }

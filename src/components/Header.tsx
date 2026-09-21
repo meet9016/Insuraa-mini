@@ -26,25 +26,25 @@ import {
 } from 'lucide-react';
 
 const NAV_LINKS = [
-  { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+  { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, animClass: 'animate-icon-dashboard' },
   {
-    name: 'Insurance', path: '#', icon: Shield, items: [
-      { name: 'Life Insurance', path: '/insurance/life', icon: HeartPulse },
-      { name: 'Health Insurance', path: '/insurance/health', icon: Stethoscope },
-      { name: 'Motor Insurance', path: '/insurance/motor', icon: Car },
-      { name: 'Other Insurance', path: '/insurance/other', icon: Umbrella },
+    name: 'Insurance', path: '#', icon: Shield, animClass: 'animate-icon-shield', items: [
+      { name: 'Life Insurance', path: '/insurance/life', icon: HeartPulse, animClass: 'animate-icon-heartbeat' },
+      { name: 'Health Insurance', path: '/insurance/health', icon: Stethoscope, animClass: 'animate-icon-stethoscope' },
+      { name: 'Motor Insurance', path: '/insurance/motor', icon: Car, animClass: 'animate-icon-car' },
+      { name: 'Other Insurance', path: '/insurance/other', icon: Umbrella, animClass: 'animate-icon-umbrella' },
     ]
   },
-  { name: 'Claim', path: '/claim', icon: FileText },
-  { name: 'Customers', path: '/customers', icon: Users },
+  { name: 'Claim', path: '/claim', icon: FileText, animClass: 'animate-icon-file' },
+  { name: 'Customers', path: '/customers', icon: Users, animClass: 'animate-icon-users' },
   {
-    name: 'Quotation', path: '#', icon: Calculator, items: [
-      { name: 'Health Quotation', path: '/quotation/health', icon: Stethoscope },
-      { name: 'Motor Quotation', path: '/quotation/motor', icon: Car },
+    name: 'Quotation', path: '#', icon: Calculator, animClass: 'animate-icon-calc', items: [
+      { name: 'Health Quotation', path: '/quotation/health', icon: Stethoscope, animClass: 'animate-icon-stethoscope' },
+      { name: 'Motor Quotation', path: '/quotation/motor', icon: Car, animClass: 'animate-icon-car' },
     ]
   },
-  { name: 'Manage Leads', path: '/manage-leads', icon: PhoneCall },
-  { name: 'Masters', path: '/masters', icon: Database },
+  { name: 'Manage Leads', path: '/manage-leads', icon: PhoneCall, animClass: 'animate-icon-phone' },
+  { name: 'Masters', path: '/masters', icon: Database, animClass: 'animate-icon-database' },
 ];
 
 export default function Header() {
@@ -312,12 +312,12 @@ export default function Header() {
                   }}
                   className={`relative flex items-center gap-2 whitespace-nowrap px-3.5 py-2 rounded-lg text-[13px] font-semibold transition-all duration-300 ${isActive
                     ? 'text-[#2F439D] bg-blue-50/80 shadow-sm border border-[#2F439D]/10'
-                    : 'text-gray-700 hover:bg-emerald-50 hover:text-[#00A389] border border-transparent'
+                    : 'text-gray-700 hover:bg-blue-50/80 hover:text-[#2F439D] border border-transparent'
                     }`}
                 >
-                  <Icon size={16} className={`transition-transform duration-300 group-hover:scale-125 group-hover:-rotate-6 ${isActive ? 'text-[#2F439D]' : 'text-gray-500 group-hover:text-[#00A389]'}`} />
+                  <Icon size={16} className={`transition-colors duration-300 ${link.animClass || ''} ${isActive ? 'text-[#2F439D]' : 'text-gray-500 group-hover:text-[#2F439D]'}`} />
                   {link.name}
-                  {hasItems && <ChevronDown size={14} className={`ml-0.5 opacity-60 group-hover:opacity-100 transition-transform duration-300 ${activeDropdown === idx ? 'rotate-180 text-[#2F439D]' : 'group-hover:rotate-180 group-hover:text-[#00A389]'}`} />}
+                  {hasItems && <ChevronDown size={14} className={`ml-0.5 opacity-60 group-hover:opacity-100 transition-transform duration-300 ${activeDropdown === idx ? 'rotate-180 text-[#2F439D]' : 'group-hover:rotate-180 group-hover:text-[#2F439D]'}`} />}
                 </Link>
 
                 {/* Active Underline */}
@@ -348,11 +348,11 @@ export default function Header() {
                     href={subLink.path}
                     className={`group/sub flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-bold transition-all duration-200 ${isSubActive
                       ? 'bg-blue-50/80 text-[#2F439D]'
-                      : 'text-gray-600 hover:bg-emerald-50 hover:text-[#00A389]'
+                      : 'text-gray-600 hover:bg-blue-50/80 hover:text-[#2F439D]'
                       }`}
                     onClick={() => setActiveDropdown(null)}
                   >
-                    <SubIcon size={17} className={`transition-transform duration-300 group-hover/sub:scale-125 group-hover/sub:-rotate-6 ${isSubActive ? 'text-[#2F439D]' : 'text-gray-400 group-hover/sub:text-[#00A389]'}`} />
+                    <SubIcon size={17} className={`transition-colors duration-300 ${subLink.animClass || ''} ${isSubActive ? 'text-[#2F439D]' : 'text-gray-400 group-hover/sub:text-[#2F439D]'}`} />
                     {subLink.name}
                   </Link>
                 );
