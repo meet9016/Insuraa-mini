@@ -22,7 +22,7 @@ export default function ActionButtons({
       <button
         onClick={onCancel}
         type="button"
-        className="bg-gray-400 hover:bg-gray-500 text-white px-5 py-2 rounded-md text-sm transition-colors"
+        className="px-5 py-2 border border-[#2B4399] rounded-md font-semibold text-sm text-[#2B4399] hover:bg-gray-100 transition-colors"
       >
         {cancelText}     
       </button>

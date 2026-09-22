@@ -36,7 +36,7 @@ export default function HealthInsuranceViewModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden border border-gray-100">
-        
+
         {/* Header */}
         <div className="bg-[#2B4399] text-white px-6 py-4 flex items-center justify-between shadow-md">
           <div className="flex items-center gap-3">
@@ -304,7 +304,7 @@ export default function HealthInsuranceViewModal({
         <div className="bg-white border-t border-gray-200 px-6 py-3.5 flex justify-end">
           <button
             onClick={onClose}
-            className="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-lg transition-colors"
+            className="px-6 py-2 border border-[#2B4399] rounded-lg font-bold text-xs text-[#2B4399] hover:bg-gray-100 transition-colors"
           >
             Close
           </button>

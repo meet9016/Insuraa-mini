@@ -346,7 +346,7 @@ export default function LifeInsuranceViewModal({
         <div className="bg-white border-t border-gray-200 px-6 py-3.5 flex justify-end">
           <button
             onClick={onClose}
-            className="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-lg transition-colors"
+            className="px-6 py-2 border border-[#2B4399] rounded-lg font-bold text-xs text-[#2B4399] hover:bg-gray-100 transition-colors"
           >
             Close
           </button>

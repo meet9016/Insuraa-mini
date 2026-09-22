@@ -16,7 +16,7 @@ export default function ViewOtherInsuranceModal({ isOpen, onClose, id }: ViewOth
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden border border-gray-100">
-        
+
         {/* Header */}
         <div className="bg-[#2B4399] text-white px-6 py-4 flex items-center justify-between shadow-md shrink-0">
           <div className="flex items-center gap-3">
@@ -198,10 +198,10 @@ export default function ViewOtherInsuranceModal({ isOpen, onClose, id }: ViewOth
                             Policy PDF
                           </td>
                           <td className="px-5 py-3.5 text-right">
-                            <a 
-                              href={data.policy_pdf} 
-                              target="_blank" 
-                              rel="noreferrer" 
+                            <a
+                              href={data.policy_pdf}
+                              target="_blank"
+                              rel="noreferrer"
                               className="inline-flex items-center gap-1 text-[#2B4399] hover:text-[#1a2963] font-semibold text-xs bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-md transition-colors"
                             >
                               <ExternalLink className="w-3.5 h-3.5" /> View File
@@ -209,7 +209,7 @@ export default function ViewOtherInsuranceModal({ isOpen, onClose, id }: ViewOth
                           </td>
                         </tr>
                       )}
-                      
+
                       {/* Other Documents */}
                       {data.documents && data.documents.map((doc: any, index: number) => (
                         <tr key={index} className="hover:bg-slate-50/50 transition-colors">
@@ -220,10 +220,10 @@ export default function ViewOtherInsuranceModal({ isOpen, onClose, id }: ViewOth
                             {doc.document_name || `Document ${index + 1}`}
                           </td>
                           <td className="px-5 py-3.5 text-right">
-                            <a 
-                              href={doc.document_image} 
-                              target="_blank" 
-                              rel="noreferrer" 
+                            <a
+                              href={doc.document_image}
+                              target="_blank"
+                              rel="noreferrer"
                               className="inline-flex items-center gap-1 text-[#2B4399] hover:text-[#1a2963] font-semibold text-xs bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-md transition-colors"
                             >
                               <ExternalLink className="w-3.5 h-3.5" /> View File
@@ -244,12 +244,12 @@ export default function ViewOtherInsuranceModal({ isOpen, onClose, id }: ViewOth
                   </table>
                 </div>
               </div>
-              
+
               {/* Footer Button */}
               <div className="pt-4 flex justify-end">
                 <button
                   onClick={onClose}
-                  className="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-semibold transition-colors text-sm"
+                  className="px-6 py-2 border border-[#2B4399] rounded-lg font-bold text-xs text-[#2B4399] hover:bg-gray-100 transition-colors"
                 >
                   Close
                 </button>

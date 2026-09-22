@@ -29,7 +29,7 @@ export default function MotorInsuranceViewModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden border border-gray-100">
-        
+
         {/* Header */}
         <div className="bg-[#2B4399] text-white px-6 py-4 flex items-center justify-between shadow-md">
           <div className="flex items-center gap-3">
@@ -227,7 +227,7 @@ export default function MotorInsuranceViewModal({
                 <h3 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
                   <Paperclip className="w-4 h-4 text-[#2B4399]" /> Documents & Attachments
                 </h3>
-                
+
                 <div className="space-y-3">
                   {/* Primary Policy PDF */}
                   {data.policy_pdf ? (
@@ -284,7 +284,7 @@ export default function MotorInsuranceViewModal({
         <div className="bg-gray-50 px-6 py-3 border-t border-gray-200 flex justify-end">
           <button
             onClick={onClose}
-            className="px-5 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold rounded-xl transition-colors"
+            className="px-6 py-2 border border-[#2B4399] rounded-lg font-bold text-xs text-[#2B4399] hover:bg-gray-100 transition-colors"
           >
             Close
           </button>
