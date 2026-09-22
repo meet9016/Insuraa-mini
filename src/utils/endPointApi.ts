@@ -109,6 +109,15 @@ export interface EndPointApi {
     DELETE_MOTOR_QUOTATION: string;
     MOTOR_QUOTATION_EDIT: string;
   };
+  CLAIM: {
+    CLAIM_MASTER_DATA: string;
+    CLAIM_CUSTOMER_POLICY_DROPDOWN: string;
+    INSERT_CLAIM: string;
+    INSURANCE_TYPE_LIST: string;
+    CLAIM_LIST: string;
+    DELETE_CLAIM: string;
+    EDIT_CLAIM: string;
+  };
 }
 
 // Define and export the standard API endpoint object
@@ -222,6 +231,15 @@ const endPointApi: EndPointApi = {
     MOTOR_QUOTATION_LIST: 'motor_quotation_list',
     DELETE_MOTOR_QUOTATION: 'delete_motor_quotation',
     MOTOR_QUOTATION_EDIT: 'motor_quotation_edit',
+  },
+  CLAIM: {
+    CLAIM_MASTER_DATA: 'claim_master_data',
+    CLAIM_CUSTOMER_POLICY_DROPDOWN: 'claim_customer_policy_dropdown',
+    INSERT_CLAIM: 'insert_claim',
+    INSURANCE_TYPE_LIST: 'insurance_type_list',
+    CLAIM_LIST: 'claim_list',
+    DELETE_CLAIM: 'delete_claim',
+    EDIT_CLAIM: 'edit_claim',
   },
 };
 

@@ -1,213 +1,467 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import PageHeader from '@/components/ui/PageHeader';
 import { useRouter } from 'next/router';
+import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import DatePicker from '@/components/ui/DatePicker';
+import { User, Info, Calendar, Building2, FileText } from 'lucide-react';
+import { api } from '@/utils/axiosInstance';
+import endPointApi from '@/utils/endPointApi';
+import { useCustomerList } from '@/hooks/useCustomerApi';
+import { useClaimMasterData, useInsuranceTypeList, useClaimCustomerPolicyDropdown, useClaimActions, formatToYYYYMMDD } from '@/hooks/useClaimApi';
 
 export default function AddClaim() {
   const router = useRouter();
-  const sectionHeaderClass = "bg-[#EEF1FA] text-[#2B4399] px-5 py-3 text-[15px] font-bold rounded-lg flex items-center gap-2 mb-5";
-  const labelClass = "text-[13px] font-bold text-gray-700 mb-1.5 block";
-  const inputClass = "w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#2D3591]/20 focus:border-[#2D3591] transition-all bg-white shadow-sm";
+  const editId = router.query.id ? String(router.query.id) : '';
+  const isEditMode = Boolean(editId);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { insertClaim, isInserting } = useClaimActions();
 
-  const handleSubmit = () => {
-    console.log("Save Claim");
+  // Fetch API master data & dropdowns
+  const { data: masterData } = useClaimMasterData();
+  const { data: insuranceTypeListData } = useInsuranceTypeList();
+  const { data: customerRes } = useCustomerList({ page: 1, limit: 1000 });
+
+  const customerList = customerRes?.customerList || [];
+  const insuranceTypes = (insuranceTypeListData && insuranceTypeListData.length > 0) ? insuranceTypeListData : (masterData?.insurance_type || []);
+  const claimStatuses = masterData?.claim_status || [];
+  const hospitalRatings = masterData?.hospital_rating || [];
+
+  const [formData, setFormData] = useState({
+    customer_id: '',
+    insurance_type: '',
+    customer_insurance_id: '',
+    admited_date: '',
+    discharge_date: '',
+    calim_amount: '',
+    deducted_amount: '',
+    setteled_amount: '',
+    claim_number: '',
+    file_at_office: '',
+    file_at_company: '',
+    next_followup_date: '',
+    query: '',
+    claim_satteled_date: '',
+    diagnosis: '',
+    claim_status: '',
+    name_of_doctor: '',
+    name_of_hospital: '',
+    location_of_hospital: '',
+    hospital_type: '',
+    rating_of_hospital: '',
+    note: '',
+  });
+
+  // Prefill claim details if editing
+  useEffect(() => {
+    if (!router.isReady || !editId) return;
+
+    const fetchClaimDetail = async () => {
+      try {
+        const formDataPayload = new FormData();
+        formDataPayload.append('page', '1');
+        formDataPayload.append('limit', '100');
+        formDataPayload.append('search', editId);
+
+        const response = await api.post(endPointApi.CLAIM.CLAIM_LIST, formDataPayload);
+        const resData = response?.data;
+        const list = Array.isArray(resData?.data) ? resData.data : [];
+        const item = list.find((c: any) => String(c.claim_id || c.id) === editId) || list[0];
+
+        if (item) {
+          setFormData({
+            customer_id: String(item.customer_id || '').trim(),
+            insurance_type: String(item.insurance_type || '').trim(),
+            customer_insurance_id: String(item.customer_insurance_id || '').trim(),
+            admited_date: formatToYYYYMMDD(item.admitted_date || item.admited_date || ''),
+            discharge_date: formatToYYYYMMDD(item.discharge_date || ''),
+            calim_amount: String(item.claim_amount ?? item.calim_amount ?? ''),
+            deducted_amount: String(item.deducted_amount ?? ''),
+            setteled_amount: String(item.settled_amount ?? item.setteled_amount ?? ''),
+            claim_number: item.claim_number || '',
+            file_at_office: formatToYYYYMMDD(item.file_at_office || ''),
+            file_at_company: formatToYYYYMMDD(item.file_at_company || ''),
+            next_followup_date: formatToYYYYMMDD(item.next_followup_date || ''),
+            query: formatToYYYYMMDD(item.query_date || item.query || ''),
+            claim_satteled_date: formatToYYYYMMDD(item.claim_settled_date || item.claim_satteled_date || ''),
+            diagnosis: item.diagnosis || '',
+            claim_status: String(item.claim_status || '').trim(),
+            name_of_doctor: item.doctor_name || item.name_of_doctor || '',
+            name_of_hospital: item.hospital_name || item.name_of_hospital || '',
+            location_of_hospital: item.hospital_location || item.location_of_hospital || '',
+            hospital_type: item.hospital_type || '',
+            rating_of_hospital: String(item.rating_of_hospital || '').trim(),
+            note: item.note || '',
+          });
+        }
+      } catch (err) {
+        console.error('Error fetching claim detail for edit:', err);
+      }
+    };
+
+    fetchClaimDetail();
+  }, [router.isReady, editId]);
+
+  // Fetch Customer Policy Dropdown when customer_id and insurance_type are selected
+  const { data: customerPolicyList = [] } = useClaimCustomerPolicyDropdown({
+    customer_id: formData.customer_id,
+    insurance_type_id: formData.insurance_type,
+  });
+
+  const handleChange = (field: string, value: any) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      const payload = isEditMode ? { ...formData, id: editId, claim_id: editId } : formData;
+      const res = await insertClaim(payload);
+      if (res?.status === 200 || res?.status === 201 || res?.status === '200' || res?.status === 'success') {
+        router.back();
+      }
+    } catch (err) {
+      console.error("Save claim error:", err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const labelClass = "text-[13px] font-bold text-gray-700 mb-1.5 block";
+
   return (
-    <div className="bg-[#f8fafc] min-h-[calc(100vh-72px-56px)] p-6">
+    <div className="bg-[#f8fafc] min-h-[calc(100vh-72px-56px)] p-0">
       <Head>
-        <title>Add Claim - Insuraa</title>
-        <style>{`
-          body {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-          }
-          body::-webkit-scrollbar {
-            display: none;
-          }
-        `}</style>
+        <title>{isEditMode ? 'Edit Claim - Insuraa' : 'Add Claim - Insuraa'}</title>
       </Head>
 
-      <div className="w-full mx-auto animate-in fade-in duration-500 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-
+      <div className="w-full mx-auto animate-in fade-in duration-500 bg-white p-6 rounded-2xl shadow-sm border border-gray-200/70 space-y-6">
         {/* Page Header */}
         <PageHeader
-          title="Add Claim"
-          submitText="Save Claim"
+          title={isEditMode ? 'Edit Claim' : 'Add Claim'}
+          submitText={isEditMode ? 'Update Claim' : 'Save Claim'}
           onSubmit={handleSubmit}
-          isSubmitting={isSubmitting}
+          isSubmitting={isSubmitting || isInserting}
         />
 
         {/* Form Content */}
-        <form className="space-y-8 bg-white">
-
-          {/* Customer Information */}
-          <div>
-            <div className={sectionHeaderClass}>
-              <UserIcon /> Customer Information
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Section 1: Customer Information */}
+          <div className="border border-gray-200/70 rounded-2xl p-6 bg-white shadow-2xs space-y-5">
+            <div className="bg-[#EEF1FA] border-l-[4px] border-[#2B4399] rounded-xl px-4 py-3 flex justify-between items-center">
+              <div className="flex items-center gap-2.5 text-[#2B4399] font-bold text-[15px]">
+                <User size={18} />
+                <span>Customer Information</span>
+              </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-5">
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
               <div>
                 <div className="flex justify-between items-center mb-1.5">
-                  <label className="text-[13px] font-bold text-gray-700">Customer Name <span className="text-red-500">*</span></label>
-                  <button type="button" className="text-xs text-[#cf3838] font-bold hover:underline">Add Customer</button>
+                  <label className="text-[13px] font-bold text-gray-700">
+                    Customer Name <span className="text-red-500">*</span>
+                  </label>
+                  <button
+                    type="button"
+                    className="text-xs text-[#2B4399] font-bold hover:underline"
+                    onClick={() => router.push('/customer/add')}
+                  >
+                    + Add Customer
+                  </button>
                 </div>
-                <Select className={inputClass}>
-                  <option>Select Customer Name</option>
+                <Select
+                  value={formData.customer_id}
+                  onChange={(e: any) => handleChange('customer_id', e.target.value)}
+                >
+                  <option value="">Select Customer Name</option>
+                  {customerList.map((cust: any) => {
+                    const custId = cust.customer_id || cust.id;
+                    const custName = cust.full_name || cust.name || (cust.first_name ? `${cust.first_name} ${cust.last_name || ''}`.trim() : `Customer #${custId}`);
+                    const phone = cust.number || cust.mobile || cust.phone || '';
+                    return (
+                      <option key={custId} value={custId}>
+                        {custName} {phone ? `(${phone})` : ''}
+                      </option>
+                    );
+                  })}
                 </Select>
               </div>
+
               <div>
-                <label className={labelClass}>Insurance Type <span className="text-red-500">*</span></label>
-                <Select className={inputClass}><option>Select Insurance Type</option></Select>
+                <label className={labelClass}>
+                  Insurance Type <span className="text-red-500">*</span>
+                </label>
+                <Select
+                  value={formData.insurance_type}
+                  onChange={(e: any) => handleChange('insurance_type', e.target.value)}
+                >
+                  <option value="">Select Insurance Type</option>
+                  {insuranceTypes.map((item: any) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name || item.value}
+                    </option>
+                  ))}
+                </Select>
               </div>
+
               <div>
-                <label className={labelClass}>Customer Policy <span className="text-red-500">*</span></label>
-                <Select className={inputClass}>
-                  <option>Select Customer Policy</option>
+                <label className={labelClass}>
+                  Customer Policy <span className="text-red-500">*</span>
+                </label>
+                <Select
+                  value={formData.customer_insurance_id}
+                  onChange={(e: any) => handleChange('customer_insurance_id', e.target.value)}
+                >
+                  <option value="">Select Customer Policy</option>
+                  {customerPolicyList.map((item: any) => {
+                    const id = item.customer_insurance_id || item.id || item.policy_id;
+                    const label =
+                      item.policy_number ||
+                      item.policy_no ||
+                      item.value ||
+                      item.name ||
+                      item.title ||
+                      item.plan_name ||
+                      (item.company_name ? `${item.policy_number || 'Policy'} - ${item.company_name}` : `Policy #${id}`);
+                    return (
+                      <option key={id} value={id}>
+                        {label}
+                      </option>
+                    );
+                  })}
                 </Select>
               </div>
             </div>
           </div>
 
-          {/* Other Information */}
-          <div>
-            <div className={sectionHeaderClass}>
-              <InfoIcon /> Other Information
+          {/* Section 2: Claim Details */}
+          <div className="border border-gray-200/70 rounded-2xl p-6 bg-white shadow-2xs space-y-5">
+            <div className="bg-[#EEF1FA] border-l-[4px] border-[#2B4399] rounded-xl px-4 py-3 flex justify-between items-center">
+              <div className="flex items-center gap-2.5 text-[#2B4399] font-bold text-[15px]">
+                <Info size={18} />
+                <span>Claim Details</span>
+              </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-5">
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
               <div>
-                <label className={labelClass}>Admitted Date <span className="text-red-500">*</span></label>
-                <DatePicker className={inputClass} value="2026-08-11" />
-              </div>
-              <div>
-                <label className={labelClass}>Discharge Date <span className="text-red-500">*</span></label>
-                <DatePicker className={inputClass} value="2026-08-11" />
-              </div>
-              <div>
-                <label className={labelClass}>Claim Amount <span className="text-red-500">*</span></label>
-                <input type="text" placeholder="Enter Claim Amount" className={inputClass} />
+                <label className={labelClass}>
+                  Admitted Date <span className="text-red-500">*</span>
+                </label>
+                <DatePicker
+                  value={formData.admited_date}
+                  onChange={(dateStr: string) => handleChange('admited_date', dateStr)}
+                />
               </div>
 
               <div>
-                <label className={labelClass}>Deducted Amount <span className="text-red-500">*</span></label>
-                <input type="text" placeholder="Enter Deducted Amount" className={inputClass} />
+                <label className={labelClass}>
+                  Discharge Date <span className="text-red-500">*</span>
+                </label>
+                <DatePicker
+                  value={formData.discharge_date}
+                  onChange={(dateStr: string) => handleChange('discharge_date', dateStr)}
+                />
               </div>
-              <div>
-                <label className={labelClass}>Settled Amount <span className="text-red-500">*</span></label>
-                <input type="text" placeholder="Enter Settled Amount" className={inputClass} />
+
+              <Input
+                label="Claim Amount"
+                name="calim_amount"
+                placeholder="Enter Claim Amount"
+                value={formData.calim_amount}
+                onChange={(e) => handleChange('calim_amount', e.target.value)}
+                required
+              />
+
+              <Input
+                label="Deducted Amount"
+                name="deducted_amount"
+                placeholder="Enter Deducted Amount"
+                value={formData.deducted_amount}
+                onChange={(e) => handleChange('deducted_amount', e.target.value)}
+              />
+
+              <Input
+                label="Settled Amount"
+                name="setteled_amount"
+                placeholder="Enter Settled Amount"
+                value={formData.setteled_amount}
+                onChange={(e) => handleChange('setteled_amount', e.target.value)}
+              />
+
+              <Input
+                label="Claim Number"
+                name="claim_number"
+                placeholder="Enter Claim Number (e.g. CLM0000012)"
+                value={formData.claim_number}
+                onChange={(e) => handleChange('claim_number', e.target.value)}
+                required
+              />
+            </div>
+          </div>
+
+          {/* Section 3: Important Dates & Status */}
+          <div className="border border-gray-200/70 rounded-2xl p-6 bg-white shadow-2xs space-y-5">
+            <div className="bg-[#EEF1FA] border-l-[4px] border-[#2B4399] rounded-xl px-4 py-3 flex justify-between items-center">
+              <div className="flex items-center gap-2.5 text-[#2B4399] font-bold text-[15px]">
+                <Calendar size={18} />
+                <span>Important Dates & Status</span>
               </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
               <div>
-                <label className={labelClass}>Claim Number <span className="text-red-500">*</span></label>
-                <input type="text" placeholder="Enter Claim Number" className={inputClass} />
+                <label className={labelClass}>File At Office Date</label>
+                <DatePicker
+                  value={formData.file_at_office}
+                  onChange={(dateStr: string) => handleChange('file_at_office', dateStr)}
+                />
+              </div>
+
+              <div>
+                <label className={labelClass}>File At Company Date</label>
+                <DatePicker
+                  value={formData.file_at_company}
+                  onChange={(dateStr: string) => handleChange('file_at_company', dateStr)}
+                />
+              </div>
+
+              <div>
+                <label className={labelClass}>Next Followup Date</label>
+                <DatePicker
+                  value={formData.next_followup_date}
+                  onChange={(dateStr: string) => handleChange('next_followup_date', dateStr)}
+                />
+              </div>
+
+              <div>
+                <label className={labelClass}>Query Date</label>
+                <DatePicker
+                  value={formData.query}
+                  onChange={(dateStr: string) => handleChange('query', dateStr)}
+                />
+              </div>
+
+              <div>
+                <label className={labelClass}>Claim Settled Date</label>
+                <DatePicker
+                  value={formData.claim_satteled_date}
+                  onChange={(dateStr: string) => handleChange('claim_satteled_date', dateStr)}
+                />
+              </div>
+
+              <Input
+                label="Diagnosis"
+                name="diagnosis"
+                placeholder="Enter Diagnosis (e.g. Fever)"
+                value={formData.diagnosis}
+                onChange={(e) => handleChange('diagnosis', e.target.value)}
+              />
+
+              <div>
+                <label className={labelClass}>
+                  Claim Status <span className="text-red-500">*</span>
+                </label>
+                <Select
+                  value={formData.claim_status}
+                  onChange={(e: any) => handleChange('claim_status', e.target.value)}
+                >
+                  <option value="">Select Claim Status</option>
+                  {claimStatuses.map((item: any) => (
+                    <option key={item.id} value={item.id}>
+                      {item.value || item.name}
+                    </option>
+                  ))}
+                </Select>
               </div>
             </div>
           </div>
 
-          {/* Important Dates */}
-          <div>
-            <div className={sectionHeaderClass}>
-              <CalendarIcon /> Important Dates
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-5">
-              <div>
-                <label className={labelClass}>File At Office <span className="text-red-500">*</span></label>
-                <DatePicker className={inputClass} value="2026-08-11" />
-              </div>
-              <div>
-                <label className={labelClass}>File At Company <span className="text-red-500">*</span></label>
-                <DatePicker className={inputClass} value="2026-08-11" />
-              </div>
-              <div>
-                <label className={labelClass}>Next Followup Date <span className="text-red-500">*</span></label>
-                <DatePicker className={inputClass} value="2026-08-11" />
-              </div>
-
-              <div>
-                <label className={labelClass}>Query <span className="text-red-500">*</span></label>
-                <DatePicker className={inputClass} value="2026-08-11" />
-              </div>
-              <div>
-                <label className={labelClass}>Claim Settled Date <span className="text-red-500">*</span></label>
-                <DatePicker className={inputClass} value="2026-08-11" />
-              </div>
-              <div>
-                <label className={labelClass}>Diagnosis <span className="text-red-500">*</span></label>
-                <input type="text" placeholder="Enter Diagnosis" className={inputClass} />
-              </div>
-
-              <div>
-                <label className={labelClass}>Claim Status <span className="text-red-500">*</span></label>
-                <Select className={inputClass}><option>Select Claim Status</option></Select>
+          {/* Section 4: Doctor & Hospital Information */}
+          <div className="border border-gray-200/70 rounded-2xl p-6 bg-white shadow-2xs space-y-5">
+            <div className="bg-[#EEF1FA] border-l-[4px] border-[#2B4399] rounded-xl px-4 py-3 flex justify-between items-center">
+              <div className="flex items-center gap-2.5 text-[#2B4399] font-bold text-[15px]">
+                <Building2 size={18} />
+                <span>Doctor & Hospital Information</span>
               </div>
             </div>
-          </div>
 
-          {/* Doctor & Hospital Information */}
-          <div>
-            <div className={sectionHeaderClass}>
-              <HospitalIcon /> Doctor & Hospital Information
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-5">
-              <div>
-                <label className={labelClass}>Name Of Doctor <span className="text-red-500">*</span></label>
-                <input type="text" placeholder="Enter Name Of Doctor" className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass}>Name Of Hospital <span className="text-red-500">*</span></label>
-                <input type="text" placeholder="Enter Name Of Hospital" className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass}>Location Of Hospital <span className="text-red-500">*</span></label>
-                <input type="text" placeholder="Enter Location Of Hospital" className={inputClass} />
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
+              <Input
+                label="Name Of Doctor"
+                name="name_of_doctor"
+                placeholder="Enter Doctor Name (e.g. Dr. ABC)"
+                value={formData.name_of_doctor}
+                onChange={(e) => handleChange('name_of_doctor', e.target.value)}
+              />
+
+              <Input
+                label="Name Of Hospital"
+                name="name_of_hospital"
+                placeholder="Enter Hospital Name (e.g. Apollo Hospital)"
+                value={formData.name_of_hospital}
+                onChange={(e) => handleChange('name_of_hospital', e.target.value)}
+              />
+
+              <Input
+                label="Location Of Hospital"
+                name="location_of_hospital"
+                placeholder="Enter Hospital Location (e.g. Ahmedabad)"
+                value={formData.location_of_hospital}
+                onChange={(e) => handleChange('location_of_hospital', e.target.value)}
+              />
+
+              <Input
+                label="Hospital Type"
+                name="hospital_type"
+                placeholder="Enter Hospital Type"
+                value={formData.hospital_type}
+                onChange={(e) => handleChange('hospital_type', e.target.value)}
+              />
 
               <div>
-                <label className={labelClass}>Hospital Type <span className="text-red-500">*</span></label>
-                <input type="text" placeholder="Enter Hospital Type" className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass}>Rating Of Hospital <span className="text-red-500">*</span></label>
-                <Select className={inputClass}><option>Select Rating Of Hospital</option></Select>
+                <label className={labelClass}>Rating Of Hospital</label>
+                <Select
+                  value={formData.rating_of_hospital}
+                  onChange={(e: any) => handleChange('rating_of_hospital', e.target.value)}
+                >
+                  <option value="">Select Rating</option>
+                  {hospitalRatings.map((item: any) => (
+                    <option key={item.id} value={item.id}>
+                      {item.value || item.name}
+                    </option>
+                  ))}
+                </Select>
               </div>
             </div>
           </div>
 
-          {/* Note Details */}
-          <div>
-            <div className={sectionHeaderClass}>
-              <NoteIcon /> Note Details
+          {/* Section 5: Note Details */}
+          <div className="border border-gray-200/70 rounded-2xl p-6 bg-white shadow-2xs space-y-5">
+            <div className="bg-[#EEF1FA] border-l-[4px] border-[#2B4399] rounded-xl px-4 py-3 flex justify-between items-center">
+              <div className="flex items-center gap-2.5 text-[#2B4399] font-bold text-[15px]">
+                <FileText size={18} />
+                <span>Note Details</span>
+              </div>
             </div>
+
             <div>
-              <label className={labelClass}>Note <span className="text-red-500">*</span></label>
-              <textarea rows={4} className={inputClass}></textarea>
+              <Input
+                label="Note"
+                name="note"
+                as="textarea"
+                placeholder="Enter any additional notes..."
+                value={formData.note}
+                onChange={(e) => handleChange('note', e.target.value)}
+              />
             </div>
           </div>
-
-          {/* Footer / Save Button removed and placed at top */}
-
         </form>
       </div>
     </div>
   );
 }
 
-// Minimal Icons to match the screenshot section headers
-function UserIcon() {
-  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
-}
-function InfoIcon() {
-  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m3.86 8.753 5.482-4.349C10.853 3.204 13.147 3.204 14.658 4.404l5.482 4.349C21.328 9.695 22 11.114 22 12.639v5.861C22 20.433 20.433 22 18.5 22H5.5C3.567 22 2 20.433 2 18.5v-5.861c0-1.525.672-2.944 1.86-3.886Z" /><path d="M12 17v-6" /><circle cx="12" cy="7.5" r="1" fill="currentColor" /></svg>
-}
-function CalendarIcon() {
-  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2" /><line x1="16" x2="16" y1="2" y2="6" /><line x1="8" x2="8" y1="2" y2="6" /><line x1="3" x2="21" y1="10" y2="10" /><path d="m9 16 2 2 4-4" /></svg>
-}
-function HospitalIcon() {
-  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 6v4" /><path d="M14 8h-4" /><path d="M18 10V6a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v4" /><path d="M22 22H2" /><path d="M20 22v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8" /></svg>
-}
-function NoteIcon() {
-  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
-}

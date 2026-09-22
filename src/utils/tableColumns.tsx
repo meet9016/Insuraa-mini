@@ -2,77 +2,153 @@ import React from 'react';
 import { Building2, List, User, Eye, FileEdit, Trash2, Calendar, Clock, Car, Bike, Hash, Settings, Barcode, Shield, Wallet, CreditCard, Phone } from 'lucide-react';
 import { TableActions } from '../components/ui/tableaggrid/TableActions';
 
-export const claimColumns = [
+export interface ClaimColumnProps {
+  onView?: (data: any) => void;
+  onEdit?: (data: any) => void;
+  onDelete?: (data: any) => void;
+}
+
+export const getClaimColumns = ({ onView, onEdit, onDelete }: ClaimColumnProps = {}) => [
+  {
+    headerName: "Claim Number",
+    field: "claim_number",
+    minWidth: 160,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      const claimNo = params.data?.claim_number || params.data?.claimNumber || (params.data?.claim_id ? `CLM-${params.data.claim_id}` : '-');
+      return <span className="font-bold text-gray-900">{claimNo}</span>;
+    },
+  },
   {
     headerName: "Client Name",
-    field: "clientName",
+    field: "customer_name",
     minWidth: 180,
-    cellRenderer: (params: any) => (
-      <span className="font-semibold text-gray-900">{params.value}</span>
-    ),
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      const data = params.data;
+      const rawName = data.customer_name || data.clientName || data.name || '-';
+      const name = String(rawName).replace(/\s+/g, ' ').trim();
+      const mobile = data.mobile || data.customer_mobile || data.customer_number || '';
+      return (
+        <div className="flex flex-col justify-center h-full py-1 leading-snug">
+          <span className="font-bold text-gray-900 text-sm leading-snug truncate">{name}</span>
+          {mobile && <span className="text-[11px] text-gray-500">Mo: {mobile}</span>}
+        </div>
+      );
+    },
   },
   {
     headerName: "Insurance Type",
-    field: "insuranceType",
+    field: "insurance_type",
     minWidth: 160,
-    cellRenderer: (params: any) => (
-      <span className="text-gray-700 font-semibold">{params.value}</span>
-    ),
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      const typeVal = params.data?.insurance_type_name || params.data?.insurance_type || params.data?.insuranceType || '-';
+      let displayText = typeVal;
+      if (typeVal === '1' || typeVal === 1) displayText = 'Health Insurance';
+      else if (typeVal === '2' || typeVal === 2) displayText = 'Motor Insurance';
+      else if (typeVal === '3' || typeVal === 3) displayText = 'Life Insurance';
+
+      return <span className="text-gray-700 font-semibold">{displayText}</span>;
+    },
   },
   {
     headerName: "Admitted Date",
-    field: "admittedDate",
+    field: "admitted_date",
     minWidth: 140,
-    cellRenderer: (params: any) => (
-      <span className="text-gray-700 font-semibold">{params.value}</span>
-    ),
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      const admitted = params.data?.admitted_date || params.data?.admittedDate || '-';
+      const discharge = params.data?.discharge_date || params.data?.dischargeDate;
+      return (
+        <div className="flex flex-col justify-center h-full py-1 leading-snug">
+          <span className="text-gray-900 font-medium text-xs">Adm: {admitted}</span>
+          {discharge && <span className="text-[11px] text-gray-500">Dis: {discharge}</span>}
+        </div>
+      );
+    },
   },
   {
     headerName: "Claim Amount",
-    field: "claimAmount",
+    field: "claim_amount",
     minWidth: 140,
-    cellRenderer: (params: any) => (
-      <span className="font-bold text-gray-900">{params.value}</span>
-    ),
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      const amt = params.data?.claim_amount ?? params.data?.claimAmount ?? 0;
+      const formatted = typeof amt === 'number' ? `₹${amt.toLocaleString('en-IN')}` : String(amt).startsWith('₹') ? amt : `₹${amt}`;
+      return <span className="font-bold text-gray-900">{formatted}</span>;
+    },
   },
   {
     headerName: "Deducted Amount",
-    field: "deductedAmount",
+    field: "deducted_amount",
     minWidth: 150,
-    cellRenderer: (params: any) => (
-      <span className="font-bold text-gray-900">{params.value}</span>
-    ),
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      const amt = params.data?.deducted_amount ?? params.data?.deductedAmount ?? 0;
+      const formatted = typeof amt === 'number' ? `₹${amt.toLocaleString('en-IN')}` : String(amt).startsWith('₹') ? amt : `₹${amt}`;
+      return <span className="font-bold text-gray-900">{formatted}</span>;
+    },
+  },
+  {
+    headerName: "Settled Amount",
+    field: "settled_amount",
+    minWidth: 150,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      const amt = params.data?.settled_amount ?? params.data?.settledAmount ?? 0;
+      const formatted = typeof amt === 'number' ? `₹${amt.toLocaleString('en-IN')}` : String(amt).startsWith('₹') ? amt : `₹${amt}`;
+      return <span className="font-bold text-gray-900">{formatted}</span>;
+    },
   },
   {
     headerName: "Claim Status",
-    field: "claimStatus",
+    field: "claim_status",
     minWidth: 140,
     cellRenderer: (params: any) => {
-      const status = params.value;
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      const rawStatus = params.data?.claim_status ?? params.data?.claimStatus ?? '-';
+      let statusText = String(rawStatus);
       let badgeClass = "bg-gray-100 text-gray-700";
-      if (status === 'Approved' || status === 'Settled') badgeClass = "bg-emerald-100 text-emerald-700";
-      if (status === 'Rejected') badgeClass = "bg-rose-100 text-rose-700";
-      if (status === 'Pending' || status === 'In Process') badgeClass = "bg-amber-100 text-amber-700";
 
-      return <span className={`text-xs font-semibold px-3 py-1 rounded-full ${badgeClass}`}>{status}</span>;
+      if (rawStatus === '1' || rawStatus === 1 || rawStatus === 'Pending') {
+        statusText = 'Pending';
+        badgeClass = "bg-amber-100 text-amber-700";
+      } else if (rawStatus === '2' || rawStatus === 2 || rawStatus === 'In Process' || rawStatus === 'Approved') {
+        statusText = rawStatus === 'Approved' ? 'Approved' : 'In Process';
+        badgeClass = rawStatus === 'Approved' ? "bg-emerald-100 text-emerald-700" : "bg-blue-100 text-blue-700";
+      } else if (rawStatus === '3' || rawStatus === 3 || rawStatus === 'Settled') {
+        statusText = 'Settled';
+        badgeClass = "bg-emerald-100 text-emerald-700";
+      } else if (rawStatus === '4' || rawStatus === 4 || rawStatus === 'Rejected') {
+        statusText = 'Rejected';
+        badgeClass = "bg-rose-100 text-rose-700";
+      }
+
+      return <span className={`text-xs font-semibold px-3 py-1 rounded-full ${badgeClass}`}>{statusText}</span>;
     },
   },
   {
     headerName: "Action",
-    field: "id",
+    field: "claim_id",
     minWidth: 140,
     sortable: false,
     filter: false,
-    cellRenderer: () => (
-      <TableActions
-        onView={() => { }}
-        onEdit={() => { }}
-        onDelete={() => { }}
-        editIcon="file-edit"
-      />
-    ),
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      return (
+        <TableActions
+          data={params.data}
+          onView={onView}
+          onEdit={onEdit}
+          onDelete={onDelete}
+        />
+      );
+    },
   },
 ];
+
+export const claimColumns = getClaimColumns();
 
 // DYNAMIC COLUMN
 export interface SourceOfLeadColumnProps {
