@@ -11,6 +11,7 @@ import {
   useMotorQuotationDetail,
   MotorQuotationProductItem,
 } from '@/hooks/useMotorQuotationApi';
+import { usePincodeDetails } from '@/hooks/useCustomerApi';
 
 function ProductSelect({
   companyId,
@@ -90,6 +91,18 @@ export default function AddMotorQuotation() {
     ncb_percent: '',
     remarks: '',
   });
+
+  const { data: pincodeData, isLoading: isPincodeLoading } = usePincodeDetails(formData?.pincode || '');
+
+  React.useEffect(() => {
+    if (pincodeData && !isPincodeLoading) {
+      setFormData((prev) => ({
+        ...prev,
+        state: pincodeData.state || prev.state,
+        city: pincodeData.city || prev.city,
+      }));
+    }
+  }, [pincodeData, isPincodeLoading]);
 
   // Dynamic Array for Quotes / Comparison Details
   const [quotes, setQuotes] = useState([
@@ -356,6 +369,20 @@ export default function AddMotorQuotation() {
               />
 
               <Input
+                label={isPincodeLoading ? 'Pincode (Loading...)' : 'Pincode'}
+                name="pincode"
+                placeholder="Pincode"
+                value={formData.pincode}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, '');
+                  if (val.length <= 6) {
+                    handleInputChange('pincode', val);
+                  }
+                }}
+                maxLength={6}
+              />
+
+              <Input
                 label="Street"
                 name="street"
                 placeholder="Street"
@@ -385,14 +412,6 @@ export default function AddMotorQuotation() {
                 placeholder="State"
                 value={formData.state}
                 onChange={(e) => handleInputChange('state', e.target.value)}
-              />
-
-              <Input
-                label="Pincode"
-                name="pincode"
-                placeholder="Pincode"
-                value={formData.pincode}
-                onChange={(e) => handleInputChange('pincode', e.target.value)}
               />
             </div>
           </div>

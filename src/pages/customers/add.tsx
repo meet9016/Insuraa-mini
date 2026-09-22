@@ -7,6 +7,7 @@ import Select from '@/components/ui/Select';
 import DatePicker from '@/components/ui/DatePicker';
 import FileUpload from '@/components/ui/FileUpload';
 import { useCustomerDropdowns } from '@/hooks/useCustomerDropdowns';
+import { usePincodeDetails } from '@/hooks/useCustomerApi';
 import { api } from '@/utils/axiosInstance';
 import endPointApi from '@/utils/endPointApi';
 import { toast } from 'react-toastify';
@@ -44,11 +45,24 @@ export default function AddCustomer() {
     pancardNo: '',
     referenceBy: '',
     pincode: '',
-    nationality: 'India',
+    nationality: '',
     state: '',
     city: '',
     address: '',
   });
+
+  const { data: pincodeData, isLoading: isPincodeLoading } = usePincodeDetails(formValues.pincode);
+
+  useEffect(() => {
+    if (pincodeData) {
+      setFormValues(prev => ({
+        ...prev,
+        nationality: pincodeData.country || prev.nationality || 'India',
+        state: pincodeData.state || prev.state || '',
+        city: pincodeData.city || prev.city || '',
+      }));
+    }
+  }, [pincodeData]);
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [customerImage, setCustomerImage] = useState<File | null>(null);
@@ -145,8 +159,11 @@ export default function AddCustomer() {
 
   const handleChange = (field: string, value: string) => {
     let sanitizedValue = value;
-    if (field === 'customerNumber' || field === 'pincode') {
+    if (field === 'customerNumber') {
       sanitizedValue = value.replace(/\D/g, '');
+    }
+    if (field === 'pincode') {
+      sanitizedValue = value.replace(/\D/g, '').slice(0, 6);
     }
 
     setFormValues(prev => ({ ...prev, [field]: sanitizedValue }));
@@ -530,11 +547,19 @@ export default function AddCustomer() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               <div>
-                <label className={labelClass}>Pincode <span className="text-red-500">*</span></label>
+                <label className={labelClass}>
+                  Pincode <span className="text-red-500">*</span>
+                  {isPincodeLoading && (
+                    <span className="ml-2 text-xs text-[#2B4399] font-normal animate-pulse">
+                      Loading details...
+                    </span>
+                  )}
+                </label>
                 <Input
                   name="pincode"
-                  placeholder="Enter Pincode"
+                  placeholder="Enter 6-digit Pincode"
                   value={formValues.pincode}
+                  maxLength={6}
                   onChange={(e: any) => handleChange('pincode', e.target.value)}
                   error={errors.pincode}
                 />

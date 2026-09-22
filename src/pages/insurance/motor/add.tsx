@@ -177,33 +177,53 @@ export default function AddMotorInsurance() {
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
-    setFormData(prev => {
-      const updated = { ...prev, [field]: value };
-
-      // Auto-calculate Net Premium & Total Premium if OD or TP or GST changes
-      if (['own_damage_premimum', 'tp_premium', 'gst_amount'].includes(field)) {
-        const od = parseFloat(field === 'own_damage_premimum' ? value : prev.own_damage_premimum) || 0;
-        const tp = parseFloat(field === 'tp_premium' ? value : prev.tp_premium) || 0;
-        const gst = parseFloat(field === 'gst_amount' ? value : prev.gst_amount) || 0;
-
-        const net = od + tp;
-        const total = net + gst;
-
-        if (field === 'own_damage_premimum' || field === 'tp_premium') {
-          updated.net_premium = String(net);
-          updated.total_premium = String(total);
-          if (errors.net_premium) setErrors(e => ({ ...e, net_premium: '' }));
-          if (errors.total_premium) setErrors(e => ({ ...e, total_premium: '' }));
-        } else if (field === 'gst_amount') {
-          const currentNet = parseFloat(prev.net_premium) || net;
-          updated.total_premium = String(currentNet + gst);
-          if (errors.total_premium) setErrors(e => ({ ...e, total_premium: '' }));
-        }
-      }
-
-      return updated;
-    });
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
+
+  // Auto-calculate Policy End Date (1 Year)
+  useEffect(() => {
+    if (formData.policy_start_date) {
+      const startDate = new Date(formData.policy_start_date);
+      if (!isNaN(startDate.getTime())) {
+        const endDate = new Date(startDate);
+        endDate.setFullYear(endDate.getFullYear() + 1);
+        endDate.setDate(endDate.getDate() - 1);
+
+        const yyyy = endDate.getFullYear();
+        const mm = String(endDate.getMonth() + 1).padStart(2, '0');
+        const dd = String(endDate.getDate()).padStart(2, '0');
+        const formattedEndDate = `${yyyy}-${mm}-${dd}`;
+
+        setFormData(prev => ({ ...prev, policy_end_date: formattedEndDate }));
+      }
+    }
+  }, [formData.policy_start_date]);
+
+  // Auto-calculate Net Premium
+  useEffect(() => {
+    const od = parseFloat(formData.own_damage_premimum);
+    const tp = parseFloat(formData.tp_premium);
+
+    if (!isNaN(od) || !isNaN(tp)) {
+      const net = (isNaN(od) ? 0 : od) + (isNaN(tp) ? 0 : tp);
+      setFormData(prev => prev.net_premium !== String(net) ? { ...prev, net_premium: String(net) } : prev);
+    } else if (formData.own_damage_premimum === '' && formData.tp_premium === '') {
+      setFormData(prev => prev.net_premium !== '' ? { ...prev, net_premium: '' } : prev);
+    }
+  }, [formData.own_damage_premimum, formData.tp_premium]);
+
+  // Auto-calculate Total Premium
+  useEffect(() => {
+    const net = parseFloat(formData.net_premium);
+    const gst = parseFloat(formData.gst_amount);
+
+    if (!isNaN(net) || !isNaN(gst)) {
+      const total = (isNaN(net) ? 0 : net) + (isNaN(gst) ? 0 : gst);
+      setFormData(prev => prev.total_premium !== String(total) ? { ...prev, total_premium: String(total) } : prev);
+    } else if (formData.net_premium === '' && formData.gst_amount === '') {
+      setFormData(prev => prev.total_premium !== '' ? { ...prev, total_premium: '' } : prev);
+    }
+  }, [formData.net_premium, formData.gst_amount]);
 
   const addDocument = () => {
     if (documents.length < maxDocs) {

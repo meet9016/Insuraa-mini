@@ -24,6 +24,7 @@ interface FormInputProps {
   checkboxColor?: string; // Custom color for checkbox
   labelClassName?: string;
   compact?: boolean;
+  maxLength?: number;
 }
 
 const FormInput: React.FC<FormInputProps> = ({
@@ -47,6 +48,7 @@ const FormInput: React.FC<FormInputProps> = ({
   checked,
   checkboxColor = "#1e40af", // Default dark blue color
   labelClassName = "",
+  maxLength,
 }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
@@ -306,6 +308,7 @@ const FormInput: React.FC<FormInputProps> = ({
             placeholder={placeholder}
             disabled={disabled}
             readOnly={readOnly}
+            maxLength={maxLength}
             className={getInputClasses()}
           />
         )}

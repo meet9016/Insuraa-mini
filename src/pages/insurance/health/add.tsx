@@ -124,6 +124,42 @@ export default function AddHealthInsurance() {
     setDocuments(prev => prev.map(d => d.id === id ? { ...d, [field]: value } : d));
   };
 
+  // Auto-calculate Policy End Date for Yearly Payment Mode
+  useEffect(() => {
+    if (formData.policy_start_date && formData.payment_mode) {
+      const selectedMode = paymentModes.find((m: any) => String(m.id) === formData.payment_mode);
+      if (selectedMode && (selectedMode.name?.toLowerCase().includes('year') || selectedMode.name?.toLowerCase().includes('annu'))) {
+        const startDate = new Date(formData.policy_start_date);
+        if (!isNaN(startDate.getTime())) {
+          const endDate = new Date(startDate);
+          endDate.setFullYear(endDate.getFullYear() + 1);
+          endDate.setDate(endDate.getDate() - 1);
+
+          const yyyy = endDate.getFullYear();
+          const mm = String(endDate.getMonth() + 1).padStart(2, '0');
+          const dd = String(endDate.getDate()).padStart(2, '0');
+          const formattedEndDate = `${yyyy}-${mm}-${dd}`;
+
+          setFormData(prev => ({ ...prev, policy_end_date: formattedEndDate }));
+        }
+      }
+    }
+  }, [formData.policy_start_date, formData.payment_mode, paymentModes]);
+
+  // Auto-calculate Total Premium
+  useEffect(() => {
+    const net = parseFloat(formData.net_premium);
+    const gst = parseFloat(formData.gst_amount);
+
+    // Only calculate if at least one is a valid number, to avoid overwriting empty fields with NaN
+    if (!isNaN(net) || !isNaN(gst)) {
+      const total = (isNaN(net) ? 0 : net) + (isNaN(gst) ? 0 : gst);
+      setFormData(prev => ({ ...prev, total_premium: String(total) }));
+    } else if (formData.net_premium === '' && formData.gst_amount === '') {
+      setFormData(prev => ({ ...prev, total_premium: '' }));
+    }
+  }, [formData.net_premium, formData.gst_amount]);
+
   // Prefill edit data if editing existing health insurance policy
   useEffect(() => {
     if (!id) return;

@@ -9,6 +9,7 @@ export interface EndPointApi {
     CUSTOMER_LIST_DROP_DOWN: string;
     INSERT_CUSTOMER: string;
     CUSTOMER_LIST: string;
+    GET_PINCODE_DETAILS: string;
   };
   COMPANY: {
     INSERT_COMPANY: string;
@@ -122,6 +123,7 @@ const endPointApi: EndPointApi = {
     CUSTOMER_LIST_DROP_DOWN: 'customer_list_drop_down',
     INSERT_CUSTOMER: 'insert_customer',
     CUSTOMER_LIST: 'customer_list',
+    GET_PINCODE_DETAILS: 'getPincodeDetails',
   },
   COMPANY: {
     INSERT_COMPANY: 'insert_company',

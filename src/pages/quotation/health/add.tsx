@@ -12,6 +12,7 @@ import {
   useHealthQuotationProducts,
   useHealthQuotationDetail,
 } from '@/hooks/useHealthQuotationApi';
+import { usePincodeDetails } from '@/hooks/useCustomerApi';
 
 function ProductSelect({ companyId, value, onChange, selectClass, labelClass }: any) {
   const { data: productList, isLoading } = useHealthQuotationProducts(companyId);
@@ -31,8 +32,8 @@ function ProductSelect({ companyId, value, onChange, selectClass, labelClass }: 
           {!companyId
             ? "Select Company First"
             : isLoading
-            ? "Loading products..."
-            : "Select Product"}
+              ? "Loading products..."
+              : "Select Product"}
         </option>
         {(productList || []).map((prod: any) => (
           <option key={prod.product_id} value={prod.name}>
@@ -74,6 +75,18 @@ export default function AddHealthQuotation() {
     state: '',
     pincode: '',
   });
+
+  const { data: pincodeData, isLoading: isPincodeLoading } = usePincodeDetails(formData.pincode);
+
+  React.useEffect(() => {
+    if (pincodeData) {
+      setFormData((prev) => ({
+        ...prev,
+        state: pincodeData.state || prev.state || '',
+        city: pincodeData.city || prev.city || '',
+      }));
+    }
+  }, [pincodeData]);
 
   const [quotes, setQuotes] = useState([
     {
@@ -154,7 +167,11 @@ export default function AddHealthQuotation() {
   }, [quotationDetail]);
 
   const handleChange = (field: string, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    let sanitizedValue = value;
+    if (field === 'pincode') {
+      sanitizedValue = String(value).replace(/\D/g, '').slice(0, 6);
+    }
+    setFormData((prev) => ({ ...prev, [field]: sanitizedValue }));
   };
 
   const handleQuoteChange = (id: number, field: string, value: any) => {
@@ -417,6 +434,23 @@ export default function AddHealthQuotation() {
                 />
               </div>
               <div>
+                <label className={labelClass}>
+                  Pincode
+                  {isPincodeLoading && (
+                    <span className="ml-2 text-xs text-[#2B4399] font-normal animate-pulse">
+                      Loading...
+                    </span>
+                  )}
+                </label>
+                <Input
+                  name="pincode"
+                  placeholder="Pincode"
+                  value={formData.pincode}
+                  maxLength={6}
+                  onChange={(e: any) => handleChange('pincode', e.target.value)}
+                />
+              </div>
+              <div>
                 <Input
                   label="Street"
                   name="street"
@@ -450,15 +484,6 @@ export default function AddHealthQuotation() {
                   placeholder="State"
                   value={formData.state}
                   onChange={(e: any) => handleChange('state', e.target.value)}
-                />
-              </div>
-              <div>
-                <Input
-                  label="Pincode"
-                  name="pincode"
-                  placeholder="Pincode"
-                  value={formData.pincode}
-                  onChange={(e: any) => handleChange('pincode', e.target.value)}
                 />
               </div>
             </div>
