@@ -1508,6 +1508,85 @@ export const getMotorQuotationColumns = ({ onView, onEdit, onDelete }: MotorQuot
   },
 ];
 
+export interface OtherInsuranceColumnProps {
+  onView?: (data: any) => void;
+  onEdit?: (data: any) => void;
+  onDelete?: (data: any) => void;
+}
 
-
-
+export const getOtherInsuranceColumns = ({ onView, onEdit, onDelete }: OtherInsuranceColumnProps = {}) => [
+  {
+    headerName: 'Customer Name',
+    field: 'customer_name',
+    sortable: true,
+    filter: true,
+    flex: 1,
+    minWidth: 150,
+  },
+  {
+    headerName: 'Company Name',
+    field: 'companies_name',
+    sortable: true,
+    filter: true,
+    flex: 1,
+    minWidth: 150,
+  },
+  {
+    headerName: 'Policy No.',
+    field: 'policy_number',
+    sortable: true,
+    filter: true,
+    flex: 1,
+    minWidth: 150,
+  },
+  {
+    headerName: 'Insurance Type',
+    field: 'insurance_type_name',
+    sortable: true,
+    filter: true,
+    flex: 1,
+    minWidth: 150,
+  },
+  {
+    headerName: 'Plan Name',
+    field: 'plan_name_text',
+    sortable: true,
+    filter: true,
+    flex: 1,
+    minWidth: 150,
+  },
+  {
+    headerName: 'Status',
+    field: 'policy_status_name',
+    sortable: true,
+    filter: true,
+    flex: 1,
+    minWidth: 120,
+  },
+  {
+    headerName: 'Total Premium',
+    field: 'total_premium',
+    sortable: true,
+    filter: true,
+    flex: 1,
+    minWidth: 120,
+  },
+  {
+    headerName: 'Actions',
+    field: 'actions',
+    sortable: false,
+    filter: false,
+    width: 120,
+    cellRenderer: (params: any) => {
+      if (!params.data || !params.data.id) return null;
+      return (
+        <TableActions
+          data={params.data}
+          onView={onView}
+          onEdit={onEdit}
+          onDelete={onDelete}
+        />
+      );
+    },
+  }
+];

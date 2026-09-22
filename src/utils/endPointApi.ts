@@ -118,6 +118,14 @@ export interface EndPointApi {
     DELETE_CLAIM: string;
     EDIT_CLAIM: string;
   };
+  OTHER_INSURANCE: {
+    INSERT_OTHER_INSURANCE: string;
+    OTHER_INSURANCE_MASTER_DATA: string;
+    OTHER_INSURANCE_COMPANY_PLANS_AND_AGENCY: string;
+    OTHER_INSURANCE_LIST: string;
+    DELETE_OTHER_INSURANCE: string;
+    VIEW_OTHER_INSURANCE: string;
+  };
 }
 
 // Define and export the standard API endpoint object
@@ -240,6 +248,14 @@ const endPointApi: EndPointApi = {
     CLAIM_LIST: 'claim_list',
     DELETE_CLAIM: 'delete_claim',
     EDIT_CLAIM: 'edit_claim',
+  },
+  OTHER_INSURANCE: {
+    INSERT_OTHER_INSURANCE: 'insert_other_insurance',
+    OTHER_INSURANCE_MASTER_DATA: 'other_insurance_master_data',
+    OTHER_INSURANCE_COMPANY_PLANS_AND_AGENCY: 'other_insurance_company_plans_and_agency',
+    OTHER_INSURANCE_LIST: 'other_insurance_list',
+    DELETE_OTHER_INSURANCE: 'delete_other_insurance',
+    VIEW_OTHER_INSURANCE: 'view_other_insurance',
   },
 };
 
