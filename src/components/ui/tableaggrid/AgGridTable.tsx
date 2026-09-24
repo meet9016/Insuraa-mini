@@ -66,7 +66,7 @@ export default function AgGridTable<T = any>({
   rowData,
   columnDefs,
   loading = false,
-  height = "650px",
+  height = "665px",
   rowHeight,
   pagination = true,
   paginationPageSize = 10,

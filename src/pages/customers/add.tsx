@@ -607,19 +607,29 @@ export default function AddCustomer() {
             </div>
           </div>
 
-          {/* Document Information (Clean Tight Flex Container) */}
+          {/* Document Information (2-Column Grid Layout matching Life Insurance) */}
           <div className="bg-white rounded-2xl border border-gray-200/80 p-5 sm:p-6 shadow-2xs">
             <div className={sectionHeaderClass}>
-              <div className="flex items-center gap-2">
-                <FileText size={18} />
-                <span>Document Information</span>
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-2">
+                  <FileText size={18} />
+                  <span>Document Information</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={addDocument}
+                  className="w-[36px] h-[36px] bg-[#2B4399] hover:bg-[#203378] text-white rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
+                  title="Add Document"
+                >
+                  <Plus size={18} />
+                </button>
               </div>
             </div>
 
-            <div className="space-y-5">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
               {documents.map((doc, index) => (
-                <div key={doc.id} className="flex flex-col sm:flex-row items-end gap-4">
-                  <div className="w-full sm:w-1/3">
+                <div key={doc.id} className="flex flex-col sm:flex-row items-start gap-3 bg-gray-50/50 p-3 rounded-2xl border border-gray-100/90">
+                  <div className="w-full sm:w-1/2">
                     <label className={labelClass}>Document Name</label>
                     <Select
                       className={selectClass}
@@ -634,7 +644,7 @@ export default function AddCustomer() {
                       ))}
                     </Select>
                   </div>
-                  <div className="flex-1 w-full">
+                  <div className="flex-1 w-full min-w-0">
                     <FileUpload
                       label="Upload Image/Document"
                       name={`document_file_${doc.id}`}
@@ -644,27 +654,18 @@ export default function AddCustomer() {
                       placeholder="Click or drag image to upload"
                     />
                   </div>
-                  <div className="shrink-0 pb-[2px]">
-                    {index === 0 ? (
-                      <button
-                        type="button"
-                        onClick={addDocument}
-                        className="w-[42px] h-[42px] bg-[#2B4399] hover:bg-[#203378] text-white rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
-                        title="Add Document"
-                      >
-                        <Plus size={20} />
-                      </button>
-                    ) : (
+                  {index > 0 && (
+                    <div className="shrink-0 mt-[25px]">
                       <button
                         type="button"
                         onClick={() => removeDocument(doc.id)}
-                        className="w-[42px] h-[42px] bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
+                        className="w-[34px] h-[34px] bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
                         title="Remove Document"
                       >
-                        <Minus size={20} />
+                        <Minus size={16} />
                       </button>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

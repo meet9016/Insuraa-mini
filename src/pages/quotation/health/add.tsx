@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Head from 'next/head';
-import { Plus, ArrowLeft, User, FileText, Users, Trash2 } from 'lucide-react';
+import { Plus, Minus, ArrowLeft, User, FileText, Users, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import Input from '@/components/ui/Input';
@@ -14,7 +14,9 @@ import {
 } from '@/hooks/useHealthQuotationApi';
 import { usePincodeDetails } from '@/hooks/useCustomerApi';
 
-function ProductSelect({ companyId, value, onChange, selectClass, labelClass }: any) {
+import { validateHealthQuotation } from '@/utils/validation';
+
+function ProductSelect({ companyId, value, onChange, selectClass, labelClass, error }: any) {
   const { data: productList, isLoading } = useHealthQuotationProducts(companyId);
 
   return (
@@ -23,7 +25,7 @@ function ProductSelect({ companyId, value, onChange, selectClass, labelClass }: 
         Product <span className="text-red-500">*</span>
       </label>
       <Select
-        className={selectClass}
+        className={`${selectClass} ${error ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
         value={value}
         onChange={onChange}
         disabled={!companyId}
@@ -41,6 +43,9 @@ function ProductSelect({ companyId, value, onChange, selectClass, labelClass }: 
           </option>
         ))}
       </Select>
+      {error && (
+        <p className="text-xs text-red-500 font-semibold mt-1 px-0.5">{error}</p>
+      )}
     </div>
   );
 }
@@ -53,6 +58,9 @@ export default function AddHealthQuotation() {
   const { data: quotationDetail, isLoading: isDetailLoading } = useHealthQuotationDetail(quotationId);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [quoteErrors, setQuoteErrors] = useState<Record<string | number, Record<string, string>>>({});
+  const [memberErrors, setMemberErrors] = useState<Record<string | number, Record<string, string>>>({});
 
   const companiesList = masterData?.companies || [];
   const proposalTypeList = masterData?.proposal_type || [];
@@ -166,17 +174,42 @@ export default function AddHealthQuotation() {
     }
   }, [quotationDetail]);
 
+  const validate = (data = formData, qList = quotes, mList = members) => {
+    const { isValid, errors: newErrors, quoteErrors: newQuoteErrors, memberErrors: newMemberErrors } =
+      validateHealthQuotation(data, qList, mList);
+
+    setErrors(newErrors);
+    setQuoteErrors(newQuoteErrors);
+    setMemberErrors(newMemberErrors);
+    return isValid;
+  };
+
   const handleChange = (field: string, value: any) => {
     let sanitizedValue = value;
     if (field === 'pincode') {
       sanitizedValue = String(value).replace(/\D/g, '').slice(0, 6);
+    } else if (field === 'mobile') {
+      sanitizedValue = String(value).replace(/\D/g, '').slice(0, 10);
     }
-    setFormData((prev) => ({ ...prev, [field]: sanitizedValue }));
+    const updatedForm = { ...formData, [field]: sanitizedValue };
+    setFormData(updatedForm);
+
+    if (errors[field]) {
+      const { errors: newErrors } = validateHealthQuotation(updatedForm, quotes, members);
+      setErrors((prev) => ({ ...prev, [field]: newErrors[field] || '' }));
+    }
+  };
+
+  const handleBlur = (field: string) => {
+    if (errors[field] || formData[field as keyof typeof formData]) {
+      const { errors: newErrors } = validateHealthQuotation(formData, quotes, members);
+      setErrors((prev) => ({ ...prev, [field]: newErrors[field] || '' }));
+    }
   };
 
   const handleQuoteChange = (id: number, field: string, value: any) => {
-    setQuotes((prev) =>
-      prev.map((q) => {
+    setQuotes((prev) => {
+      const updated = prev.map((q) => {
         if (q.id === id) {
           if (field === 'company_name') {
             return { ...q, company_name: value, product_name: '' };
@@ -184,14 +217,43 @@ export default function AddHealthQuotation() {
           return { ...q, [field]: value };
         }
         return q;
-      })
-    );
+      });
+
+      if (quoteErrors[id]?.[field]) {
+        const { quoteErrors: newQuoteErrors } = validateHealthQuotation(formData, updated, members);
+        setQuoteErrors((prevErrors) => ({
+          ...prevErrors,
+          [id]: { ...(prevErrors[id] || {}), [field]: newQuoteErrors[id]?.[field] || '' },
+        }));
+      }
+
+      return updated;
+    });
   };
 
   const handleMemberChange = (id: number, field: string, value: any) => {
-    setMembers((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, [field]: value } : m))
-    );
+    setMembers((prev) => {
+      const updated = prev.map((m) => {
+        if (m.id === id) {
+          let sanitizedValue = value;
+          if (field === 'age') {
+            sanitizedValue = String(value).replace(/\D/g, '').slice(0, 3);
+          }
+          return { ...m, [field]: sanitizedValue };
+        }
+        return m;
+      });
+
+      if (memberErrors[id]?.[field]) {
+        const { memberErrors: newMemberErrors } = validateHealthQuotation(formData, quotes, updated);
+        setMemberErrors((prevErrors) => ({
+          ...prevErrors,
+          [id]: { ...(prevErrors[id] || {}), [field]: newMemberErrors[id]?.[field] || '' },
+        }));
+      }
+
+      return updated;
+    });
   };
 
   const addQuote = () =>
@@ -235,6 +297,11 @@ export default function AddHealthQuotation() {
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+
+    if (!validate()) {
+      return;
+    }
+
     if (isSubmitting) return;
 
     setIsSubmitting(true);
@@ -358,6 +425,8 @@ export default function AddHealthQuotation() {
                   placeholder="Insured Name"
                   value={formData.insured_name}
                   onChange={(e: any) => handleChange('insured_name', e.target.value)}
+                  onBlur={() => handleBlur('insured_name')}
+                  error={errors.insured_name}
                 />
               </div>
               <div>
@@ -367,6 +436,9 @@ export default function AddHealthQuotation() {
                   placeholder="MobileNo"
                   value={formData.mobile}
                   onChange={(e: any) => handleChange('mobile', e.target.value)}
+                  onBlur={() => handleBlur('mobile')}
+                  error={errors.mobile}
+                  maxLength={10}
                 />
               </div>
               <div>
@@ -377,6 +449,8 @@ export default function AddHealthQuotation() {
                   placeholder="Email"
                   value={formData.email}
                   onChange={(e: any) => handleChange('email', e.target.value)}
+                  onBlur={() => handleBlur('email')}
+                  error={errors.email}
                 />
               </div>
               <div>
@@ -431,6 +505,8 @@ export default function AddHealthQuotation() {
                   placeholder="House No"
                   value={formData.house_no}
                   onChange={(e: any) => handleChange('house_no', e.target.value)}
+                  onBlur={() => handleBlur('house_no')}
+                  error={errors.house_no}
                 />
               </div>
               <div>
@@ -448,6 +524,8 @@ export default function AddHealthQuotation() {
                   value={formData.pincode}
                   maxLength={6}
                   onChange={(e: any) => handleChange('pincode', e.target.value)}
+                  onBlur={() => handleBlur('pincode')}
+                  error={errors.pincode}
                 />
               </div>
               <div>
@@ -492,32 +570,35 @@ export default function AddHealthQuotation() {
           {/* Quotation Details */}
           <div className="bg-white rounded-2xl border border-gray-200/80 p-5 sm:p-6 shadow-2xs">
             <div className={sectionHeaderClass}>
-              <div className="flex items-center gap-2">
-                <FileText size={18} />
-                <span>Quotation Details</span>
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-2">
+                  <FileText size={18} />
+                  <span>Quotation Details</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={addQuote}
+                  className="w-[36px] h-[36px] bg-[#2B4399] hover:bg-[#203378] text-white rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
+                  title="Add Quote"
+                >
+                  <Plus size={18} />
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={addQuote}
-                className="bg-[#2B4399] text-white px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 hover:bg-[#203378] transition-colors shadow-2xs"
-              >
-                <Plus size={15} strokeWidth={2.5} /> Add Quote
-              </button>
             </div>
 
             <div className="space-y-6">
-              {quotes.map((quote) => (
+              {quotes.map((quote, index) => (
                 <div
                   key={quote.id}
                   className="bg-gray-50/70 p-5 rounded-xl border border-gray-200/80 flex flex-col gap-4"
                 >
-                  <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
                     <div className="md:col-span-3">
                       <label className={labelClass}>
                         Company <span className="text-red-500">*</span>
                       </label>
                       <Select
-                        className={selectClass}
+                        className={`${selectClass} ${quoteErrors[quote.id]?.company_name ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
                         value={quote.company_name}
                         onChange={(e: any) =>
                           handleQuoteChange(quote.id, 'company_name', e.target.value)
@@ -530,6 +611,11 @@ export default function AddHealthQuotation() {
                           </option>
                         ))}
                       </Select>
+                      {quoteErrors[quote.id]?.company_name && (
+                        <p className="text-xs text-red-500 font-semibold mt-1 px-0.5">
+                          {quoteErrors[quote.id].company_name}
+                        </p>
+                      )}
                     </div>
                     <div className="md:col-span-3">
                       <ProductSelect
@@ -540,6 +626,7 @@ export default function AddHealthQuotation() {
                         }
                         selectClass={selectClass}
                         labelClass={labelClass}
+                        error={quoteErrors[quote.id]?.product_name}
                       />
                     </div>
                     <div className="md:col-span-2">
@@ -562,39 +649,47 @@ export default function AddHealthQuotation() {
                         onChange={(e: any) =>
                           handleQuoteChange(quote.id, 'sa', e.target.value)
                         }
+                        error={quoteErrors[quote.id]?.sa}
                       />
                     </div>
-                    <div className="md:col-span-1 flex flex-col items-center">
-                      <label className="text-[12px] font-bold text-gray-700 mb-2">
+                    <div className="md:col-span-1 flex flex-col items-center justify-start">
+                      <label className="text-[13px] font-bold text-gray-700 mb-1.5 block">
                         Recommended
                       </label>
-                      <input
-                        type="radio"
-                        name="recommendedQuote"
-                        checked={quote.recommended}
-                        onChange={() =>
-                          setQuotes((prev) =>
-                            prev.map((q) => ({
-                              ...q,
-                              recommended: q.id === quote.id,
-                            }))
-                          )
-                        }
-                        className="w-4 h-4 text-[#2B4399] focus:ring-[#2D3591]"
-                      />
+                      <div className="h-[42px] flex items-center justify-center">
+                        <input
+                          type="radio"
+                          name="recommendedQuote"
+                          checked={quote.recommended}
+                          onChange={() =>
+                            setQuotes((prev) =>
+                              prev.map((q) => ({
+                                ...q,
+                                recommended: q.id === quote.id,
+                              }))
+                            )
+                          }
+                          className="w-4 h-4 text-[#2B4399] focus:ring-[#2D3591]"
+                        />
+                      </div>
                     </div>
-                    <div className="md:col-span-1 flex justify-end">
-                      <button
-                        type="button"
-                        onClick={() => removeQuote(quote.id)}
-                        className="bg-[#da3f49] text-white px-3 py-2.5 rounded-xl text-xs font-bold hover:bg-[#c9303a] transition-colors w-full flex items-center justify-center gap-1"
-                        title="Delete Quote"
-                      >
-                        <Trash2 size={14} /> Delete
-                      </button>
+                    <div className="md:col-span-1 flex flex-col items-center justify-start">
+                      <span className="text-[13px] font-bold block opacity-0 pointer-events-none mb-1.5 hidden md:block">
+                        Delete
+                      </span>
+                      {index > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => removeQuote(quote.id)}
+                          className="w-[36px] h-[36px] bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
+                          title="Delete Quote"
+                        >
+                          <Minus size={18} />
+                        </button>
+                      )}
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
                     <div>
                       <Input
                         label="Addon"
@@ -616,6 +711,7 @@ export default function AddHealthQuotation() {
                         onChange={(e: any) =>
                           handleQuoteChange(quote.id, 'premium_1y', e.target.value)
                         }
+                        error={quoteErrors[quote.id]?.premium_1y}
                       />
                     </div>
                     <div>
@@ -627,6 +723,7 @@ export default function AddHealthQuotation() {
                         onChange={(e: any) =>
                           handleQuoteChange(quote.id, 'premium_2y', e.target.value)
                         }
+                        error={quoteErrors[quote.id]?.premium_2y}
                       />
                     </div>
                     <div>
@@ -638,6 +735,7 @@ export default function AddHealthQuotation() {
                         onChange={(e: any) =>
                           handleQuoteChange(quote.id, 'premium_3y', e.target.value)
                         }
+                        error={quoteErrors[quote.id]?.premium_3y}
                       />
                     </div>
                   </div>
@@ -649,24 +747,27 @@ export default function AddHealthQuotation() {
           {/* Member Details */}
           <div className="bg-white rounded-2xl border border-gray-200/80 p-5 sm:p-6 shadow-2xs">
             <div className={sectionHeaderClass}>
-              <div className="flex items-center gap-2">
-                <Users size={18} />
-                <span>Member Details</span>
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-2">
+                  <Users size={18} />
+                  <span>Member Details</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={addMember}
+                  className="w-[36px] h-[36px] bg-[#2B4399] hover:bg-[#203378] text-white rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
+                  title="Add Member"
+                >
+                  <Plus size={18} />
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={addMember}
-                className="bg-[#2B4399] text-white px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 hover:bg-[#203378] transition-colors shadow-2xs"
-              >
-                <Plus size={15} strokeWidth={2.5} /> Add Member
-              </button>
             </div>
 
             <div className="space-y-4">
-              {members.map((member) => (
+              {members.map((member, index) => (
                 <div
                   key={member.id}
-                  className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end bg-gray-50/70 p-5 rounded-xl border border-gray-200/80"
+                  className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start bg-gray-50/70 p-5 rounded-xl border border-gray-200/80"
                 >
                   <div className="md:col-span-3">
                     <Input
@@ -678,6 +779,7 @@ export default function AddHealthQuotation() {
                       onChange={(e: any) =>
                         handleMemberChange(member.id, 'member_name', e.target.value)
                       }
+                      error={memberErrors[member.id]?.member_name}
                     />
                   </div>
                   <div className="md:col-span-2">
@@ -690,6 +792,7 @@ export default function AddHealthQuotation() {
                       onChange={(e: any) =>
                         handleMemberChange(member.id, 'relation', e.target.value)
                       }
+                      error={memberErrors[member.id]?.relation}
                     />
                   </div>
                   <div className="md:col-span-2">
@@ -699,8 +802,13 @@ export default function AddHealthQuotation() {
                     <DatePicker
                       value={member.dob}
                       onChange={(dateStr: string) => handleMemberChange(member.id, 'dob', dateStr)}
-                      className={smallInputClass}
+                      className={`${smallInputClass} ${memberErrors[member.id]?.dob ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
                     />
+                    {memberErrors[member.id]?.dob && (
+                      <p className="text-xs text-red-500 font-semibold mt-1 px-0.5">
+                        {memberErrors[member.id].dob}
+                      </p>
+                    )}
                   </div>
                   <div className="md:col-span-1">
                     <Input
@@ -711,6 +819,8 @@ export default function AddHealthQuotation() {
                       onChange={(e: any) =>
                         handleMemberChange(member.id, 'age', e.target.value)
                       }
+                      error={memberErrors[member.id]?.age}
+                      maxLength={3}
                     />
                   </div>
                   <div className="md:col-span-2">
@@ -723,6 +833,7 @@ export default function AddHealthQuotation() {
                       onChange={(e: any) =>
                         handleMemberChange(member.id, 'gender', e.target.value)
                       }
+                      error={memberErrors[member.id]?.gender}
                     />
                   </div>
                   <div className="md:col-span-1">
@@ -734,17 +845,23 @@ export default function AddHealthQuotation() {
                       onChange={(e: any) =>
                         handleMemberChange(member.id, 'medical_history', e.target.value)
                       }
+                      error={memberErrors[member.id]?.medical_history}
                     />
                   </div>
-                  <div className="md:col-span-1 flex justify-end">
-                    <button
-                      type="button"
-                      onClick={() => removeMember(member.id)}
-                      className="bg-[#da3f49] text-white px-3 py-2.5 rounded-xl text-xs font-bold hover:bg-[#c9303a] transition-colors w-full flex items-center justify-center gap-1"
-                      title="Delete Member"
-                    >
-                      <Trash2 size={14} /> Delete
-                    </button>
+                  <div className="md:col-span-1 flex flex-col items-center justify-start">
+                    <span className="text-[13px] font-bold block opacity-0 pointer-events-none mb-1.5 hidden md:block">
+                      Delete
+                    </span>
+                    {index > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => removeMember(member.id)}
+                        className="w-[36px] h-[36px] bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
+                        title="Delete Member"
+                      >
+                        <Minus size={18} />
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

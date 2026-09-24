@@ -10,6 +10,7 @@ import { api } from '@/utils/axiosInstance';
 import endPointApi from '@/utils/endPointApi';
 import { useCustomerList } from '@/hooks/useCustomerApi';
 import { useClaimMasterData, useInsuranceTypeList, useClaimCustomerPolicyDropdown, useClaimActions, formatToYYYYMMDD } from '@/hooks/useClaimApi';
+import { validateClaim } from '@/utils/validation';
 
 export default function AddClaim() {
   const router = useRouter();
@@ -17,6 +18,7 @@ export default function AddClaim() {
   const isEditMode = Boolean(editId);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const { insertClaim, isInserting } = useClaimActions();
 
   // Fetch API master data & dropdowns
@@ -110,12 +112,37 @@ export default function AddClaim() {
     insurance_type_id: formData.insurance_type,
   });
 
+  const validate = () => {
+    const { isValid, errors: valErrors } = validateClaim(formData);
+    setErrors(valErrors);
+    return isValid;
+  };
+
   const handleChange = (field: string, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    const updatedForm = { ...formData, [field]: value };
+    setFormData(updatedForm);
+    if (errors[field]) {
+      const { errors: valErrors } = validateClaim(updatedForm);
+      setErrors((prev) => ({ ...prev, [field]: valErrors[field] || '' }));
+    }
+  };
+
+  const handleBlur = (field: string) => {
+    if (errors[field] || formData[field as keyof typeof formData]) {
+      const { errors: valErrors } = validateClaim(formData);
+      setErrors((prev) => ({ ...prev, [field]: valErrors[field] || '' }));
+    }
   };
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+
+    if (!validate()) {
+      return;
+    }
+
+    if (isSubmitting) return;
+
     setIsSubmitting(true);
     try {
       const payload = isEditMode ? { ...formData, id: editId, claim_id: editId } : formData;
@@ -158,7 +185,7 @@ export default function AddClaim() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5 items-start">
               <div>
                 <div className="flex justify-between items-center mb-1.5">
                   <label className="text-[13px] font-bold text-gray-700">
@@ -175,6 +202,7 @@ export default function AddClaim() {
                 <Select
                   value={formData.customer_id}
                   onChange={(e: any) => handleChange('customer_id', e.target.value)}
+                  error={errors.customer_id}
                 >
                   <option value="">Select Customer Name</option>
                   {customerList.map((cust: any) => {
@@ -188,6 +216,7 @@ export default function AddClaim() {
                     );
                   })}
                 </Select>
+                {errors.customer_id && <p className="text-xs text-red-500 font-semibold mt-1">{errors.customer_id}</p>}
               </div>
 
               <div>
@@ -197,6 +226,7 @@ export default function AddClaim() {
                 <Select
                   value={formData.insurance_type}
                   onChange={(e: any) => handleChange('insurance_type', e.target.value)}
+                  error={errors.insurance_type}
                 >
                   <option value="">Select Insurance Type</option>
                   {insuranceTypes.map((item: any) => (
@@ -205,6 +235,7 @@ export default function AddClaim() {
                     </option>
                   ))}
                 </Select>
+                {errors.insurance_type && <p className="text-xs text-red-500 font-semibold mt-1">{errors.insurance_type}</p>}
               </div>
 
               <div>
@@ -214,6 +245,7 @@ export default function AddClaim() {
                 <Select
                   value={formData.customer_insurance_id}
                   onChange={(e: any) => handleChange('customer_insurance_id', e.target.value)}
+                  error={errors.customer_insurance_id}
                 >
                   <option value="">Select Customer Policy</option>
                   {customerPolicyList.map((item: any) => {
@@ -233,6 +265,7 @@ export default function AddClaim() {
                     );
                   })}
                 </Select>
+                {errors.customer_insurance_id && <p className="text-xs text-red-500 font-semibold mt-1">{errors.customer_insurance_id}</p>}
               </div>
             </div>
           </div>
@@ -246,7 +279,7 @@ export default function AddClaim() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5 items-start">
               <div>
                 <label className={labelClass}>
                   Admitted Date <span className="text-red-500">*</span>
@@ -254,6 +287,7 @@ export default function AddClaim() {
                 <DatePicker
                   value={formData.admited_date}
                   onChange={(dateStr: string) => handleChange('admited_date', dateStr)}
+                  error={errors.admited_date}
                 />
               </div>
 
@@ -264,6 +298,7 @@ export default function AddClaim() {
                 <DatePicker
                   value={formData.discharge_date}
                   onChange={(dateStr: string) => handleChange('discharge_date', dateStr)}
+                  error={errors.discharge_date}
                 />
               </div>
 
@@ -273,6 +308,8 @@ export default function AddClaim() {
                 placeholder="Enter Claim Amount"
                 value={formData.calim_amount}
                 onChange={(e) => handleChange('calim_amount', e.target.value)}
+                onBlur={() => handleBlur('calim_amount')}
+                error={errors.calim_amount}
                 required
               />
 
@@ -282,6 +319,9 @@ export default function AddClaim() {
                 placeholder="Enter Deducted Amount"
                 value={formData.deducted_amount}
                 onChange={(e) => handleChange('deducted_amount', e.target.value)}
+                onBlur={() => handleBlur('deducted_amount')}
+                error={errors.deducted_amount}
+                required
               />
 
               <Input
@@ -290,6 +330,9 @@ export default function AddClaim() {
                 placeholder="Enter Settled Amount"
                 value={formData.setteled_amount}
                 onChange={(e) => handleChange('setteled_amount', e.target.value)}
+                onBlur={() => handleBlur('setteled_amount')}
+                error={errors.setteled_amount}
+                required
               />
 
               <Input
@@ -298,6 +341,8 @@ export default function AddClaim() {
                 placeholder="Enter Claim Number (e.g. CLM0000012)"
                 value={formData.claim_number}
                 onChange={(e) => handleChange('claim_number', e.target.value)}
+                onBlur={() => handleBlur('claim_number')}
+                error={errors.claim_number}
                 required
               />
             </div>
@@ -312,44 +357,59 @@ export default function AddClaim() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5 items-start">
               <div>
-                <label className={labelClass}>File At Office Date</label>
+                <label className={labelClass}>
+                  File At Office Date <span className="text-red-500">*</span>
+                </label>
                 <DatePicker
                   value={formData.file_at_office}
                   onChange={(dateStr: string) => handleChange('file_at_office', dateStr)}
+                  error={errors.file_at_office}
                 />
               </div>
 
               <div>
-                <label className={labelClass}>File At Company Date</label>
+                <label className={labelClass}>
+                  File At Company Date <span className="text-red-500">*</span>
+                </label>
                 <DatePicker
                   value={formData.file_at_company}
                   onChange={(dateStr: string) => handleChange('file_at_company', dateStr)}
+                  error={errors.file_at_company}
                 />
               </div>
 
               <div>
-                <label className={labelClass}>Next Followup Date</label>
+                <label className={labelClass}>
+                  Next Followup Date <span className="text-red-500">*</span>
+                </label>
                 <DatePicker
                   value={formData.next_followup_date}
                   onChange={(dateStr: string) => handleChange('next_followup_date', dateStr)}
+                  error={errors.next_followup_date}
                 />
               </div>
 
               <div>
-                <label className={labelClass}>Query Date</label>
+                <label className={labelClass}>
+                  Query Date <span className="text-red-500">*</span>
+                </label>
                 <DatePicker
                   value={formData.query}
                   onChange={(dateStr: string) => handleChange('query', dateStr)}
+                  error={errors.query}
                 />
               </div>
 
               <div>
-                <label className={labelClass}>Claim Settled Date</label>
+                <label className={labelClass}>
+                  Claim Settled Date <span className="text-red-500">*</span>
+                </label>
                 <DatePicker
                   value={formData.claim_satteled_date}
                   onChange={(dateStr: string) => handleChange('claim_satteled_date', dateStr)}
+                  error={errors.claim_satteled_date}
                 />
               </div>
 
@@ -359,6 +419,9 @@ export default function AddClaim() {
                 placeholder="Enter Diagnosis (e.g. Fever)"
                 value={formData.diagnosis}
                 onChange={(e) => handleChange('diagnosis', e.target.value)}
+                onBlur={() => handleBlur('diagnosis')}
+                error={errors.diagnosis}
+                required
               />
 
               <div>
@@ -368,6 +431,7 @@ export default function AddClaim() {
                 <Select
                   value={formData.claim_status}
                   onChange={(e: any) => handleChange('claim_status', e.target.value)}
+                  error={errors.claim_status}
                 >
                   <option value="">Select Claim Status</option>
                   {claimStatuses.map((item: any) => (
@@ -376,6 +440,7 @@ export default function AddClaim() {
                     </option>
                   ))}
                 </Select>
+                {errors.claim_status && <p className="text-xs text-red-500 font-semibold mt-1">{errors.claim_status}</p>}
               </div>
             </div>
           </div>
@@ -389,13 +454,16 @@ export default function AddClaim() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5 items-start">
               <Input
                 label="Name Of Doctor"
                 name="name_of_doctor"
                 placeholder="Enter Doctor Name (e.g. Dr. ABC)"
                 value={formData.name_of_doctor}
                 onChange={(e) => handleChange('name_of_doctor', e.target.value)}
+                onBlur={() => handleBlur('name_of_doctor')}
+                error={errors.name_of_doctor}
+                required
               />
 
               <Input
@@ -404,6 +472,9 @@ export default function AddClaim() {
                 placeholder="Enter Hospital Name (e.g. Apollo Hospital)"
                 value={formData.name_of_hospital}
                 onChange={(e) => handleChange('name_of_hospital', e.target.value)}
+                onBlur={() => handleBlur('name_of_hospital')}
+                error={errors.name_of_hospital}
+                required
               />
 
               <Input
@@ -412,6 +483,9 @@ export default function AddClaim() {
                 placeholder="Enter Hospital Location (e.g. Ahmedabad)"
                 value={formData.location_of_hospital}
                 onChange={(e) => handleChange('location_of_hospital', e.target.value)}
+                onBlur={() => handleBlur('location_of_hospital')}
+                error={errors.location_of_hospital}
+                required
               />
 
               <Input
@@ -420,13 +494,19 @@ export default function AddClaim() {
                 placeholder="Enter Hospital Type"
                 value={formData.hospital_type}
                 onChange={(e) => handleChange('hospital_type', e.target.value)}
+                onBlur={() => handleBlur('hospital_type')}
+                error={errors.hospital_type}
+                required
               />
 
               <div>
-                <label className={labelClass}>Rating Of Hospital</label>
+                <label className={labelClass}>
+                  Rating Of Hospital <span className="text-red-500">*</span>
+                </label>
                 <Select
                   value={formData.rating_of_hospital}
                   onChange={(e: any) => handleChange('rating_of_hospital', e.target.value)}
+                  error={errors.rating_of_hospital}
                 >
                   <option value="">Select Rating</option>
                   {hospitalRatings.map((item: any) => (
@@ -435,6 +515,7 @@ export default function AddClaim() {
                     </option>
                   ))}
                 </Select>
+                {errors.rating_of_hospital && <p className="text-xs text-red-500 font-semibold mt-1">{errors.rating_of_hospital}</p>}
               </div>
             </div>
           </div>
@@ -456,6 +537,9 @@ export default function AddClaim() {
                 placeholder="Enter any additional notes..."
                 value={formData.note}
                 onChange={(e) => handleChange('note', e.target.value)}
+                onBlur={() => handleBlur('note')}
+                error={errors.note}
+                required
               />
             </div>
           </div>
@@ -464,4 +548,5 @@ export default function AddClaim() {
     </div>
   );
 }
+
 

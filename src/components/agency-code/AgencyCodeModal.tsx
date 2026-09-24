@@ -62,6 +62,11 @@ export default function AgencyCodeModal({
     }
   };
 
+  const handleMobileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+    handleChange('mobile_number', value);
+  };
+
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       {/* Backdrop */}
@@ -156,9 +161,10 @@ export default function AgencyCodeModal({
               name="mobile_number"
               placeholder="Enter Mobile Number"
               value={formData.mobile_number}
-              onChange={(e: any) => handleChange('mobile_number', e.target.value)}
+              onChange={handleMobileChange}
               onBlur={() => handleBlur('mobile_number')}
               error={errors.mobile_number}
+              maxLength={10}
             />
 
             <Input

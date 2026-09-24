@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import { Plus, Trash2, User, Car, Building2, FileText, ArrowLeft } from 'lucide-react';
+import { Plus, Minus, Trash2, User, Car, Building2, FileText, ArrowLeft } from 'lucide-react';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import {
@@ -13,42 +13,52 @@ import {
 } from '@/hooks/useMotorQuotationApi';
 import { usePincodeDetails } from '@/hooks/useCustomerApi';
 
+import { validateMotorQuotation } from '@/utils/validation';
+
 function ProductSelect({
   companyId,
   value,
   onChange,
+  error,
 }: {
   companyId?: string | number;
   value: string;
   onChange: (val: string, prodObj?: MotorQuotationProductItem) => void;
+  error?: string;
 }) {
   const { data: productList = [], isLoading } = useMotorQuotationProducts(companyId);
 
   return (
-    <Select
-      value={value}
-      onChange={(e: any) => {
-        const val = e.target.value;
-        const found = productList.find(
-          (p) => String(p.product_id) === String(val) || p.name === val
-        );
-        onChange(val, found);
-      }}
-      disabled={!companyId}
-    >
-      <option value="">
-        {!companyId
-          ? 'Select Company First'
-          : isLoading
-            ? 'Loading...'
-            : 'Select Product'}
-      </option>
-      {productList.map((prod) => (
-        <option key={prod.product_id} value={prod.product_id}>
-          {prod.name}
+    <div>
+      <Select
+        value={value}
+        onChange={(e: any) => {
+          const val = e.target.value;
+          const found = productList.find(
+            (p) => String(p.product_id) === String(val) || p.name === val
+          );
+          onChange(val, found);
+        }}
+        disabled={!companyId}
+        className={error ? '!border-red-500 ring-2 ring-red-500/20' : ''}
+      >
+        <option value="">
+          {!companyId
+            ? 'Select Company First'
+            : isLoading
+              ? 'Loading...'
+              : 'Select Product'}
         </option>
-      ))}
-    </Select>
+        {productList.map((prod) => (
+          <option key={prod.product_id} value={prod.product_id}>
+            {prod.name}
+          </option>
+        ))}
+      </Select>
+      {error && (
+        <p className="text-xs text-red-500 font-semibold mt-1 px-0.5">{error}</p>
+      )}
+    </div>
   );
 }
 
@@ -60,6 +70,8 @@ export default function AddMotorQuotation() {
   const { data: quotationDetail, isLoading: isDetailLoading } = useMotorQuotationDetail(quotationId);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [quoteErrors, setQuoteErrors] = useState<Record<string | number, Record<string, string>>>({});
 
   const companyList = masterData?.companies || [];
   const vehicleTypeList = masterData?.vehicle_type || [];
@@ -169,19 +181,55 @@ export default function AddMotorQuotation() {
     }
   }, [quotationDetail]);
 
+  const validate = (data = formData, qList = quotes) => {
+    const { isValid, errors: newErrors, quoteErrors: newQuoteErrors } =
+      validateMotorQuotation(data, qList);
+
+    setErrors(newErrors);
+    setQuoteErrors(newQuoteErrors);
+    return isValid;
+  };
+
   const handleInputChange = (field: string, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    let sanitizedValue = value;
+    if (field === 'mobile') {
+      sanitizedValue = String(value).replace(/\D/g, '').slice(0, 10);
+    } else if (field === 'pincode') {
+      sanitizedValue = String(value).replace(/\D/g, '').slice(0, 6);
+    } else if (field === 'mfg_year') {
+      sanitizedValue = String(value).replace(/\D/g, '').slice(0, 4);
+    }
+    const updatedForm = { ...formData, [field]: sanitizedValue };
+    setFormData(updatedForm);
+
+    if (errors[field]) {
+      const { errors: newErrors } = validateMotorQuotation(updatedForm, quotes);
+      setErrors((prev) => ({ ...prev, [field]: newErrors[field] || '' }));
+    }
+  };
+
+  const handleBlur = (field: string) => {
+    if (errors[field] || formData[field as keyof typeof formData]) {
+      const { errors: newErrors } = validateMotorQuotation(formData, quotes);
+      setErrors((prev) => ({ ...prev, [field]: newErrors[field] || '' }));
+    }
   };
 
   const handleVehicleTypeChange = (val: string) => {
     const selected = vehicleTypeList.find(
       (vt: any) => String(vt.id) === String(val) || String(vt.value) === String(val)
     );
-    setFormData((prev) => ({
-      ...prev,
+    const updatedForm = {
+      ...formData,
       vehicle_type_id: selected ? String(selected.id) : val,
       vehicle_type: selected ? selected.value : val,
-    }));
+    };
+    setFormData(updatedForm);
+
+    if (errors.vehicle_type_id) {
+      const { errors: newErrors } = validateMotorQuotation(updatedForm, quotes);
+      setErrors((prev) => ({ ...prev, vehicle_type_id: newErrors.vehicle_type_id || '' }));
+    }
   };
 
   const handleMakeChange = (val: string) => {
@@ -206,6 +254,16 @@ export default function AddMotorQuotation() {
         }));
       }
       updated[index] = { ...updated[index], [field]: value };
+
+      const keyId = updated[index].id || index;
+      if (quoteErrors[keyId]?.[field]) {
+        const { quoteErrors: newQuoteErrors } = validateMotorQuotation(formData, updated);
+        setQuoteErrors((prevErrors) => ({
+          ...prevErrors,
+          [keyId]: { ...(prevErrors[keyId] || {}), [field]: newQuoteErrors[keyId]?.[field] || '' },
+        }));
+      }
+
       return updated;
     });
   };
@@ -221,6 +279,16 @@ export default function AddMotorQuotation() {
         product_id: '',
         product_name: '',
       };
+
+      const keyId = updated[index].id || index;
+      if (quoteErrors[keyId]?.company_id) {
+        const { quoteErrors: newQuoteErrors } = validateMotorQuotation(formData, updated);
+        setQuoteErrors((prevErrors) => ({
+          ...prevErrors,
+          [keyId]: { ...(prevErrors[keyId] || {}), company_id: newQuoteErrors[keyId]?.company_id || '' },
+        }));
+      }
+
       return updated;
     });
   };
@@ -233,6 +301,16 @@ export default function AddMotorQuotation() {
         product_id: val,
         product_name: prodObj ? prodObj.name : val,
       };
+
+      const keyId = updated[index].id || index;
+      if (quoteErrors[keyId]?.product_id) {
+        const { quoteErrors: newQuoteErrors } = validateMotorQuotation(formData, updated);
+        setQuoteErrors((prevErrors) => ({
+          ...prevErrors,
+          [keyId]: { ...(prevErrors[keyId] || {}), product_id: newQuoteErrors[keyId]?.product_id || '' },
+        }));
+      }
+
       return updated;
     });
   };
@@ -264,6 +342,11 @@ export default function AddMotorQuotation() {
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+
+    if (!validate()) {
+      return;
+    }
+
     if (isSubmitting) return;
 
     setIsSubmitting(true);
@@ -340,6 +423,8 @@ export default function AddMotorQuotation() {
                 placeholder="Insured Name"
                 value={formData.insured_name}
                 onChange={(e) => handleInputChange('insured_name', e.target.value)}
+                onBlur={() => handleBlur('insured_name')}
+                error={errors.insured_name}
                 required
               />
 
@@ -349,6 +434,9 @@ export default function AddMotorQuotation() {
                 placeholder="MobileNo"
                 value={formData.mobile}
                 onChange={(e) => handleInputChange('mobile', e.target.value)}
+                onBlur={() => handleBlur('mobile')}
+                error={errors.mobile}
+                maxLength={10}
               />
 
               <Input
@@ -358,6 +446,8 @@ export default function AddMotorQuotation() {
                 placeholder="Email"
                 value={formData.email}
                 onChange={(e) => handleInputChange('email', e.target.value)}
+                onBlur={() => handleBlur('email')}
+                error={errors.email}
               />
 
               <Input
@@ -366,21 +456,27 @@ export default function AddMotorQuotation() {
                 placeholder="House No"
                 value={formData.house_no}
                 onChange={(e) => handleInputChange('house_no', e.target.value)}
+                onBlur={() => handleBlur('house_no')}
+                error={errors.house_no}
               />
 
-              <Input
-                label={isPincodeLoading ? 'Pincode (Loading...)' : 'Pincode'}
-                name="pincode"
-                placeholder="Pincode"
-                value={formData.pincode}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, '');
-                  if (val.length <= 6) {
-                    handleInputChange('pincode', val);
-                  }
-                }}
-                maxLength={6}
-              />
+              <div>
+                <Input
+                  label={isPincodeLoading ? 'Pincode (Loading...)' : 'Pincode'}
+                  name="pincode"
+                  placeholder="Pincode"
+                  value={formData.pincode}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '');
+                    if (val.length <= 6) {
+                      handleInputChange('pincode', val);
+                    }
+                  }}
+                  onBlur={() => handleBlur('pincode')}
+                  error={errors.pincode}
+                  maxLength={6}
+                />
+              </div>
 
               <Input
                 label="Street"
@@ -434,6 +530,7 @@ export default function AddMotorQuotation() {
                 <Select
                   value={formData.vehicle_type_id || formData.vehicle_type}
                   onChange={(e: any) => handleVehicleTypeChange(e.target.value)}
+                  className={errors.vehicle_type_id ? '!border-red-500 ring-2 ring-red-500/20' : ''}
                 >
                   <option value="">{isMasterLoading ? 'Loading...' : 'Select Vehicle Type'}</option>
                   {vehicleTypeList.map((vt: any) => (
@@ -442,6 +539,11 @@ export default function AddMotorQuotation() {
                     </option>
                   ))}
                 </Select>
+                {errors.vehicle_type_id && (
+                  <p className="text-xs text-red-500 font-semibold mt-1 px-0.5">
+                    {errors.vehicle_type_id}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -481,6 +583,9 @@ export default function AddMotorQuotation() {
                 placeholder="Year Of Manufacture"
                 value={formData.mfg_year}
                 onChange={(e) => handleInputChange('mfg_year', e.target.value)}
+                onBlur={() => handleBlur('mfg_year')}
+                error={errors.mfg_year}
+                maxLength={4}
               />
 
               <Input
@@ -510,6 +615,8 @@ export default function AddMotorQuotation() {
                 placeholder="Seating Capacity"
                 value={formData.seat_capacity}
                 onChange={(e) => handleInputChange('seat_capacity', e.target.value)}
+                onBlur={() => handleBlur('seat_capacity')}
+                error={errors.seat_capacity}
               />
 
               <Input
@@ -518,6 +625,8 @@ export default function AddMotorQuotation() {
                 placeholder="Total IDV"
                 value={formData.total_idv}
                 onChange={(e) => handleInputChange('total_idv', e.target.value)}
+                onBlur={() => handleBlur('total_idv')}
+                error={errors.total_idv}
               />
 
               <Input
@@ -526,6 +635,8 @@ export default function AddMotorQuotation() {
                 placeholder="NCB %"
                 value={formData.ncb_percent}
                 onChange={(e) => handleInputChange('ncb_percent', e.target.value)}
+                onBlur={() => handleBlur('ncb_percent')}
+                error={errors.ncb_percent}
               />
             </div>
           </div>
@@ -541,9 +652,10 @@ export default function AddMotorQuotation() {
               <button
                 type="button"
                 onClick={addQuote}
-                className="bg-[#2B4399] hover:bg-[#203378] text-white px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors shadow-2xs"
+                className="w-[36px] h-[36px] bg-[#2B4399] hover:bg-[#203378] text-white rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
+                title="Add Quote"
               >
-                <Plus size={15} strokeWidth={2.5} /> Add Quote
+                <Plus size={18} />
               </button>
             </div>
 
@@ -554,7 +666,7 @@ export default function AddMotorQuotation() {
                   className="bg-[#F8FAFC] p-4 md:p-5 rounded-xl border border-gray-200/80 space-y-4 shadow-2xs hover:border-gray-300 transition-all"
                 >
                   {/* Row 1 of fields: Company, Product, Addon, IDV */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
                     <div>
                       <label className={labelClass}>
                         Company <span className="text-red-500">*</span>
@@ -562,6 +674,7 @@ export default function AddMotorQuotation() {
                       <Select
                         value={quote.company_id || ''}
                         onChange={(e: any) => handleCompanyChange(idx, e.target.value)}
+                        className={quoteErrors[quote.id || idx]?.company_id ? '!border-red-500 ring-2 ring-red-500/20' : ''}
                       >
                         <option value="">{isMasterLoading ? 'Loading...' : 'Select Company'}</option>
                         {companyList.map((comp: any) => (
@@ -570,6 +683,11 @@ export default function AddMotorQuotation() {
                           </option>
                         ))}
                       </Select>
+                      {quoteErrors[quote.id || idx]?.company_id && (
+                        <p className="text-xs text-red-500 font-semibold mt-1 px-0.5">
+                          {quoteErrors[quote.id || idx].company_id}
+                        </p>
+                      )}
                     </div>
 
                     <div>
@@ -580,12 +698,13 @@ export default function AddMotorQuotation() {
                         companyId={quote.company_id}
                         value={quote.product_id || quote.product_name}
                         onChange={(val, prodObj) => handleProductChange(idx, val, prodObj)}
+                        error={quoteErrors[quote.id || idx]?.product_id}
                       />
                     </div>
 
                     <div>
-                      <label className={labelClass}>Addon</label>
                       <Input
+                        label="Addon"
                         name={`add_on_${idx}`}
                         placeholder="Addon details"
                         value={quote.add_on}
@@ -594,43 +713,48 @@ export default function AddMotorQuotation() {
                     </div>
 
                     <div>
-                      <label className={labelClass}>IDV</label>
                       <Input
+                        label="IDV"
                         name={`idv_${idx}`}
                         placeholder="IDV"
                         value={quote.idv}
                         onChange={(e) => handleQuoteChange(idx, 'idv', e.target.value)}
+                        error={quoteErrors[quote.id || idx]?.idv}
                       />
                     </div>
                   </div>
 
                   {/* Row 2 of fields: Premium, Discount, Remark, Recommended + Delete */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
                     <div>
-                      <label className={labelClass}>
-                        Premium <span className="text-red-500">*</span>
-                      </label>
                       <Input
+                        label={
+                          <span>
+                            Premium <span className="text-red-500">*</span>
+                          </span>
+                        }
                         name={`premium_${idx}`}
                         placeholder="0"
                         value={quote.premium}
                         onChange={(e) => handleQuoteChange(idx, 'premium', e.target.value)}
+                        error={quoteErrors[quote.id || idx]?.premium}
                       />
                     </div>
 
                     <div>
-                      <label className={labelClass}>Discount</label>
                       <Input
+                        label="Discount"
                         name={`discount_${idx}`}
                         placeholder="Discount"
                         value={quote.discount}
                         onChange={(e) => handleQuoteChange(idx, 'discount', e.target.value)}
+                        error={quoteErrors[quote.id || idx]?.discount}
                       />
                     </div>
 
                     <div>
-                      <label className={labelClass}>Remark</label>
                       <Input
+                        label="Remark"
                         name={`remark_${idx}`}
                         placeholder="Remark"
                         value={quote.remark}
@@ -638,30 +762,39 @@ export default function AddMotorQuotation() {
                       />
                     </div>
 
-                    <div className="flex items-center justify-between gap-3 pt-1">
-                      <div className="flex flex-col items-center">
-                        <label className="text-[11px] font-bold text-gray-700 mb-1.5">
+                    <div className="flex items-center justify-between gap-3 pt-0">
+                      <div className="flex flex-col items-center justify-start">
+                        <label className="text-[11px] font-bold text-gray-700 mb-1.5 block">
                           Recommended
                         </label>
-                        <input
-                          type="radio"
-                          name="recommended_quote"
-                          checked={quote.is_recommended}
-                          onChange={(e) =>
-                            handleQuoteChange(idx, 'is_recommended', e.target.checked)
-                          }
-                          className="w-4 h-4 text-[#2B4399] focus:ring-[#2B4399] cursor-pointer"
-                        />
+                        <div className="h-[42px] flex items-center justify-center">
+                          <input
+                            type="radio"
+                            name="recommended_quote"
+                            checked={quote.is_recommended}
+                            onChange={(e) =>
+                              handleQuoteChange(idx, 'is_recommended', e.target.checked)
+                            }
+                            className="w-4 h-4 text-[#2B4399] focus:ring-[#2B4399] cursor-pointer"
+                          />
+                        </div>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => removeQuote(idx)}
-                        className="bg-[#DA3F49] hover:bg-[#c9303a] text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-2xs h-[42px]"
-                      >
-                        <Trash2 size={15} />
-                        <span>Delete</span>
-                      </button>
+                      <div className="flex flex-col items-center justify-start">
+                        <span className="text-[11px] font-bold block opacity-0 pointer-events-none mb-1.5 hidden md:block">
+                          Delete
+                        </span>
+                        {idx > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => removeQuote(idx)}
+                            className="w-[36px] h-[36px] bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
+                            title="Delete Quote"
+                          >
+                            <Minus size={18} />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

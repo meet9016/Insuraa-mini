@@ -73,9 +73,18 @@ export default function AddHealthInsurance() {
   const companyPlans = plansRes?.plan_list || [];
 
   const handleChange = (field: string, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    const updatedForm = { ...formData, [field]: value };
+    setFormData(updatedForm);
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
+      const { errors: newErrors } = validateHealthInsurance(updatedForm);
+      setErrors(prev => ({ ...prev, [field]: newErrors[field] || '' }));
+    }
+  };
+
+  const handleBlur = (field: string) => {
+    if (errors[field] || formData[field as keyof typeof formData]) {
+      const { errors: newErrors } = validateHealthInsurance(formData);
+      setErrors(prev => ({ ...prev, [field]: newErrors[field] || '' }));
     }
   };
 
@@ -155,6 +164,7 @@ export default function AddHealthInsurance() {
     if (!isNaN(net) || !isNaN(gst)) {
       const total = (isNaN(net) ? 0 : net) + (isNaN(gst) ? 0 : gst);
       setFormData(prev => ({ ...prev, total_premium: String(total) }));
+      setErrors(prev => ({ ...prev, total_premium: '' }));
     } else if (formData.net_premium === '' && formData.gst_amount === '') {
       setFormData(prev => ({ ...prev, total_premium: '' }));
     }
@@ -438,7 +448,7 @@ export default function AddHealthInsurance() {
                 <span>Customer Information</span>
               </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
               <div className="lg:col-span-2">
                 <div className="flex justify-between items-center mb-1.5">
                   <label className={labelClass}>Customer Name <span className="text-red-500">*</span></label>
@@ -448,6 +458,7 @@ export default function AddHealthInsurance() {
                   className={`${selectClass} ${errors.customer_id ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
                   value={formData.customer_id}
                   onChange={(e: any) => handleChange('customer_id', e.target.value)}
+                  error={errors.customer_id}
                 >
                   <option value="">Select Customer Name</option>
                   {customerList.map((cust: any) => {
@@ -513,7 +524,7 @@ export default function AddHealthInsurance() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
               {/* Row 1 */}
               <div>
                 <label className={labelClass}>Insurance Company Name <span className="text-red-500">*</span></label>
@@ -524,6 +535,7 @@ export default function AddHealthInsurance() {
                     handleChange('companies_id', e.target.value);
                     handleChange('plan_name', '');
                   }}
+                  error={errors.companies_id}
                 >
                   <option value="">Select Insurance Company Name</option>
                   {companyList.map((c: any) => (
@@ -551,6 +563,7 @@ export default function AddHealthInsurance() {
                   className={`${selectClass} ${errors.plan_name ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
                   value={formData.plan_name}
                   onChange={(e: any) => handleChange('plan_name', e.target.value)}
+                  error={errors.plan_name}
                 >
                   <option value="">Select Company Plan Name</option>
                   {companyPlans.map((p: any) => (
@@ -568,6 +581,7 @@ export default function AddHealthInsurance() {
                   className={`${selectClass} ${errors.insurance_type ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
                   value={formData.insurance_type}
                   onChange={(e: any) => handleChange('insurance_type', e.target.value)}
+                  error={errors.insurance_type}
                 >
                   <option value="">Select Insurance Type</option>
                   {insuranceTypes.map((item: any) => (
@@ -586,6 +600,7 @@ export default function AddHealthInsurance() {
                   className={`${selectClass} ${errors.payment_mode ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
                   value={formData.payment_mode}
                   onChange={(e: any) => handleChange('payment_mode', e.target.value)}
+                  error={errors.payment_mode}
                 >
                   <option value="">Select Payment Mode</option>
                   {paymentModes.map((item: any) => (
@@ -604,6 +619,7 @@ export default function AddHealthInsurance() {
                   placeholder="Enter Policy Number"
                   value={formData.policy_number}
                   onChange={(e: any) => handleChange('policy_number', e.target.value)}
+                  onBlur={() => handleBlur('policy_number')}
                   error={errors.policy_number}
                 />
               </div>
@@ -615,8 +631,8 @@ export default function AddHealthInsurance() {
                   value={formData.policy_login_date}
                   onChange={(date) => handleChange('policy_login_date', date)}
                   placeholder="Select Policy Login Date"
+                  error={errors.policy_login_date}
                 />
-                {errors.policy_login_date && <p className="text-xs text-red-500 font-semibold mt-1">{errors.policy_login_date}</p>}
               </div>
 
               <div>
@@ -626,8 +642,8 @@ export default function AddHealthInsurance() {
                   value={formData.policy_start_date}
                   onChange={(date) => handleChange('policy_start_date', date)}
                   placeholder="Select Policy Start Date"
+                  error={errors.policy_start_date}
                 />
-                {errors.policy_start_date && <p className="text-xs text-red-500 font-semibold mt-1">{errors.policy_start_date}</p>}
               </div>
 
               {/* Row 3 */}
@@ -638,8 +654,8 @@ export default function AddHealthInsurance() {
                   value={formData.policy_end_date}
                   onChange={(date) => handleChange('policy_end_date', date)}
                   placeholder="Select Policy End Date"
+                  error={errors.policy_end_date}
                 />
-                {errors.policy_end_date && <p className="text-xs text-red-500 font-semibold mt-1">{errors.policy_end_date}</p>}
               </div>
 
               <div>
@@ -658,6 +674,7 @@ export default function AddHealthInsurance() {
                   className={`${selectClass} ${errors.plan_type ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
                   value={formData.plan_type}
                   onChange={(e: any) => handleChange('plan_type', e.target.value)}
+                  error={errors.plan_type}
                 >
                   <option value="">Select Plan Type</option>
                   {planTypes.map((item: any) => (
@@ -676,6 +693,7 @@ export default function AddHealthInsurance() {
                   placeholder="Enter Sum Assured"
                   value={formData.sum_assured}
                   onChange={(e: any) => handleChange('sum_assured', e.target.value)}
+                  onBlur={() => handleBlur('sum_assured')}
                   error={errors.sum_assured}
                 />
               </div>
@@ -688,6 +706,8 @@ export default function AddHealthInsurance() {
                   placeholder="Enter Bonus"
                   value={formData.bonus}
                   onChange={(e: any) => handleChange('bonus', e.target.value)}
+                  onBlur={() => handleBlur('bonus')}
+                  error={errors.bonus}
                 />
               </div>
 
@@ -714,6 +734,8 @@ export default function AddHealthInsurance() {
                   placeholder="Enter Health Check Up Amount"
                   value={formData.health_check_up_amount}
                   onChange={(e: any) => handleChange('health_check_up_amount', e.target.value)}
+                  onBlur={() => handleBlur('health_check_up_amount')}
+                  error={errors.health_check_up_amount}
                 />
               </div>
 
@@ -724,6 +746,8 @@ export default function AddHealthInsurance() {
                   placeholder="Enter Deductable"
                   value={formData.deductable}
                   onChange={(e: any) => handleChange('deductable', e.target.value)}
+                  onBlur={() => handleBlur('deductable')}
+                  error={errors.deductable}
                 />
               </div>
 
@@ -735,6 +759,8 @@ export default function AddHealthInsurance() {
                   placeholder="Enter Claim"
                   value={formData.claim}
                   onChange={(e: any) => handleChange('claim', e.target.value)}
+                  onBlur={() => handleBlur('claim')}
+                  error={errors.claim}
                 />
               </div>
 
@@ -745,6 +771,7 @@ export default function AddHealthInsurance() {
                   placeholder="Enter Net Premium"
                   value={formData.net_premium}
                   onChange={(e: any) => handleChange('net_premium', e.target.value)}
+                  onBlur={() => handleBlur('net_premium')}
                   error={errors.net_premium}
                 />
               </div>
@@ -756,6 +783,8 @@ export default function AddHealthInsurance() {
                   placeholder="Enter GST Amount"
                   value={formData.gst_amount}
                   onChange={(e: any) => handleChange('gst_amount', e.target.value)}
+                  onBlur={() => handleBlur('gst_amount')}
+                  error={errors.gst_amount}
                 />
               </div>
 
@@ -766,6 +795,7 @@ export default function AddHealthInsurance() {
                   placeholder="Enter Total Premium"
                   value={formData.total_premium}
                   onChange={(e: any) => handleChange('total_premium', e.target.value)}
+                  onBlur={() => handleBlur('total_premium')}
                   error={errors.total_premium}
                 />
               </div>
@@ -776,16 +806,26 @@ export default function AddHealthInsurance() {
           {/* Insured Members Information (Exact 4 Columns Row with Square Icon Button) */}
           <div className="bg-white rounded-2xl border border-gray-200/80 p-5 sm:p-6 shadow-2xs">
             <div className={sectionHeaderClass}>
-              <div className="flex items-center gap-2">
-                <Users size={18} />
-                <span>Insured Members</span>
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-2">
+                  <Users size={18} />
+                  <span>Insured Members</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={addMember}
+                  className="w-[36px] h-[36px] bg-[#2B4399] hover:bg-[#203378] text-white rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
+                  title="Add Member"
+                >
+                  <Plus size={18} />
+                </button>
               </div>
             </div>
 
             <div className="space-y-5">
               {members.map((member, index) => (
-                <div key={member.id} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 items-end">
-                  <div>
+                <div key={member.id} className="flex flex-col sm:flex-row items-start gap-4">
+                  <div className="flex-1 w-full sm:w-1/4">
                     <label className={labelClass}>Member Name</label>
                     <Input
                       name={`member_name_${member.id}`}
@@ -794,7 +834,7 @@ export default function AddHealthInsurance() {
                       onChange={(e: any) => updateMember(member.id, 'member_name', e.target.value)}
                     />
                   </div>
-                  <div>
+                  <div className="flex-1 w-full sm:w-1/4">
                     <label className={labelClass}>Relationship</label>
                     <Select
                       className={selectClass}
@@ -809,7 +849,7 @@ export default function AddHealthInsurance() {
                       ))}
                     </Select>
                   </div>
-                  <div>
+                  <div className="flex-1 w-full sm:w-1/4">
                     <label className={labelClass}>DOB</label>
                     <DatePicker
                       className={selectClass}
@@ -818,7 +858,7 @@ export default function AddHealthInsurance() {
                       placeholder="Select DOB"
                     />
                   </div>
-                  <div>
+                  <div className="flex-1 w-full sm:w-1/4">
                     <label className={labelClass}>Age</label>
                     <Input
                       name={`member_age_${member.id}`}
@@ -827,27 +867,20 @@ export default function AddHealthInsurance() {
                       onChange={(e: any) => updateMember(member.id, 'member_age', e.target.value)}
                     />
                   </div>
-                  <div className="flex items-center">
-                    {index === 0 ? (
-                      <button
-                        type="button"
-                        onClick={addMember}
-                        className="w-[42px] h-[42px] bg-[#2B4399] hover:bg-[#203378] text-white rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
-                        title="Add Member"
-                      >
-                        <Plus size={20} />
-                      </button>
-                    ) : (
+                  {index > 0 ? (
+                    <div className="shrink-0 mt-[25px]">
                       <button
                         type="button"
                         onClick={() => removeMember(member.id)}
-                        className="w-[42px] h-[42px] bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
+                        className="w-[36px] h-[36px] bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
                         title="Remove Member"
                       >
-                        <Minus size={20} />
+                        <Minus size={18} />
                       </button>
-                    )}
-                  </div>
+                    </div>
+                  ) : (
+                    members.length > 1 && <div className="w-[36px] shrink-0 hidden sm:block" />
+                  )}
                 </div>
               ))}
             </div>
@@ -873,19 +906,29 @@ export default function AddHealthInsurance() {
             </div>
           </div>
 
-          {/* Additional Document Information (Clean Tight Flex Container) */}
+          {/* Additional Document Information (2-Column Grid Layout matching Life Insurance) */}
           <div className="bg-white rounded-2xl border border-gray-200/80 p-5 sm:p-6 shadow-2xs">
             <div className={sectionHeaderClass}>
-              <div className="flex items-center gap-2">
-                <FileText size={18} />
-                <span>Additional Document Information</span>
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-2">
+                  <FileText size={18} />
+                  <span>Additional Document Information</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={addDocument}
+                  className="w-[36px] h-[36px] bg-[#2B4399] hover:bg-[#203378] text-white rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
+                  title="Add Document"
+                >
+                  <Plus size={18} />
+                </button>
               </div>
             </div>
 
-            <div className="space-y-5">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
               {documents.map((doc, index) => (
-                <div key={doc.id} className="flex flex-col sm:flex-row items-end gap-4">
-                  <div className="w-full sm:w-1/3">
+                <div key={doc.id} className="flex flex-col sm:flex-row items-start gap-3 bg-gray-50/50 p-3 rounded-2xl border border-gray-100/90">
+                  <div className="w-full sm:w-1/2">
                     <label className={labelClass}>Document Name</label>
                     <Select
                       className={selectClass}
@@ -900,7 +943,7 @@ export default function AddHealthInsurance() {
                       ))}
                     </Select>
                   </div>
-                  <div className="flex-1 w-full">
+                  <div className="flex-1 w-full min-w-0">
                     <FileUpload
                       label="Upload Image/Document"
                       name={`document_file_${doc.id}`}
@@ -910,27 +953,18 @@ export default function AddHealthInsurance() {
                       placeholder="Click or drag image to upload"
                     />
                   </div>
-                  <div className="shrink-0 pb-[2px]">
-                    {index === 0 ? (
-                      <button
-                        type="button"
-                        onClick={addDocument}
-                        className="w-[42px] h-[42px] bg-[#2B4399] hover:bg-[#203378] text-white rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
-                        title="Add Document"
-                      >
-                        <Plus size={20} />
-                      </button>
-                    ) : (
+                  {index > 0 && (
+                    <div className="shrink-0 mt-[25px]">
                       <button
                         type="button"
                         onClick={() => removeDocument(doc.id)}
-                        className="w-[42px] h-[42px] bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
+                        className="w-[34px] h-[34px] bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
                         title="Remove Document"
                       >
-                        <Minus size={20} />
+                        <Minus size={16} />
                       </button>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

@@ -393,30 +393,38 @@ export default function AddLifeInsurance() {
   };
 
   const handleChange = (field: string, value: any) => {
-    setFormData(prev => {
-      const updated = { ...prev, [field]: value };
+    const updatedForm = { ...formData, [field]: value };
+    setFormData(updatedForm);
 
-      if (field === 'net_premium' || field === 'gst_amount' || field === 'total_net_premium') {
-        const { computedTotalNet, computedTotal } = calculateTotals(
-          field === 'net_premium' ? value : prev.net_premium,
-          field === 'gst_amount' ? value : prev.gst_amount,
-          riders,
-          field === 'total_net_premium' ? value : prev.total_net_premium
-        );
-        updated.total_net_premium = computedTotalNet;
-        updated.total_premium = computedTotal;
-      }
-
-      return updated;
-    });
+    if (field === 'net_premium' || field === 'gst_amount' || field === 'total_net_premium') {
+      const { computedTotalNet, computedTotal } = calculateTotals(
+        field === 'net_premium' ? value : formData.net_premium,
+        field === 'gst_amount' ? value : formData.gst_amount,
+        riders,
+        field === 'total_net_premium' ? value : formData.total_net_premium
+      );
+      setFormData(prev => ({
+        ...prev,
+        total_net_premium: computedTotalNet,
+        total_premium: computedTotal
+      }));
+    }
 
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
+      const { errors: newErrors } = validateLifeInsurance(updatedForm, nominees);
+      setErrors(prev => ({ ...prev, [field]: newErrors[field] || '' }));
     }
   };
 
-  const validateForm = async () => {
-    const { isValid, errors: newErrors } = await validateLifeInsurance(formData, nominees);
+  const handleBlur = (field: string) => {
+    if (errors[field] || formData[field as keyof typeof formData]) {
+      const { errors: newErrors } = validateLifeInsurance(formData, nominees);
+      setErrors(prev => ({ ...prev, [field]: newErrors[field] || '' }));
+    }
+  };
+
+  const validateForm = () => {
+    const { isValid, errors: newErrors } = validateLifeInsurance(formData, nominees);
     setErrors(newErrors);
     return isValid;
   };
@@ -424,7 +432,7 @@ export default function AddLifeInsurance() {
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
 
-    const isValid = await validateForm();
+    const isValid = validateForm();
     if (!isValid) {
       return;
     }
@@ -533,7 +541,7 @@ export default function AddLifeInsurance() {
                 <span>Customer Information</span>
               </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
               <div className="lg:col-span-2">
                 <div className="flex justify-between items-center mb-1.5">
                   <label className={labelClass}>Customer Name <span className="text-red-500">*</span></label>
@@ -543,6 +551,7 @@ export default function AddLifeInsurance() {
                   className={`${selectClass} ${errors.customer_id ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
                   value={formData.customer_id}
                   onChange={(e: any) => handleChange('customer_id', e.target.value)}
+                  error={errors.customer_id}
                 >
                   <option value="">Select Customer Name</option>
                   {customerList.map((cust: any) => {
@@ -609,7 +618,7 @@ export default function AddLifeInsurance() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
               {/* Row 1 */}
               <div>
                 <label className={labelClass}>Insurance Company Name <span className="text-red-500">*</span></label>
@@ -617,6 +626,7 @@ export default function AddLifeInsurance() {
                   className={`${selectClass} ${errors.companies_id ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
                   value={formData.companies_id}
                   onChange={(e: any) => handleChange('companies_id', e.target.value)}
+                  error={errors.companies_id}
                 >
                   <option value="">Select Insurance Company Name</option>
                   {companyList.map((comp: any) => (
@@ -671,6 +681,7 @@ export default function AddLifeInsurance() {
                   className={`${selectClass} ${errors.payment_mode ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
                   value={formData.payment_mode}
                   onChange={(e: any) => handleChange('payment_mode', e.target.value)}
+                  error={errors.payment_mode}
                 >
                   <option value="">Select Payment Mode</option>
                   {paymentModes.map((pm: any) => (
@@ -690,6 +701,7 @@ export default function AddLifeInsurance() {
                   placeholder="Enter Policy Number"
                   value={formData.policy_number}
                   onChange={(e: any) => handleChange('policy_number', e.target.value)}
+                  onBlur={() => handleBlur('policy_number')}
                   error={errors.policy_number}
                 />
               </div>
@@ -700,6 +712,7 @@ export default function AddLifeInsurance() {
                     className={`${selectClass} ${errors.policy_premium_term ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
                     value={formData.policy_premium_term}
                     onChange={(e: any) => handleChange('policy_premium_term', e.target.value)}
+                    error={errors.policy_premium_term}
                   >
                     <option value="">Select Premium Term</option>
                     {policyTermOptions.map((pt: any) => (
@@ -714,6 +727,7 @@ export default function AddLifeInsurance() {
                     placeholder="Enter Premium Term"
                     value={formData.policy_premium_term}
                     onChange={(e: any) => handleChange('policy_premium_term', e.target.value)}
+                    onBlur={() => handleBlur('policy_premium_term')}
                     error={errors.policy_premium_term}
                   />
                 )}
@@ -726,6 +740,7 @@ export default function AddLifeInsurance() {
                     className={`${selectClass} ${errors.policy_term ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
                     value={formData.policy_term}
                     onChange={(e: any) => handleChange('policy_term', e.target.value)}
+                    error={errors.policy_term}
                   >
                     <option value="">Select Policy Term</option>
                     {policyTermOptions.map((pt: any) => (
@@ -740,6 +755,7 @@ export default function AddLifeInsurance() {
                     placeholder="Enter Policy Term"
                     value={formData.policy_term}
                     onChange={(e: any) => handleChange('policy_term', e.target.value)}
+                    onBlur={() => handleBlur('policy_term')}
                     error={errors.policy_term}
                   />
                 )}
@@ -752,8 +768,8 @@ export default function AddLifeInsurance() {
                   placeholder="Select Login Date"
                   value={formData.policy_login_date}
                   onChange={(dateStr: string) => handleChange('policy_login_date', dateStr)}
+                  error={errors.policy_login_date}
                 />
-                {errors.policy_login_date && <p className="text-xs text-red-500 font-semibold mt-1">{errors.policy_login_date}</p>}
               </div>
 
               {/* Row 3 */}
@@ -764,8 +780,8 @@ export default function AddLifeInsurance() {
                   placeholder="Select Start Date"
                   value={formData.policy_start_date}
                   onChange={(dateStr: string) => handleChange('policy_start_date', dateStr)}
+                  error={errors.policy_start_date}
                 />
-                {errors.policy_start_date && <p className="text-xs text-red-500 font-semibold mt-1">{errors.policy_start_date}</p>}
               </div>
               <div>
                 <label className={labelClass}>Policy Premium End Date <span className="text-red-500">*</span></label>
@@ -774,8 +790,8 @@ export default function AddLifeInsurance() {
                   placeholder="Select Premium End Date"
                   value={formData.policy_end_date}
                   onChange={(dateStr: string) => handleChange('policy_end_date', dateStr)}
+                  error={errors.policy_end_date}
                 />
-                {errors.policy_end_date && <p className="text-xs text-red-500 font-semibold mt-1">{errors.policy_end_date}</p>}
               </div>
               <div>
                 <label className={labelClass}>Policy Maturity Date <span className="text-red-500">*</span></label>
@@ -784,8 +800,8 @@ export default function AddLifeInsurance() {
                   placeholder="Select Maturity Date"
                   value={formData.policy_maturity_date}
                   onChange={(dateStr: string) => handleChange('policy_maturity_date', dateStr)}
+                  error={errors.policy_maturity_date}
                 />
-                {errors.policy_maturity_date && <p className="text-xs text-red-500 font-semibold mt-1">{errors.policy_maturity_date}</p>}
               </div>
               <div>
                 <label className={labelClass}>Maturity Amount</label>
@@ -794,6 +810,8 @@ export default function AddLifeInsurance() {
                   placeholder="Enter Maturity Amount"
                   value={formData.maturity_amount}
                   onChange={(e: any) => handleChange('maturity_amount', e.target.value)}
+                  onBlur={() => handleBlur('maturity_amount')}
+                  error={errors.maturity_amount}
                 />
               </div>
 
@@ -804,6 +822,7 @@ export default function AddLifeInsurance() {
                   className={`${selectClass} ${errors.plan_type ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
                   value={formData.plan_type}
                   onChange={(e: any) => handleChange('plan_type', e.target.value)}
+                  error={errors.plan_type}
                 >
                   <option value="">Select Plan Type</option>
                   {planTypeOptions.map((pt: any) => (
@@ -821,6 +840,7 @@ export default function AddLifeInsurance() {
                   placeholder="Enter Sum Assured"
                   value={formData.sum_assured}
                   onChange={(e: any) => handleChange('sum_assured', e.target.value)}
+                  onBlur={() => handleBlur('sum_assured')}
                   error={errors.sum_assured}
                 />
               </div>
@@ -831,6 +851,7 @@ export default function AddLifeInsurance() {
                   placeholder="Enter Net Premium"
                   value={formData.net_premium}
                   onChange={(e: any) => handleChange('net_premium', e.target.value)}
+                  onBlur={() => handleBlur('net_premium')}
                   error={errors.net_premium}
                 />
               </div>
@@ -841,14 +862,16 @@ export default function AddLifeInsurance() {
                   placeholder="Enter GST Amount"
                   value={formData.gst_amount}
                   onChange={(e: any) => handleChange('gst_amount', e.target.value)}
+                  onBlur={() => handleBlur('gst_amount')}
+                  error={errors.gst_amount}
                 />
               </div>
 
               {/* Dynamic Riders Fields */}
               <div className="col-span-1 sm:col-span-2 lg:col-span-4 space-y-5">
                 {riders.map((rider, index) => (
-                  <div key={rider.id} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
-                    <div>
+                  <div key={rider.id} className="flex flex-col sm:flex-row items-start gap-4">
+                    <div className="flex-1 w-full sm:w-1/3">
                       <label className={labelClass}>Rider Name</label>
                       <Select
                         className={selectClass}
@@ -867,7 +890,7 @@ export default function AddLifeInsurance() {
                         })}
                       </Select>
                     </div>
-                    <div>
+                    <div className="flex-1 w-full sm:w-1/3">
                       <label className={labelClass}>Rider Amount</label>
                       <Input
                         name={`riders_amount_${rider.id}`}
@@ -876,7 +899,7 @@ export default function AddLifeInsurance() {
                         onChange={(e: any) => updateRider(rider.id, 'riders_amount', e.target.value)}
                       />
                     </div>
-                    <div>
+                    <div className="flex-1 w-full sm:w-1/3">
                       <label className={labelClass}>Note</label>
                       <Input
                         name={`riders_note_${rider.id}`}
@@ -885,24 +908,24 @@ export default function AddLifeInsurance() {
                         onChange={(e: any) => updateRider(rider.id, 'riders_note', e.target.value)}
                       />
                     </div>
-                    <div className="flex items-center">
+                    <div className="shrink-0 mt-[25px]">
                       {index === 0 ? (
                         <button
                           type="button"
                           onClick={addRider}
-                          className="w-[42px] h-[42px] bg-[#2B4399] hover:bg-[#203378] text-white rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
+                          className="w-[36px] h-[36px] bg-[#2B4399] hover:bg-[#203378] text-white rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
                           title="Add Rider"
                         >
-                          <Plus size={20} />
+                          <Plus size={18} />
                         </button>
                       ) : (
                         <button
                           type="button"
                           onClick={() => removeRider(rider.id)}
-                          className="w-[42px] h-[42px] bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
+                          className="w-[36px] h-[36px] bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
                           title="Remove Rider"
                         >
-                          <Minus size={20} />
+                          <Minus size={18} />
                         </button>
                       )}
                     </div>
@@ -983,16 +1006,26 @@ export default function AddLifeInsurance() {
           {/* Nominee Details (Exact 4 Columns Row with Square Icon Button) */}
           <div className="bg-white rounded-2xl border border-gray-200/80 p-5 sm:p-6 shadow-2xs">
             <div className={sectionHeaderClass}>
-              <div className="flex items-center gap-2">
-                <Users size={18} />
-                <span>Nominee Details</span>
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-2">
+                  <Users size={18} />
+                  <span>Nominee Details</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={addNominee}
+                  className="w-[36px] h-[36px] bg-[#2B4399] hover:bg-[#203378] text-white rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
+                  title="Add Nominee"
+                >
+                  <Plus size={18} />
+                </button>
               </div>
             </div>
 
             <div className="space-y-5">
               {nominees.map((nominee, index) => (
-                <div key={nominee.id} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
-                  <div>
+                <div key={nominee.id} className="flex flex-col sm:flex-row items-start gap-4">
+                  <div className="flex-1 w-full sm:w-1/3">
                     <label className={labelClass}>Nominee Name <span className="text-red-500">*</span></label>
                     <Input
                       name={`nomainee_name_${nominee.id}`}
@@ -1002,7 +1035,7 @@ export default function AddLifeInsurance() {
                       error={errors.nomainee_name && !nominee.nomainee_name ? errors.nomainee_name : undefined}
                     />
                   </div>
-                  <div>
+                  <div className="flex-1 w-full sm:w-1/3">
                     <label className={labelClass}>Relationship</label>
                     <Select
                       className={selectClass}
@@ -1017,7 +1050,7 @@ export default function AddLifeInsurance() {
                       ))}
                     </Select>
                   </div>
-                  <div>
+                  <div className="flex-1 w-full sm:w-1/3">
                     <label className={labelClass}>Percentage (%)</label>
                     <Input
                       name={`nomainee_per_${nominee.id}`}
@@ -1026,27 +1059,18 @@ export default function AddLifeInsurance() {
                       onChange={(e: any) => updateNominee(nominee.id, 'nomainee_per', e.target.value)}
                     />
                   </div>
-                  <div className="flex items-center">
-                    {index === 0 ? (
-                      <button
-                        type="button"
-                        onClick={addNominee}
-                        className="w-[42px] h-[42px] bg-[#2B4399] hover:bg-[#203378] text-white rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
-                        title="Add Nominee"
-                      >
-                        <Plus size={20} />
-                      </button>
-                    ) : (
+                  {index > 0 && (
+                    <div className="shrink-0 mt-[25px]">
                       <button
                         type="button"
                         onClick={() => removeNominee(nominee.id)}
-                        className="w-[42px] h-[42px] bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
+                        className="w-[36px] h-[36px] bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
                         title="Remove Nominee"
                       >
-                        <Minus size={20} />
+                        <Minus size={18} />
                       </button>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -1080,7 +1104,7 @@ export default function AddLifeInsurance() {
                 <span>Bank Details IN Policy</span>
               </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
               <div>
                 <label className={labelClass}>Bank Name</label>
                 <Input
@@ -1115,6 +1139,8 @@ export default function AddLifeInsurance() {
                   placeholder="Enter IFSC CODE"
                   value={formData.ifsc_code}
                   onChange={(e: any) => handleChange('ifsc_code', e.target.value)}
+                  onBlur={() => handleBlur('ifsc_code')}
+                  error={errors.ifsc_code}
                 />
               </div>
               <div>
@@ -1132,16 +1158,26 @@ export default function AddLifeInsurance() {
           {/* Additional Document Information (Exact 4 Columns Row with Square Icon Button) */}
           <div className="bg-white rounded-2xl border border-gray-200/80 p-5 sm:p-6 shadow-2xs">
             <div className={sectionHeaderClass}>
-              <div className="flex items-center gap-2">
-                <FileText size={18} />
-                <span>Additional Document Information</span>
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-2">
+                  <FileText size={18} />
+                  <span>Additional Document Information</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={addDocument}
+                  className="w-[36px] h-[36px] bg-[#2B4399] hover:bg-[#203378] text-white rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
+                  title="Add Document"
+                >
+                  <Plus size={18} />
+                </button>
               </div>
             </div>
 
-            <div className="space-y-5">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
               {documents.map((doc, index) => (
-                <div key={doc.id} className="flex flex-col sm:flex-row items-end gap-4">
-                  <div className="w-full sm:w-1/3">
+                <div key={doc.id} className="flex flex-col sm:flex-row items-start gap-3 bg-gray-50/50 p-3 rounded-2xl border border-gray-100/90">
+                  <div className="w-full sm:w-1/2">
                     <label className={labelClass}>Document Name</label>
                     <Select
                       className={selectClass}
@@ -1160,7 +1196,7 @@ export default function AddLifeInsurance() {
                       })}
                     </Select>
                   </div>
-                  <div className="flex-1 w-full">
+                  <div className="flex-1 w-full min-w-0">
                     <FileUpload
                       label="Upload Image/Document"
                       name={`other_document_image_${doc.id}`}
@@ -1170,27 +1206,18 @@ export default function AddLifeInsurance() {
                       placeholder="Click or drag image to upload"
                     />
                   </div>
-                  <div className="shrink-0 pb-[2px]">
-                    {index === 0 ? (
-                      <button
-                        type="button"
-                        onClick={addDocument}
-                        className="w-[42px] h-[42px] bg-[#2B4399] hover:bg-[#203378] text-white rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
-                        title="Add Document"
-                      >
-                        <Plus size={20} />
-                      </button>
-                    ) : (
+                  {index > 0 && (
+                    <div className="shrink-0 mt-[25px]">
                       <button
                         type="button"
                         onClick={() => removeDocument(doc.id)}
-                        className="w-[42px] h-[42px] bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
+                        className="w-[34px] h-[34px] bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
                         title="Remove Document"
                       >
-                        <Minus size={20} />
+                        <Minus size={16} />
                       </button>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

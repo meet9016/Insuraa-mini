@@ -174,10 +174,19 @@ export default function AddMotorInsurance() {
   ]);
 
   const handleChange = (field: string, value: any) => {
+    const updatedForm = { ...formData, [field]: value };
+    setFormData(updatedForm);
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
+      const { errors: newErrors } = validateMotorInsurance(updatedForm);
+      setErrors(prev => ({ ...prev, [field]: newErrors[field] || '' }));
     }
-    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleBlur = (field: string) => {
+    if (errors[field] || formData[field as keyof typeof formData]) {
+      const { errors: newErrors } = validateMotorInsurance(formData);
+      setErrors(prev => ({ ...prev, [field]: newErrors[field] || '' }));
+    }
   };
 
   // Auto-calculate Policy End Date (1 Year)
@@ -220,6 +229,7 @@ export default function AddMotorInsurance() {
     if (!isNaN(net) || !isNaN(gst)) {
       const total = (isNaN(net) ? 0 : net) + (isNaN(gst) ? 0 : gst);
       setFormData(prev => prev.total_premium !== String(total) ? { ...prev, total_premium: String(total) } : prev);
+      setErrors(prev => ({ ...prev, total_premium: '' }));
     } else if (formData.net_premium === '' && formData.gst_amount === '') {
       setFormData(prev => prev.total_premium !== '' ? { ...prev, total_premium: '' } : prev);
     }
@@ -324,7 +334,7 @@ export default function AddMotorInsurance() {
                 <span>Customer Information</span>
               </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
               <div className="lg:col-span-2">
                 <div className="flex justify-between items-center mb-1.5">
                   <label className={labelClass}>Customer Name <span className="text-red-500">*</span></label>
@@ -334,6 +344,7 @@ export default function AddMotorInsurance() {
                   className={`${selectClass} ${errors.customer_id ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
                   value={formData.customer_id}
                   onChange={(e: any) => handleChange('customer_id', e.target.value)}
+                  error={errors.customer_id}
                 >
                   <option value="">Select Customer Name</option>
                   {customerList.map((cust: any) => {
@@ -395,7 +406,7 @@ export default function AddMotorInsurance() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
 
               <div>
                 <label className={labelClass}>Insurance Company Name <span className="text-red-500">*</span></label>
@@ -403,6 +414,7 @@ export default function AddMotorInsurance() {
                   className={`${selectClass} ${errors.companies_id ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
                   value={formData.companies_id}
                   onChange={(e: any) => handleChange('companies_id', e.target.value)}
+                  error={errors.companies_id}
                 >
                   <option value="">Select Insurance Company Name</option>
                   {companyList.map((comp: any) => (
@@ -420,6 +432,7 @@ export default function AddMotorInsurance() {
                   className={`${selectClass} ${errors.plan_name ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
                   value={formData.plan_name}
                   onChange={(e: any) => handleChange('plan_name', e.target.value)}
+                  error={errors.plan_name}
                 >
                   <option value="">Select Company Plan Name</option>
                   {companyPlans.map((plan: any) => {
@@ -461,6 +474,7 @@ export default function AddMotorInsurance() {
                   className={`${selectClass} ${errors.plan_type ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
                   value={formData.plan_type}
                   onChange={(e: any) => handleChange('plan_type', e.target.value)}
+                  error={errors.plan_type}
                 >
                   <option value="">Select Plan Type</option>
                   {planTypeList.map((pt: any) => (
@@ -478,6 +492,7 @@ export default function AddMotorInsurance() {
                   className={`${selectClass} ${errors.vehicle_type ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
                   value={formData.vehicle_type}
                   onChange={(e: any) => handleChange('vehicle_type', e.target.value)}
+                  error={errors.vehicle_type}
                 >
                   <option value="">Select Vehicle Type</option>
                   {vehicleTypeList.map((vt: any) => (
@@ -495,6 +510,7 @@ export default function AddMotorInsurance() {
                   className={`${selectClass} ${errors.class_of_vehicle ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
                   value={formData.class_of_vehicle}
                   onChange={(e: any) => handleChange('class_of_vehicle', e.target.value)}
+                  error={errors.class_of_vehicle}
                 >
                   <option value="">Select Class of vehicle</option>
                   {classOfVehicleList.map((cov: any) => (
@@ -512,6 +528,7 @@ export default function AddMotorInsurance() {
                   className={`${selectClass} ${errors.insurance_type ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
                   value={formData.insurance_type}
                   onChange={(e: any) => handleChange('insurance_type', e.target.value)}
+                  error={errors.insurance_type}
                 >
                   <option value="">Select Insurance Type</option>
                   {insuranceTypeList.map((it: any) => (
@@ -529,6 +546,7 @@ export default function AddMotorInsurance() {
                   name="registration_number_rto"
                   value={formData.registration_number_rto}
                   onChange={(e: any) => handleChange('registration_number_rto', e.target.value)}
+                  onBlur={() => handleBlur('registration_number_rto')}
                   placeholder="Enter Registration Number/RTO"
                   error={errors.registration_number_rto}
                 />
@@ -560,6 +578,7 @@ export default function AddMotorInsurance() {
                   name="policy_number"
                   value={formData.policy_number}
                   onChange={(e: any) => handleChange('policy_number', e.target.value)}
+                  onBlur={() => handleBlur('policy_number')}
                   placeholder="Enter Policy Number"
                   error={errors.policy_number}
                 />
@@ -637,7 +656,9 @@ export default function AddMotorInsurance() {
                   name="cng_value"
                   value={formData.cng_value}
                   onChange={(e: any) => handleChange('cng_value', e.target.value)}
+                  onBlur={() => handleBlur('cng_value')}
                   placeholder="Enter CNG Value"
+                  error={errors.cng_value}
                 />
               </div>
 
@@ -647,7 +668,9 @@ export default function AddMotorInsurance() {
                   name="vehicle_value"
                   value={formData.vehicle_value}
                   onChange={(e: any) => handleChange('vehicle_value', e.target.value)}
+                  onBlur={() => handleBlur('vehicle_value')}
                   placeholder="Enter Vehicle Value (IDV)"
+                  error={errors.vehicle_value}
                 />
               </div>
 
@@ -657,7 +680,9 @@ export default function AddMotorInsurance() {
                   name="own_damage_premimum"
                   value={formData.own_damage_premimum}
                   onChange={(e: any) => handleChange('own_damage_premimum', e.target.value)}
+                  onBlur={() => handleBlur('own_damage_premimum')}
                   placeholder="Enter Own Damage Premium"
+                  error={errors.own_damage_premimum}
                 />
               </div>
 
@@ -667,7 +692,9 @@ export default function AddMotorInsurance() {
                   name="tp_premium"
                   value={formData.tp_premium}
                   onChange={(e: any) => handleChange('tp_premium', e.target.value)}
+                  onBlur={() => handleBlur('tp_premium')}
                   placeholder="Enter TP Premium"
+                  error={errors.tp_premium}
                 />
               </div>
 
@@ -677,6 +704,7 @@ export default function AddMotorInsurance() {
                   name="net_premium"
                   value={formData.net_premium}
                   onChange={(e: any) => handleChange('net_premium', e.target.value)}
+                  onBlur={() => handleBlur('net_premium')}
                   placeholder="Enter Net Premium"
                   error={errors.net_premium}
                 />
@@ -688,7 +716,9 @@ export default function AddMotorInsurance() {
                   name="gst_amount"
                   value={formData.gst_amount}
                   onChange={(e: any) => handleChange('gst_amount', e.target.value)}
+                  onBlur={() => handleBlur('gst_amount')}
                   placeholder="Enter GST Amount"
+                  error={errors.gst_amount}
                 />
               </div>
 
@@ -698,6 +728,7 @@ export default function AddMotorInsurance() {
                   name="total_premium"
                   value={formData.total_premium}
                   onChange={(e: any) => handleChange('total_premium', e.target.value)}
+                  onBlur={() => handleBlur('total_premium')}
                   placeholder="Enter Total Premium"
                   error={errors.total_premium}
                 />
@@ -726,19 +757,29 @@ export default function AddMotorInsurance() {
             </div>
           </div>
 
-          {/* Additional Document Information Section Card */}
+          {/* Additional Document Information Section Card (2-Column Grid Layout matching Life Insurance) */}
           <div className="bg-white rounded-2xl border border-gray-200/80 p-5 sm:p-6 shadow-2xs">
             <div className={sectionHeaderClass}>
-              <div className="flex items-center gap-2">
-                <FileText size={18} />
-                <span>Additional Document Information</span>
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-2">
+                  <FileText size={18} />
+                  <span>Additional Document Information</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={addDocument}
+                  className="w-[36px] h-[36px] bg-[#2B4399] hover:bg-[#203378] text-white rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
+                  title="Add Document"
+                >
+                  <Plus size={18} />
+                </button>
               </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
               {documents.map((doc, index) => (
-                <div key={doc.id} className="flex items-start gap-4">
-                  <div className="w-1/3">
+                <div key={doc.id} className="flex flex-col sm:flex-row items-start gap-3 bg-gray-50/50 p-3 rounded-2xl border border-gray-100/90">
+                  <div className="w-full sm:w-1/2">
                     <label className={labelClass}>Document Name</label>
                     <Select
                       className={selectClass}
@@ -753,9 +794,9 @@ export default function AddMotorInsurance() {
                       ))}
                     </Select>
                   </div>
-                  <div className="flex-1">
-                    <label className={labelClass}>Upload Image/Document</label>
+                  <div className="flex-1 w-full min-w-0">
                     <FileUpload
+                      label="Upload Image/Document"
                       name={`other_document_image[${index}]`}
                       file={doc.other_document_image}
                       existingUrl={doc.existing_image_url}
@@ -763,27 +804,18 @@ export default function AddMotorInsurance() {
                       placeholder="Click or drag image to upload"
                     />
                   </div>
-                  <div className="pt-7 shrink-0">
-                    {index === 0 ? (
-                      <button
-                        type="button"
-                        onClick={addDocument}
-                        className="bg-[#2B4399] text-white p-3 rounded-xl hover:bg-[#203378] transition-colors shadow-2xs flex items-center justify-center"
-                        title="Add Document"
-                      >
-                        <Plus size={18} />
-                      </button>
-                    ) : (
+                  {index > 0 && (
+                    <div className="shrink-0 mt-[25px]">
                       <button
                         type="button"
                         onClick={() => removeDocument(doc.id)}
-                        className="bg-[#FFF5F5] text-[#EF4444] border border-[#FCA5A5] p-3 rounded-xl hover:bg-red-100 transition-colors shadow-2xs flex items-center justify-center"
+                        className="w-[34px] h-[34px] bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
                         title="Remove Document"
                       >
-                        <Minus size={18} />
+                        <Minus size={16} />
                       </button>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

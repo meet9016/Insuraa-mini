@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, Children, isValidElement } from 'react';
 import { ChevronDown, Search, Check } from 'lucide-react';
 
-export default function Select({ children, className, onChange, value, error, ...props }: any) {
+export default function Select({ children, className, onChange, value, error, dropUp, ...props }: any) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -28,6 +28,13 @@ export default function Select({ children, className, onChange, value, error, ..
     });
     return opts;
   }, [children]);
+
+  // Automatically detect Document Name select field
+  const isDocumentSelect = React.useMemo(() => {
+    return options.some(o => o.label.toLowerCase().includes('document'));
+  }, [options]);
+
+  const shouldDropUp = dropUp !== undefined ? Boolean(dropUp) : isDocumentSelect;
 
   // Use the option that says "Select" as placeholder
   const placeholderOption = options.find(o => o.label.toLowerCase().includes('select'));
@@ -71,10 +78,10 @@ export default function Select({ children, className, onChange, value, error, ..
       <div
         onClick={() => setIsOpen(!isOpen)}
         className={`w-full h-[42px] px-3.5 py-2 bg-white border rounded-xl text-sm flex items-center justify-between cursor-pointer transition-all shadow-2xs ${error
-            ? 'border-red-500 ring-2 ring-red-500/20'
-            : isOpen
-              ? 'border-[#2B4399] ring-2 ring-[#2B4399]/20'
-              : 'border-gray-300 hover:border-gray-400'
+          ? 'border-red-500 ring-2 ring-red-500/20'
+          : isOpen
+            ? 'border-[#2B4399] ring-2 ring-[#2B4399]/20'
+            : 'border-gray-300 hover:border-gray-400'
           } ${className || ''}`}
       >
         <span className={selectedOption ? 'text-gray-900' : 'text-gray-400'}>
@@ -85,7 +92,7 @@ export default function Select({ children, className, onChange, value, error, ..
 
       {/* Dropdown Menu (Matches the reference image layout) */}
       {isOpen && (
-        <div className="absolute z-[9999] w-full mt-2 bg-white border border-[#d2d6f0] rounded-xl shadow-lg overflow-hidden flex flex-col">
+        <div className={`absolute z-[9999] w-full bg-white border border-[#d2d6f0] rounded-xl shadow-lg overflow-hidden flex flex-col ${shouldDropUp ? 'bottom-full mb-2' : 'top-full mt-2'}`}>
 
           {/* Search Box inside dropdown */}
           <div className="p-2 border-b border-gray-100">
@@ -130,3 +137,4 @@ export default function Select({ children, className, onChange, value, error, ..
     </div>
   );
 }
+
