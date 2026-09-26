@@ -2,9 +2,7 @@
 import axios from "axios";
 
 // Default base URL from environment or fallback with proxy support for browser CORS
-const baseURL = typeof window !== 'undefined'
-  ? '/'
-  : (process.env.NEXT_PUBLIC_APP_URL || 'https://api.insuraa.in/');
+const baseURL = process.env.NEXT_PUBLIC_APP_URL || 'https://api.insuraa.in/';
 
 const apiAdminInstance = axios.create({
   baseURL: baseURL,
