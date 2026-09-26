@@ -158,7 +158,7 @@ export interface SourceOfLeadColumnProps {
 
 export const getSourceOfLeadColumns = ({ onEdit, onDelete }: SourceOfLeadColumnProps) => [
   {
-    headerName: "Source Of Lead",
+    headerName: "Product Of Lead",
     field: "name",
     minWidth: 200,
     cellRenderer: (params: any) => {

@@ -159,12 +159,12 @@ export default function SourceOfLead() {
 
       <div className="w-full bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-gray-200 overflow-hidden flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500">
         <TableHeader
-          title="Source Of Lead"
+          title="Product Of Lead"
           subtitle="Manage and view your lead sources"
           searchPlaceholder="Search lead sources..."
           searchValue={search}
           onSearchChange={handleSearchChange}
-          buttonText="Add Source Of Lead"
+          buttonText="Add Product Of Lead"
           onButtonClick={handleOpenAddModal}
         />
 
@@ -186,7 +186,7 @@ export default function SourceOfLead() {
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={handleCancel}></div>
           <div className="relative bg-white w-full max-w-lg rounded-xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="bg-[#2B4399] px-5 py-3.5 flex justify-between items-center text-white">
-              <h2 className="font-bold text-base">{editingId ? 'Edit Source of Lead' : 'Add Source of Lead'}</h2>
+              <h2 className="font-bold text-base">{editingId ? 'Edit Product of Lead' : 'Add Product of Lead'}</h2>
               <button onClick={handleCancel} className="hover:text-gray-200 transition-colors">
                 <X size={20} strokeWidth={2.5} />
               </button>
@@ -197,7 +197,7 @@ export default function SourceOfLead() {
                 label="Name"
                 required
                 name="name"
-                placeholder="Enter Source of Lead Name"
+                placeholder="Enter Product of Lead Name"
                 value={newName}
                 onChange={(e: any) => {
                   const val = e.target.value;
@@ -231,7 +231,7 @@ export default function SourceOfLead() {
         isOpen={deleteModalState.isOpen}
         onClose={() => setDeleteModalState(prev => ({ ...prev, isOpen: false }))}
         onConfirm={handleConfirmDelete}
-        title="Delete Source of Lead"
+        title="Delete Product of Lead"
         itemName={deleteModalState.name}
         isDeleting={deleteModalState.isDeleting}
       />

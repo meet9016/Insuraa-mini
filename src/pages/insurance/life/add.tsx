@@ -117,7 +117,7 @@ function CompanySelectWithAdd({
       </div>
 
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-gray-200 rounded-2xl shadow-xl p-3 z-50 space-y-2.5 animate-in fade-in zoom-in-95 duration-150">
+        <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-gray-200 rounded-2xl shadow-xl p-3 z-50 space-y-2.5 animate-in fade-in zoom-in-95 duration-150 ">
           {/* Search Bar using common Input component */}
           <div>
             <Input

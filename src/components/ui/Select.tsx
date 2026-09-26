@@ -94,7 +94,7 @@ export default function Select({ children, className, onChange, value, error, dr
 
       {/* Dropdown Menu (Matches the reference image layout) */}
       {isOpen && (
-        <div className={`absolute z-[9999] w-full bg-white border border-[#d2d6f0] rounded-xl shadow-lg overflow-hidden flex flex-col ${shouldDropUp ? 'bottom-full mb-2' : 'top-full mt-2'}`}>
+        <div className={`absolute z-[1] w-full bg-white border border-[#d2d6f0] rounded-xl shadow-lg overflow-hidden flex flex-col ${shouldDropUp ? 'bottom-full mb-2' : 'top-full mt-2'}`}>
 
           {/* Search Box inside dropdown */}
           <div className="p-2 border-b border-gray-100">

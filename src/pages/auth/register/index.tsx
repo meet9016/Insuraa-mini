@@ -42,9 +42,9 @@ export default function RegisterPage() {
           onSuccess: (res) => {
             const isError =
               !res ||
-              res.status === 404 ||
-              res.status === 400 ||
-              res.status === false;
+              res.status === false ||
+              res.status === 'Failed' ||
+              (typeof res.status === 'number' && res.status >= 400);
 
             if (isError) {
               toast.error(res?.message || 'Failed to send OTP');
@@ -139,6 +139,17 @@ export default function RegisterPage() {
         { number: activeNumber },
         {
           onSuccess: (res) => {
+            const isError =
+              !res ||
+              res.status === false ||
+              res.status === 'Failed' ||
+              (typeof res.status === 'number' && res.status >= 400);
+
+            if (isError) {
+              toast.error(res?.message || 'Failed to resend OTP');
+              return;
+            }
+
             if (res?.message) {
               toast.info(res.message);
             }

@@ -69,7 +69,7 @@ export default function MasterManagement() {
 
   const otherMasters = [
     {
-      title: 'Source of Lead',
+      title: 'Product of Lead',
       description: 'Manage lead sources',
       icon: <UserPlus size={20} strokeWidth={2} />,
       link: '/masters/source-of-lead',

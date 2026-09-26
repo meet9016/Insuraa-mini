@@ -71,7 +71,7 @@ export const loadMoreKanbanLeads = async (statusId: string | number, page: numbe
   }
 };
 
-export const useBusinessGroupsDropdown = () => {
+export const useBusinessGroupsDropdown = (enabled: boolean = true) => {
   return useQuery<Array<{ business_group_id: string | number; name: string }>>({
     queryKey: ['businessGroupsDropdown'],
     queryFn: async () => {
@@ -85,10 +85,11 @@ export const useBusinessGroupsDropdown = () => {
         return [];
       }
     },
+    enabled,
   });
 };
 
-export const useLeadProductDropdown = () => {
+export const useLeadProductDropdown = (enabled: boolean = true) => {
   return useQuery<Array<{ lead_product_id: string | number; name: string }>>({
     queryKey: ['leadProductDropdown'],
     queryFn: async () => {
@@ -102,6 +103,7 @@ export const useLeadProductDropdown = () => {
         return [];
       }
     },
+    enabled,
   });
 };
 

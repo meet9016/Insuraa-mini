@@ -32,8 +32,8 @@ export default function AddLeadModal({ isOpen, onClose, editData }: AddLeadModal
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { insertLead } = useLeadActions();
-  const { data: businessGroups = [] } = useBusinessGroupsDropdown();
-  const { data: leadProducts = [] } = useLeadProductDropdown();
+  const { data: businessGroups = [] } = useBusinessGroupsDropdown(isOpen);
+  const { data: leadProducts = [] } = useLeadProductDropdown(isOpen);
 
   useEffect(() => {
     if (isOpen && editData) {

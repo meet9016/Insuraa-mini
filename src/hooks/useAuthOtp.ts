@@ -46,7 +46,18 @@ export const useSendLoginOtp = () => {
     formData.append('number', payload.number);
 
     const response = await api.post(endPointApi.AUTH.SEND_LOGIN_OTP, formData);
-    return response.data;
+    const resData = response.data;
+
+    if (
+      !resData ||
+      resData.status === false ||
+      resData.status === 'Failed' ||
+      (typeof resData.status === 'number' && resData.status >= 400)
+    ) {
+      throw new Error(resData?.message || 'Failed to send OTP');
+    }
+
+    return resData;
   }, []);
 
   const onSuccess = useCallback((data: OtpResponse, variables: SendOtpPayload) => {
@@ -106,7 +117,18 @@ export const useSendSignUpOtp = () => {
     formData.append('number', payload.number);
 
     const response = await api.post(endPointApi.AUTH.SEND_SIGN_UP_OTP, formData);
-    return response.data;
+    const resData = response.data;
+
+    if (
+      !resData ||
+      resData.status === false ||
+      resData.status === 'Failed' ||
+      (typeof resData.status === 'number' && resData.status >= 400)
+    ) {
+      throw new Error(resData?.message || 'Failed to send OTP');
+    }
+
+    return resData;
   }, []);
 
   const options = useMemo(() => ({
@@ -136,7 +158,12 @@ export const useVerifySignUpOtp = () => {
     const response = await api.post(endPointApi.AUTH.VERIFY_SIGN_UP_OTP, formData);
     const resData = response.data;
 
-    if (resData && (resData.status === 401 || resData.status === 400 || resData.status === 429 || resData.status === 'Failed' || resData.status === false)) {
+    if (
+      !resData ||
+      resData.status === false ||
+      resData.status === 'Failed' ||
+      (typeof resData.status === 'number' && resData.status >= 400)
+    ) {
       throw new Error(resData.message || 'Failed to complete registration');
     }
 
