@@ -626,48 +626,66 @@ export default function AddCustomer() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-              {documents.map((doc, index) => (
-                <div key={doc.id} className="flex flex-col sm:flex-row items-start gap-3 bg-gray-50/50 p-3 rounded-2xl border border-gray-100/90">
-                  <div className="w-full sm:w-1/2">
-                    <label className={labelClass}>Document Name</label>
-                    <Select
-                      className={selectClass}
-                      value={doc.documentId}
-                      onChange={(e: any) => handleDocumentChange(doc.id, e.target.value)}
-                    >
-                      <option value="">Select Document Name</option>
-                      {dropdownData?.document_name?.map((item) => (
-                        <option key={item.id} value={String(item.id)}>
-                          {item.name}
-                        </option>
-                      ))}
-                    </Select>
-                  </div>
-                  <div className="flex-1 w-full min-w-0">
-                    <FileUpload
-                      label="Upload Image/Document"
-                      name={`document_file_${doc.id}`}
-                      file={doc.file}
-                      existingUrl={doc.existing_image_url}
-                      onChange={(file) => handleDocumentFileChange(doc.id, file)}
-                      placeholder="Click or drag image to upload"
-                    />
-                  </div>
-                  {index > 0 && (
-                    <div className="shrink-0 mt-[25px]">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+              {(() => {
+                const selectedDocumentIds = documents.map(d => String(d.documentId)).filter(id => id !== '' && id !== 'undefined');
+
+                return documents.map((doc, index) => (
+                  <div key={doc.id} className="relative bg-white rounded-2xl border border-gray-200/80 p-5 shadow-2xs hover:shadow-md transition-shadow">
+                    {index > 0 && (
                       <button
                         type="button"
                         onClick={() => removeDocument(doc.id)}
-                        className="w-[34px] h-[34px] bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
+                        className="absolute top-4 right-4 w-8 h-8 bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 hover:text-red-700 rounded-xl flex items-center justify-center transition-colors z-10"
                         title="Remove Document"
                       >
-                        <Minus size={16} />
+                        <Minus size={16} strokeWidth={2.5} />
                       </button>
+                    )}
+
+                    <div className="flex items-start gap-3 mb-4 pr-10">
+                      <div className="w-10 h-10 bg-[#EEF2FF] text-[#2B4399] rounded-xl flex items-center justify-center shrink-0">
+                        <FileText size={20} strokeWidth={2} />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-gray-900 mb-0.5">Document Name </h4>
+                        <p className="text-[11px] text-gray-500">Select the document you want to upload</p>
+                      </div>
                     </div>
-                  )}
-                </div>
-              ))}
+
+                    <div className="space-y-4">
+                      <Select
+                        className={selectClass}
+                        value={doc.documentId}
+                        onChange={(e: any) => handleDocumentChange(doc.id, e.target.value)}
+                      >
+                        <option value="">Select Document Name</option>
+                        {dropdownData?.document_name?.map((item) => {
+                          const dId = String(item.id);
+                          const dName = item.name;
+                          const isSelectedByOther = selectedDocumentIds.includes(dId) && String(doc.documentId) !== dId;
+
+                          return (
+                            <option key={dId} value={dId} disabled={isSelectedByOther}>
+                              {dName}
+                            </option>
+                          );
+                        })}
+                      </Select>
+
+                      <div className="w-full">
+                        <FileUpload
+                          name={`document_file_${doc.id}`}
+                          file={doc.file}
+                          existingUrl={doc.existing_image_url}
+                          onChange={(file) => handleDocumentFileChange(doc.id, file)}
+                          placeholder="Click or drag image to upload"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ));
+              })()}
             </div>
           </div>
 

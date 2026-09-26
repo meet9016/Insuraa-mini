@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
-import { Plus, Minus, ArrowLeft, Sparkles, User, FileText, Shield, Notebook } from 'lucide-react';
+import { Plus, Minus, ArrowLeft, Sparkles, User, FileText, Shield, Notebook, Search, ChevronDown, Check } from 'lucide-react';
 import { useRouter } from 'next/router';
+import { useQueryClient } from '@tanstack/react-query';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import DatePicker from '@/components/ui/DatePicker';
@@ -11,7 +12,306 @@ import { api } from '@/utils/axiosInstance';
 import endPointApi from '@/utils/endPointApi';
 import { validateMotorInsurance } from '@/utils/validation';
 import { useCustomerList } from '@/hooks/useCustomerApi';
+import { useCompanyActions } from '@/hooks/useCompanyApi';
 import { useMotorInsuranceMasterData, useMotorInsuranceCompanyPlansAndAgency, useMotorInsuranceActions } from '@/hooks/useMotorInsuranceApi';
+
+function CompanySelectWithAdd({
+  companyList,
+  selectedId,
+  onChange,
+  onAddCompany,
+  error,
+}: {
+  companyList: Array<{ id: string | number; name: string }>;
+  selectedId: string | number;
+  onChange: (id: string) => void;
+  onAddCompany: (comp: { id: string | number; name: string }) => void;
+  error?: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [newCompanyInput, setNewCompanyInput] = useState('');
+  const [isAdding, setIsAdding] = useState(false);
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
+
+  const { insertCompany } = useCompanyActions();
+
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const selectedCompany = companyList.find((c: any) => String(c.id) === String(selectedId));
+
+  const filteredCompanies = companyList.filter((c: any) =>
+    (c.name || '').toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const handleAdd = async () => {
+    if (!newCompanyInput.trim() || isAdding) return;
+    setIsAdding(true);
+    const newName = newCompanyInput.trim();
+    try {
+      const success = await insertCompany(newName);
+      if (success) {
+        const newId = `custom_${Date.now()}`;
+        const newComp = { id: newId, name: newName };
+        onAddCompany(newComp);
+        setNewCompanyInput('');
+        setSearchQuery('');
+      }
+    } catch (err: any) {
+      // handled inside hook
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
+  return (
+    <div className="relative w-full" ref={dropdownRef}>
+      <div
+        onClick={() => setIsOpen(prev => !prev)}
+        className={`w-full min-h-[42px] bg-white border ${error ? '!border-red-500 ring-2 ring-red-500/20' : isOpen ? 'border-[#2B4399] ring-2 ring-[#2B4399]/15' : 'border-gray-200 hover:border-gray-300'
+          } rounded-xl px-3.5 py-2 flex items-center justify-between cursor-pointer transition-all shadow-2xs`}
+      >
+        <span className={`text-sm ${selectedCompany ? 'text-gray-900 font-medium' : 'text-gray-400'}`}>
+          {selectedCompany ? selectedCompany.name : 'Select Insurance Company Name'}
+        </span>
+        <ChevronDown
+          size={18}
+          className={`text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180 text-[#2B4399]' : ''}`}
+        />
+      </div>
+
+      {isOpen && (
+        <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-gray-200 rounded-2xl shadow-xl p-3 z-50 space-y-2.5 animate-in fade-in zoom-in-95 duration-150">
+          <div>
+            <Input
+              name="company_search_query"
+              value={searchQuery}
+              onChange={(e: any) => setSearchQuery(e.target.value)}
+              placeholder="Search company..."
+              icon={<Search size={16} className="text-gray-400" />}
+              className="!h-[38px] text-xs sm:text-sm border-gray-200 focus:border-[#2B4399]"
+            />
+          </div>
+
+          <div className="max-h-44 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+            {filteredCompanies.length > 0 ? (
+              filteredCompanies.map((c: any) => {
+                const isSelected = String(c.id) === String(selectedId);
+                return (
+                  <div
+                    key={c.id}
+                    onClick={() => {
+                      onChange(String(c.id));
+                      setIsOpen(false);
+                      setSearchQuery('');
+                    }}
+                    className={`w-full text-left px-3.5 py-2.5 rounded-xl text-sm transition-colors flex items-center justify-between cursor-pointer ${isSelected
+                        ? 'bg-[#EEF2FF] text-[#2B4399] font-bold'
+                        : 'text-gray-700 font-medium hover:bg-gray-50'
+                      }`}
+                  >
+                    <span className="truncate">{c.name}</span>
+                    {isSelected && <Check size={16} className="text-[#2B4399] shrink-0 ml-2" />}
+                  </div>
+                );
+              })
+            ) : (
+              <div className="text-xs text-gray-400 py-3 text-center">No company found</div>
+            )}
+          </div>
+
+          <div className="bg-[#F3F4FF] border border-[#E0E7FF] p-2 rounded-2xl flex items-center gap-2 mt-1">
+            <div className="w-7 h-7 rounded-full bg-[#2B4399] flex items-center justify-center text-white shrink-0 shadow-2xs">
+              <Plus size={14} strokeWidth={2.5} />
+            </div>
+            <div className="flex-1">
+              <Input
+                name="new_company_name"
+                value={newCompanyInput}
+                onChange={(e: any) => setNewCompanyInput(e.target.value)}
+                onKeyDown={(e: any) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAdd();
+                  }
+                }}
+                placeholder="Enter new company name..."
+                disabled={isAdding}
+                className="!h-[36px] text-xs sm:text-sm border-[#C7D2FE] focus:border-[#2B4399]"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleAdd}
+              disabled={isAdding}
+              className="h-[36px] bg-[#2B4399] hover:bg-[#203378] text-white px-4 rounded-xl text-xs font-bold transition-colors shadow-2xs shrink-0 disabled:opacity-50 flex items-center justify-center"
+            >
+              {isAdding ? 'Adding...' : 'Add'}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PlanSelectWithAdd({
+  planList,
+  selectedId,
+  companyId,
+  onChange,
+  onAddPlan,
+  error,
+}: {
+  planList: Array<{ id: string | number; name: string }>;
+  selectedId: string | number;
+  companyId: string | number;
+  onChange: (id: string) => void;
+  onAddPlan: (plan: { id: string | number; name: string }) => void;
+  error?: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [newPlanInput, setNewPlanInput] = useState('');
+  const [isAdding, setIsAdding] = useState(false);
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
+
+  const { insertCompanyPlan } = useCompanyActions();
+
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const selectedPlan = planList.find((c: any) => String(c.id) === String(selectedId));
+
+  const filteredPlans = planList.filter((c: any) =>
+    (c.name || '').toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const handleAdd = async () => {
+    if (!newPlanInput.trim() || isAdding || !companyId) return;
+    setIsAdding(true);
+    const newName = newPlanInput.trim();
+    try {
+      const success = await insertCompanyPlan(String(companyId), newName);
+      if (success) {
+        const newId = `custom_plan_${Date.now()}`;
+        const newPlan = { id: newId, name: newName };
+        onAddPlan(newPlan);
+        setNewPlanInput('');
+        setSearchQuery('');
+      }
+    } catch (err: any) {
+      // handled inside hook
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
+  return (
+    <div className="relative w-full" ref={dropdownRef}>
+      <div
+        onClick={() => setIsOpen(prev => !prev)}
+        className={`w-full min-h-[42px] bg-white border ${error ? '!border-red-500 ring-2 ring-red-500/20' : isOpen ? 'border-[#2B4399] ring-2 ring-[#2B4399]/15' : 'border-gray-200 hover:border-gray-300'
+          } rounded-xl px-3.5 py-2 flex items-center justify-between cursor-pointer transition-all shadow-2xs`}
+      >
+        <span className={`text-sm ${selectedPlan ? 'text-gray-900 font-medium' : 'text-gray-400'}`}>
+          {selectedPlan ? selectedPlan.name : 'Select Company Plan Name'}
+        </span>
+        <ChevronDown
+          size={18}
+          className={`text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180 text-[#2B4399]' : ''}`}
+        />
+      </div>
+
+      {isOpen && (
+        <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-gray-200 rounded-2xl shadow-xl p-3 z-50 space-y-2.5 animate-in fade-in zoom-in-95 duration-150">
+          <div>
+            <Input
+              name="plan_search_query"
+              value={searchQuery}
+              onChange={(e: any) => setSearchQuery(e.target.value)}
+              placeholder="Search plan..."
+              icon={<Search size={16} className="text-gray-400" />}
+              className="!h-[38px] text-xs sm:text-sm border-gray-200 focus:border-[#2B4399]"
+            />
+          </div>
+
+          <div className="max-h-44 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+            {filteredPlans.length > 0 ? (
+              filteredPlans.map((c: any) => {
+                const isSelected = String(c.id) === String(selectedId);
+                return (
+                  <div
+                    key={c.id}
+                    onClick={() => {
+                      onChange(String(c.id));
+                      setIsOpen(false);
+                      setSearchQuery('');
+                    }}
+                    className={`w-full text-left px-3.5 py-2.5 rounded-xl text-sm transition-colors flex items-center justify-between cursor-pointer ${isSelected
+                        ? 'bg-[#EEF2FF] text-[#2B4399] font-bold'
+                        : 'text-gray-700 font-medium hover:bg-gray-50'
+                      }`}
+                  >
+                    <span className="truncate">{c.name}</span>
+                    {isSelected && <Check size={16} className="text-[#2B4399] shrink-0 ml-2" />}
+                  </div>
+                );
+              })
+            ) : (
+              <div className="text-xs text-gray-400 py-3 text-center">No plan found</div>
+            )}
+          </div>
+
+          <div className="bg-[#F3F4FF] border border-[#E0E7FF] p-2 rounded-2xl flex items-center gap-2 mt-1">
+            <div className="w-7 h-7 rounded-full bg-[#2B4399] flex items-center justify-center text-white shrink-0 shadow-2xs">
+              <Plus size={14} strokeWidth={2.5} />
+            </div>
+            <div className="flex-1">
+              <Input
+                name="new_plan_name"
+                value={newPlanInput}
+                onChange={(e: any) => setNewPlanInput(e.target.value)}
+                onKeyDown={(e: any) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAdd();
+                  }
+                }}
+                placeholder="Enter new plan name..."
+                disabled={isAdding || !companyId}
+                className="!h-[36px] text-xs sm:text-sm border-[#C7D2FE] focus:border-[#2B4399]"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleAdd}
+              disabled={isAdding || !companyId}
+              className="h-[36px] bg-[#2B4399] hover:bg-[#203378] text-white px-4 rounded-xl text-xs font-bold transition-colors shadow-2xs shrink-0 disabled:opacity-50 flex items-center justify-center"
+            >
+              {isAdding ? 'Adding...' : 'Add'}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function AddMotorInsurance() {
   const router = useRouter();
@@ -25,8 +325,22 @@ export default function AddMotorInsurance() {
   const { data: masterData } = useMotorInsuranceMasterData();
   const { data: customerRes } = useCustomerList({ page: 1, limit: 1000 });
 
+  const queryClient = useQueryClient();
   const customerList = customerRes?.customerList || [];
-  const companyList = masterData?.companies || [];
+
+  const [customCompanies, setCustomCompanies] = useState<Array<{ id: string | number; name: string }>>([]);
+  const companyList = React.useMemo(() => {
+    const base = masterData?.companies || [];
+    const baseNames = new Set(base.map((c: any) => (c.name || '').toLowerCase().trim()));
+    const uniqueCustomCompanies = customCompanies.filter((c: any) => !baseNames.has((c.name || '').toLowerCase().trim()));
+    return [...base, ...uniqueCustomCompanies];
+  }, [masterData?.companies, customCompanies]);
+
+  const handleAddCustomCompany = (newComp: { id: string | number; name: string }) => {
+    setCustomCompanies(prev => [...prev, newComp]);
+    queryClient.invalidateQueries({ queryKey: ["motorInsuranceMasterData"] });
+    queryClient.invalidateQueries({ queryKey: ["companyList"] });
+  };
   const planTypeList = masterData?.plan_type || [];
   const vehicleTypeList = masterData?.vehicle_type || [];
   const classOfVehicleList = masterData?.class_of_vehicle || [];
@@ -163,6 +477,22 @@ export default function AddMotorInsurance() {
   const { data: plansAndAgencyRes } = useMotorInsuranceCompanyPlansAndAgency(formData.companies_id);
   const companyPlans = plansAndAgencyRes?.plan_list || [];
   const agencyCodeList = plansAndAgencyRes?.agency_code || [];
+
+  const [customPlans, setCustomPlans] = useState<Array<{ id: string | number; name: string }>>([]);
+  const planList = React.useMemo(() => {
+    const base = companyPlans.map((p: any) => ({
+      id: p.id || p.plan_id,
+      name: p.plan_name || p.name || `Plan #${p.id || p.plan_id}`
+    }));
+    const baseNames = new Set(base.map((c: any) => (c.name || '').toLowerCase().trim()));
+    const uniqueCustomPlans = customPlans.filter((c: any) => !baseNames.has((c.name || '').toLowerCase().trim()));
+    return [...base, ...uniqueCustomPlans];
+  }, [companyPlans, customPlans]);
+
+  const handleAddCustomPlan = (newPlan: { id: string | number; name: string }) => {
+    setCustomPlans(prev => [...prev, newPlan]);
+    queryClient.invalidateQueries({ queryKey: ["motorInsuranceCompanyPlansAndAgency"] });
+  };
 
   // Policy PDF file state
   const [policyPdf, setPolicyPdf] = useState<File | null>(null);
@@ -410,41 +740,37 @@ export default function AddMotorInsurance() {
 
               <div>
                 <label className={labelClass}>Insurance Company Name <span className="text-red-500">*</span></label>
-                <Select
-                  className={`${selectClass} ${errors.companies_id ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
-                  value={formData.companies_id}
-                  onChange={(e: any) => handleChange('companies_id', e.target.value)}
+                <CompanySelectWithAdd
+                  companyList={companyList}
+                  selectedId={formData.companies_id}
+                  onChange={(val: string) => {
+                    setFormData(prev => ({
+                      ...prev,
+                      companies_id: val,
+                      plan_name: '',
+                      companies_agency_code: '',
+                    }));
+                    if (errors.companies_id) {
+                      const { errors: newErrors } = validateMotorInsurance({ ...formData, companies_id: val });
+                      setErrors(prev => ({ ...prev, companies_id: newErrors.companies_id || '' }));
+                    }
+                  }}
+                  onAddCompany={handleAddCustomCompany}
                   error={errors.companies_id}
-                >
-                  <option value="">Select Insurance Company Name</option>
-                  {companyList.map((comp: any) => (
-                    <option key={comp.id} value={comp.id}>
-                      {comp.name}
-                    </option>
-                  ))}
-                </Select>
+                />
                 {errors.companies_id && <p className="text-xs text-red-500 font-semibold mt-1">{errors.companies_id}</p>}
               </div>
 
               <div>
                 <label className={labelClass}>Plan Name <span className="text-red-500">*</span></label>
-                <Select
-                  className={`${selectClass} ${errors.plan_name ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
-                  value={formData.plan_name}
-                  onChange={(e: any) => handleChange('plan_name', e.target.value)}
+                <PlanSelectWithAdd
+                  planList={planList}
+                  selectedId={formData.plan_name}
+                  companyId={formData.companies_id}
+                  onChange={(val: string) => handleChange('plan_name', val)}
+                  onAddPlan={handleAddCustomPlan}
                   error={errors.plan_name}
-                >
-                  <option value="">Select Company Plan Name</option>
-                  {companyPlans.map((plan: any) => {
-                    const pId = plan.plan_id || plan.id;
-                    const pName = plan.plan_name || plan.name || `Plan #${pId}`;
-                    return (
-                      <option key={pId} value={pId}>
-                        {pName}
-                      </option>
-                    );
-                  })}
-                </Select>
+                />
                 {errors.plan_name && <p className="text-xs text-red-500 font-semibold mt-1">{errors.plan_name}</p>}
               </div>
 
@@ -776,48 +1102,66 @@ export default function AddMotorInsurance() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-              {documents.map((doc, index) => (
-                <div key={doc.id} className="flex flex-col sm:flex-row items-start gap-3 bg-gray-50/50 p-3 rounded-2xl border border-gray-100/90">
-                  <div className="w-full sm:w-1/2">
-                    <label className={labelClass}>Document Name</label>
-                    <Select
-                      className={selectClass}
-                      value={doc.other_document_name}
-                      onChange={(e: any) => updateDocument(doc.id, 'other_document_name', e.target.value)}
-                    >
-                      <option value="">Select Document Name</option>
-                      {documentNameList.map((d: any) => (
-                        <option key={d.id} value={d.id}>
-                          {d.name}
-                        </option>
-                      ))}
-                    </Select>
-                  </div>
-                  <div className="flex-1 w-full min-w-0">
-                    <FileUpload
-                      label="Upload Image/Document"
-                      name={`other_document_image[${index}]`}
-                      file={doc.other_document_image}
-                      existingUrl={doc.existing_image_url}
-                      onChange={(file) => updateDocument(doc.id, 'other_document_image', file)}
-                      placeholder="Click or drag image to upload"
-                    />
-                  </div>
-                  {index > 0 && (
-                    <div className="shrink-0 mt-[25px]">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+              {(() => {
+                const selectedDocumentIds = documents.map(d => String(d.other_document_name)).filter(id => id !== '' && id !== 'undefined');
+                
+                return documents.map((doc, index) => (
+                  <div key={doc.id} className="relative bg-white rounded-2xl border border-gray-200/80 p-5 shadow-2xs hover:shadow-md transition-shadow">
+                    {index > 0 && (
                       <button
                         type="button"
                         onClick={() => removeDocument(doc.id)}
-                        className="w-[34px] h-[34px] bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
+                        className="absolute top-4 right-4 w-8 h-8 bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 hover:text-red-700 rounded-xl flex items-center justify-center transition-colors z-10"
                         title="Remove Document"
                       >
-                        <Minus size={16} />
+                        <Minus size={16} strokeWidth={2.5} />
                       </button>
+                    )}
+                    
+                    <div className="flex items-start gap-3 mb-4 pr-10">
+                      <div className="w-10 h-10 bg-[#EEF2FF] text-[#2B4399] rounded-xl flex items-center justify-center shrink-0">
+                        <FileText size={20} strokeWidth={2} />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-gray-900 mb-0.5">Document Name </h4>
+                        <p className="text-[11px] text-gray-500">Select the document you want to upload</p>
+                      </div>
                     </div>
-                  )}
-                </div>
-              ))}
+                    
+                    <div className="space-y-4">
+                      <Select
+                        className={selectClass}
+                        value={doc.other_document_name}
+                        onChange={(e: any) => updateDocument(doc.id, 'other_document_name', e.target.value)}
+                      >
+                        <option value="">Select Document Name</option>
+                        {documentNameList.map((dc: any) => {
+                          const dId = String(dc.id || dc.document_id);
+                          const dName = dc.name || dc.document_name || `Doc #${dId}`;
+                          const isSelectedByOther = selectedDocumentIds.includes(dId) && String(doc.other_document_name) !== dId;
+                          
+                          return (
+                            <option key={dId} value={dId} disabled={isSelectedByOther}>
+                              {dName}
+                            </option>
+                          );
+                        })}
+                      </Select>
+  
+                      <div className="w-full">
+                        <FileUpload
+                          name={`other_document_image[${index}]`}
+                          file={doc.other_document_image}
+                          existingUrl={doc.existing_image_url}
+                          onChange={(file) => updateDocument(doc.id, 'other_document_image', file)}
+                          placeholder="Click or drag image to upload"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ));
+              })()}
             </div>
           </div>
 

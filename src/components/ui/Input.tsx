@@ -9,6 +9,7 @@ interface FormInputProps {
   value?: any;
   onChange: (e: any) => void;
   onBlur?: (e: any) => void;
+  onKeyDown?: (e: any) => void;
   error?: string;
   placeholder?: string;
   as?: "input" | "textarea" | "checkbox";
@@ -34,6 +35,7 @@ const FormInput: React.FC<FormInputProps> = ({
   value,
   onChange,
   onBlur,
+  onKeyDown,
   error,
   placeholder = "",
   as = "input",
@@ -278,6 +280,7 @@ const FormInput: React.FC<FormInputProps> = ({
               setIsFocused(false);
               onBlur?.(e);
             }}
+            onKeyDown={onKeyDown}
             onFocus={() => setIsFocused(true)}
             placeholder={placeholder}
             rows={4}
@@ -304,6 +307,7 @@ const FormInput: React.FC<FormInputProps> = ({
               setIsFocused(false);
               onBlur?.(e);
             }}
+            onKeyDown={onKeyDown}
             onFocus={() => setIsFocused(true)}
             placeholder={placeholder}
             disabled={disabled}

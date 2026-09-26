@@ -23,7 +23,8 @@ export default function Select({ children, className, onChange, value, error, dr
         const props = child.props as any;
         const val = props.value !== undefined ? String(props.value) : getLabelText(props.children);
         const label = getLabelText(props.children);
-        opts.push({ value: val, label });
+        const disabled = Boolean(props.disabled);
+        opts.push({ value: val, label, disabled });
       }
     });
     return opts;
@@ -62,7 +63,8 @@ export default function Select({ children, className, onChange, value, error, dr
 
   const filteredOptions = actualOptions.filter(o => o.label.toLowerCase().includes(search.toLowerCase()));
 
-  const handleSelect = (val: string) => {
+  const handleSelect = (val: string, isDisabled: boolean) => {
+    if (isDisabled) return;
     setInternalValue(val);
     if (onChange) {
       onChange({ target: { value: val } });
@@ -115,10 +117,10 @@ export default function Select({ children, className, onChange, value, error, dr
               filteredOptions.map((opt) => (
                 <div
                   key={opt.value}
-                  onClick={() => handleSelect(opt.value)}
-                  className={`flex items-center justify-between px-4 py-2.5 cursor-pointer transition-colors text-[13.5px] ${internalValue === opt.value
+                  onClick={() => handleSelect(opt.value, opt.disabled)}
+                  className={`flex items-center justify-between px-4 py-2.5 transition-colors text-[13.5px] ${opt.disabled ? 'opacity-50 cursor-not-allowed bg-gray-50' : 'cursor-pointer'} ${!opt.disabled && internalValue === opt.value
                     ? 'bg-[var(--primary)]/5 text-[var(--primary)] font-bold'
-                    : 'text-gray-700 hover:bg-gray-50'
+                    : !opt.disabled ? 'text-gray-700 hover:bg-gray-50' : ''
                     }`}
                 >
                   {opt.label}
