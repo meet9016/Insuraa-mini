@@ -165,7 +165,7 @@ export default function AddClaim() {
         <title>{isEditMode ? 'Edit Claim - Insuraa' : 'Add Claim - Insuraa'}</title>
       </Head>
 
-      <div className="w-full mx-auto animate-in fade-in duration-500 bg-white p-6 rounded-2xl shadow-sm border border-gray-200/70 space-y-6">
+      <div className="w-full mx-auto animate-in fade-in duration-500 bg-white p-6  rounded-2xl shadow-sm border border-gray-200/70 space-y-6">
         {/* Page Header */}
         <PageHeader
           title={isEditMode ? 'Edit Claim' : 'Add Claim'}

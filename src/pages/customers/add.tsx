@@ -12,6 +12,7 @@ import { api } from '@/utils/axiosInstance';
 import endPointApi from '@/utils/endPointApi';
 import { toast } from 'react-toastify';
 import { validateCustomer } from '@/utils/validation';
+import { calculateAge } from '@/utils/helper';
 
 interface CustomerDocItem {
   id: number;
@@ -108,6 +109,7 @@ export default function AddCustomer() {
         if (item) {
           const rawDob = item.dob || item.date_of_birth || item.customer_dob || item.birth_date || '';
           const rawAnniversary = item.anniversary_date || item.anniversary || item.anniversary_dob || item.marriage_date || '';
+          const existingAge = String(item.age || '');
 
           setFormValues({
             customerId: String(item.id || item.customer_id || queryId),
@@ -118,7 +120,7 @@ export default function AddCustomer() {
             customerNumber: item.customer_number || item.number || item.phone || '',
             email: item.email || '',
             dob: rawDob,
-            age: String(item.age || ''),
+            age: existingAge || (rawDob ? calculateAge(rawDob) : ''),
             gender: String(item.gender || item.gender_id || ''),
             height: String(item.height ?? item.customer_height ?? item.height_id ?? item.height_val ?? ''),
             weight: String(item.weight ?? item.customer_weight ?? item.weight_id ?? item.weight_val ?? ''),
@@ -160,13 +162,26 @@ export default function AddCustomer() {
   const handleChange = (field: string, value: string) => {
     let sanitizedValue = value;
     if (field === 'customerNumber') {
-      sanitizedValue = value.replace(/\D/g, '');
+      sanitizedValue = value.replace(/\D/g, '').slice(0, 10);
     }
     if (field === 'pincode') {
       sanitizedValue = value.replace(/\D/g, '').slice(0, 6);
     }
+    if (field === 'age') {
+      sanitizedValue = value.replace(/\D/g, '').slice(0, 3);
+    }
 
-    setFormValues(prev => ({ ...prev, [field]: sanitizedValue }));
+    setFormValues(prev => {
+      const updated = { ...prev, [field]: sanitizedValue };
+      if (field === 'dob' && value) {
+        const autoAge = calculateAge(value);
+        if (autoAge) {
+          updated.age = autoAge;
+        }
+      }
+      return updated;
+    });
+
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
@@ -286,17 +301,17 @@ export default function AddCustomer() {
             <button onClick={() => router.back()} type="button" className="p-2 border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors shadow-2xs" title="Go Back">
               <ArrowLeft size={18} />
             </button>
-            <h1 className="text-xl font-bold tracking-tight text-gray-900">{id ? 'Edit Customer' : 'Add Customer'}</h1>
+            <h1 className="text-xl font-semibold tracking-tight text-gray-900">{id ? 'Edit Customer' : 'Add Customer'}</h1>
           </div>
           <div className="flex items-center gap-3 w-full sm:w-auto">
-            <button type="button" onClick={() => router.back()} className="flex-1 sm:flex-none px-5 py-2.5 border border-gray-300 rounded-xl text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors shadow-2xs">
+            <button type="button" onClick={() => router.back()} className="flex-1 sm:flex-none px-5 py-2.5 border border-gray-300 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors shadow-2xs">
               Cancel
             </button>
             <button
               type="button"
               onClick={() => handleSubmit()}
               disabled={isSubmitting}
-              className="flex-1 sm:flex-none bg-[#2B4399] text-white px-7 py-2.5 rounded-xl text-sm font-bold hover:bg-[#203378] transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
+              className="flex-1 sm:flex-none bg-[#2B4399] text-white px-7 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#203378] transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {isSubmitting ? 'Saving...' : id ? 'Update Customer' : 'Save Customer'}
             </button>
@@ -400,6 +415,7 @@ export default function AddCustomer() {
                   placeholder="Enter Email"
                   value={formValues.email}
                   onChange={(e: any) => handleChange('email', e.target.value)}
+                  error={errors.email}
                 />
               </div>
 

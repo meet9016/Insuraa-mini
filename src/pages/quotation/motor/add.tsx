@@ -382,7 +382,7 @@ export default function AddMotorQuotation() {
             >
               <ArrowLeft size={18} />
             </button>
-            <h1 className="text-xl font-bold text-gray-900">
+            <h1 className="text-xl font-semibold text-gray-900">
               {quotationId ? 'Edit Motor Quotation' : 'Add Motor Quotation'}
             </h1>
           </div>

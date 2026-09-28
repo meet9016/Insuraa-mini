@@ -15,6 +15,7 @@ import {
 import { usePincodeDetails } from '@/hooks/useCustomerApi';
 
 import { validateHealthQuotation } from '@/utils/validation';
+import { calculateAge } from '@/utils/helper';
 
 function ProductSelect({ companyId, value, onChange, selectClass, labelClass, error }: any) {
   const { data: productList, isLoading } = useHealthQuotationProducts(companyId);
@@ -161,15 +162,19 @@ export default function AddHealthQuotation() {
 
     if (Array.isArray(quotationDetail.members) && quotationDetail.members.length > 0) {
       setMembers(
-        quotationDetail.members.map((member: any, idx: number) => ({
-          id: member.member_id || idx + 1,
-          member_name: member.member_name || '',
-          relation: member.relation || '',
-          dob: member.dob || '',
-          age: member.age !== undefined && member.age !== null ? String(member.age) : '',
-          gender: member.gender || '',
-          medical_history: member.medical_history || '',
-        }))
+        quotationDetail.members.map((member: any, idx: number) => {
+          const dobVal = member.dob || '';
+          const existingAge = member.age !== undefined && member.age !== null ? String(member.age) : '';
+          return {
+            id: member.member_id || idx + 1,
+            member_name: member.member_name || '',
+            relation: member.relation || '',
+            dob: dobVal,
+            age: existingAge || (dobVal ? calculateAge(dobVal) : ''),
+            gender: member.gender || '',
+            medical_history: member.medical_history || '',
+          };
+        })
       );
     }
   }, [quotationDetail]);
@@ -239,16 +244,23 @@ export default function AddHealthQuotation() {
           if (field === 'age') {
             sanitizedValue = String(value).replace(/\D/g, '').slice(0, 3);
           }
-          return { ...m, [field]: sanitizedValue };
+          const updatedMember = { ...m, [field]: sanitizedValue };
+          if (field === 'dob' && value) {
+            const autoAge = calculateAge(value);
+            if (autoAge) {
+              updatedMember.age = autoAge;
+            }
+          }
+          return updatedMember;
         }
         return m;
       });
 
-      if (memberErrors[id]?.[field]) {
+      if (memberErrors[id]?.[field] || (field === 'dob' && memberErrors[id]?.age)) {
         const { memberErrors: newMemberErrors } = validateHealthQuotation(formData, quotes, updated);
         setMemberErrors((prevErrors) => ({
           ...prevErrors,
-          [id]: { ...(prevErrors[id] || {}), [field]: newMemberErrors[id]?.[field] || '' },
+          [id]: { ...(prevErrors[id] || {}), [field]: newMemberErrors[id]?.[field] || '', ...(field === 'dob' ? { age: newMemberErrors[id]?.age || '' } : {}) },
         }));
       }
 
@@ -368,7 +380,7 @@ export default function AddHealthQuotation() {
             >
               <ArrowLeft size={18} />
             </button>
-            <h1 className="text-xl font-bold tracking-tight text-gray-900">
+            <h1 className="text-xl font-semibold tracking-tight text-gray-900">
               {quotationId ? 'Edit Health Quotation' : 'Add Health Quotation'}
             </h1>
           </div>
@@ -376,7 +388,7 @@ export default function AddHealthQuotation() {
             <button
               type="button"
               onClick={() => router.back()}
-              className="flex-1 sm:flex-none px-5 py-2.5 border border-gray-300 rounded-xl text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors shadow-2xs"
+              className="flex-1 sm:flex-none px-5 py-2.5 border border-gray-300 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors shadow-2xs"
             >
               Cancel
             </button>
@@ -384,7 +396,7 @@ export default function AddHealthQuotation() {
               type="button"
               onClick={() => handleSubmit()}
               disabled={isSubmitting}
-              className="flex-1 sm:flex-none bg-[#2B4399] text-white px-7 py-2.5 rounded-xl text-sm font-bold hover:bg-[#203378] transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
+              className="flex-1 sm:flex-none bg-[#2B4399] text-white px-7 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#203378] transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {isSubmitting ? 'Saving...' : 'Save Quotation'}
             </button>

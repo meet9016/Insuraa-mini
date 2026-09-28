@@ -11,6 +11,7 @@ import { toast } from 'react-toastify';
 import { api } from '@/utils/axiosInstance';
 import endPointApi from '@/utils/endPointApi';
 import { validateHealthInsurance } from '@/utils/validation';
+import { calculateAge } from '@/utils/helper';
 import { useCustomerList } from '@/hooks/useCustomerApi';
 import { useCompanyActions } from '@/hooks/useCompanyApi';
 import {
@@ -438,7 +439,19 @@ export default function AddHealthInsurance() {
   };
 
   const updateMember = (id: number, field: string, value: any) => {
-    setMembers(prev => prev.map(m => m.id === id ? { ...m, [field]: value } : m));
+    setMembers(prev => prev.map(m => {
+      if (m.id === id) {
+        const updated = { ...m, [field]: value };
+        if (field === 'member_dob' && value) {
+          const autoAge = calculateAge(value);
+          if (autoAge) {
+            updated.member_age = autoAge;
+          }
+        }
+        return updated;
+      }
+      return m;
+    }));
   };
 
   // Documents state
@@ -582,23 +595,25 @@ export default function AddHealthInsurance() {
           if (Array.isArray(rawMembers) && rawMembers.length > 0) {
             parsedMembers = rawMembers.map((m: any, idx: number) => {
               const dobVal = m.member_dob || m.dob || m.date_of_birth || m.member_date_of_birth || m.birth_date || m.b_date || m.date_birth || m.dob_text || m.member_dob_text || m.bdate || m.member_bdate || '';
+              const cleanDob = (dobVal && dobVal !== '0000-00-00' && dobVal !== '00-00-0000') ? String(dobVal) : '';
               return {
                 id: idx + 1,
                 member_name: m.member_name || m.name || m.full_name || '',
                 member_relationship: String(m.member_relationship || m.relationship || m.relationship_id || ''),
-                member_dob: (dobVal && dobVal !== '0000-00-00' && dobVal !== '00-00-0000') ? String(dobVal) : '',
-                member_age: String(m.member_age || m.age || ''),
+                member_dob: cleanDob,
+                member_age: String(m.member_age || m.age || (cleanDob ? calculateAge(cleanDob) : '')),
               };
             });
           } else if (Array.isArray(item.member_name)) {
             parsedMembers = item.member_name.map((name: string, idx: number) => {
               const dobVal = item.member_dob?.[idx] || item.dob?.[idx] || item.date_of_birth?.[idx] || item.member_date_of_birth?.[idx] || item.birth_date?.[idx] || '';
+              const cleanDob = (dobVal && dobVal !== '0000-00-00' && dobVal !== '00-00-0000') ? String(dobVal) : '';
               return {
                 id: idx + 1,
                 member_name: name || '',
                 member_relationship: String(item.member_relationship?.[idx] || item.relationship?.[idx] || ''),
-                member_dob: (dobVal && dobVal !== '0000-00-00' && dobVal !== '00-00-0000') ? String(dobVal) : '',
-                member_age: String(item.member_age?.[idx] || item.age?.[idx] || ''),
+                member_dob: cleanDob,
+                member_age: String(item.member_age?.[idx] || item.age?.[idx] || (cleanDob ? calculateAge(cleanDob) : '')),
               };
             });
           } else if (item.member_name && typeof item.member_name === 'string') {
@@ -611,12 +626,14 @@ export default function AddHealthInsurance() {
 
             parsedMembers = names.map((name: string, idx: number) => {
               const dobVal = dobs[idx] || (typeof rawDob === 'string' ? rawDob : '');
+              const cleanDob = (dobVal && dobVal !== '0000-00-00' && dobVal !== '00-00-0000') ? String(dobVal) : '';
+              const existingAge = ages[idx] || (typeof rawAge === 'string' ? rawAge : '');
               return {
                 id: idx + 1,
                 member_name: name,
                 member_relationship: String(rels[idx] || item.member_relationship || ''),
-                member_dob: (dobVal && dobVal !== '0000-00-00' && dobVal !== '00-00-0000') ? String(dobVal) : '',
-                member_age: String(ages[idx] || (typeof rawAge === 'string' ? rawAge : '')),
+                member_dob: cleanDob,
+                member_age: String(existingAge || (cleanDob ? calculateAge(cleanDob) : '')),
               };
             });
           }
@@ -751,17 +768,17 @@ export default function AddHealthInsurance() {
             <button onClick={() => router.back()} type="button" className="p-2 border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors shadow-2xs" title="Go Back">
               <ArrowLeft size={18} />
             </button>
-            <h1 className="text-xl font-bold tracking-tight text-gray-900">{id ? 'Edit Health Insurance' : 'Add Health Insurance'}</h1>
+            <h1 className="text-xl font-semibold tracking-tight text-gray-900">{id ? 'Edit Health Insurance' : 'Add Health Insurance'}</h1>
           </div>
           <div className="flex items-center gap-3 w-full sm:w-auto">
-            <button type="button" onClick={() => router.back()} className="flex-1 sm:flex-none px-5 py-2.5 border border-gray-300 rounded-xl text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors shadow-2xs">
+            <button type="button" onClick={() => router.back()} className="flex-1 sm:flex-none px-5 py-2.5 border border-gray-300 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors shadow-2xs">
               Cancel
             </button>
             <button
               type="button"
               onClick={() => handleSubmit()}
               disabled={isSubmitting}
-              className="flex-1 sm:flex-none bg-[#2B4399] text-white px-7 py-2.5 rounded-xl text-sm font-bold hover:bg-[#203378] transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
+              className="flex-1 sm:flex-none bg-[#2B4399] text-white px-7 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#203378] transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {isSubmitting ? 'Saving...' : 'Save Insurance'}
             </button>

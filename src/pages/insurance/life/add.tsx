@@ -848,17 +848,17 @@ export default function AddLifeInsurance() {
               <ArrowLeft size={18} />
             </button>
 
-            <h1 className="text-xl font-bold tracking-tight text-gray-900">{formData.life_insurance_id ? 'Edit Life Insurance' : 'Add Life Insurance'}</h1>
+            <h1 className="text-xl font-semibold tracking-tight text-gray-900">{formData.life_insurance_id ? 'Edit Life Insurance' : 'Add Life Insurance'}</h1>
           </div>
           <div className="flex items-center gap-3 w-full sm:w-auto">
-            <button type="button" onClick={() => router.back()} className="flex-1 sm:flex-none px-5 py-2.5 border border-gray-300 rounded-xl text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors shadow-2xs">
+            <button type="button" onClick={() => router.back()} className="flex-1 sm:flex-none px-5 py-2.5 border border-gray-300 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors shadow-2xs">
               Cancel
             </button>
             <button
               type="button"
               onClick={() => handleSubmit()}
               disabled={isSubmitting}
-              className="flex-1 sm:flex-none bg-[#2B4399] text-white px-7 py-2.5 rounded-xl text-sm font-bold hover:bg-[#203378] transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
+              className="flex-1 sm:flex-none bg-[#2B4399] text-white px-7 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#203378] transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {isSubmitting ? 'Saving...' : 'Save Insurance'}
             </button>

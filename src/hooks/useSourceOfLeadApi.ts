@@ -50,10 +50,13 @@ export const useSourceOfLeadActions = () => {
       }
       const response = await api.post(endPointApi.SOURCE_OF_LEAD.INSERT_LEAD_PRODUCT, formData);
       const resData = response.data;
-      if (resData?.status === 200) {
+      if (resData?.status === 200 || resData?.status === 'success' || resData?.status === true) {
         toast.success(resData?.message || 'Lead product saved successfully');
         queryClient.invalidateQueries({
           queryKey: ["sourceOfLeadList"],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["leadProductDropdown"],
         });
         return true;
       }

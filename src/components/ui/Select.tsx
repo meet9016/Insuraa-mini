@@ -30,7 +30,7 @@ export default function Select({ children, className, onChange, value, error, dr
     return opts;
   }, [children]);
 
-  // Automatically detect Document Name select field
+  // Automatically detect Document select fields to drop up if needed
   const isDocumentSelect = React.useMemo(() => {
     return options.some(o => o.label.toLowerCase().includes('document'));
   }, [options]);
@@ -92,9 +92,9 @@ export default function Select({ children, className, onChange, value, error, dr
         <ChevronDown size={18} className={`transition-transform duration-200 ${isOpen ? 'rotate-180 text-[#2B4399]' : 'text-gray-500'}`} />
       </div>
 
-      {/* Dropdown Menu (Matches the reference image layout) */}
+      {/* Dropdown Menu (Floats on top with high z-index) */}
       {isOpen && (
-        <div className={`absolute z-[1] w-full bg-white border border-[#d2d6f0] rounded-xl shadow-lg overflow-hidden flex flex-col ${shouldDropUp ? 'bottom-full mb-2' : 'top-full mt-2'}`}>
+        <div className={`absolute z-[9999] w-full bg-white border border-[#d2d6f0] rounded-xl shadow-2xl overflow-hidden flex flex-col ${shouldDropUp ? 'bottom-full mb-2' : 'top-full mt-2'}`}>
 
           {/* Search Box inside dropdown */}
           <div className="p-2 border-b border-gray-100">

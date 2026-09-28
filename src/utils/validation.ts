@@ -269,6 +269,14 @@ export const customerSchema = Joi.object({
       'string.pattern.base': 'Please enter a valid 10-digit phone number',
     }),
 
+  email: Joi.string()
+    .trim()
+    .allow('', null)
+    .pattern(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/)
+    .messages({
+      'string.pattern.base': 'Please enter a valid email address (e.g. example@domain.com)',
+    }),
+
   pincode: Joi.string().trim().required().messages({
     'string.empty': 'Pincode is required',
   }),
@@ -398,7 +406,7 @@ export const validateRider = (name: string) => {
 // Source of Lead Form Joi Validation Schema
 export const sourceOfLeadSchema = Joi.object({
   name: Joi.string().trim().required().messages({
-    'string.empty': 'Source of Lead Name is required',
+    'string.empty': 'Product of Lead Name is required',
   }),
 });
 
@@ -406,7 +414,7 @@ export const sourceOfLeadSchema = Joi.object({
 export const validateSourceOfLead = (name: string) => {
   const { error } = sourceOfLeadSchema.validate({ name }, { abortEarly: false });
   if (error) {
-    return error.details[0]?.message || 'Source of Lead Name is required';
+    return error.details[0]?.message || 'Product of Lead Name is required';
   }
   return '';
 };

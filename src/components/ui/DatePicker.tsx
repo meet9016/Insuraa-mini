@@ -14,6 +14,11 @@ const MONTHS = [
   'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
+const MONTHS_SHORT = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+];
+
 const DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
 const parseDateString = (val?: string): Date | null => {
@@ -37,10 +42,14 @@ const parseDateString = (val?: string): Date | null => {
   return isNaN(parsed.getTime()) ? null : parsed;
 };
 
+type ViewMode = 'days' | 'months' | 'years';
+
 export default function DatePicker({ value, onChange, className, placeholder = "Select Date", error }: DatePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(parseDateString(value));
   const [currentDate, setCurrentDate] = useState<Date>(parseDateString(value) || new Date());
+  const [viewMode, setViewMode] = useState<ViewMode>('days');
+  const [yearStart, setYearStart] = useState<number>(Math.floor((parseDateString(value) || new Date()).getFullYear() / 12) * 12);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Sync external value
@@ -49,6 +58,7 @@ export default function DatePicker({ value, onChange, className, placeholder = "
     setSelectedDate(parsed);
     if (parsed) {
       setCurrentDate(parsed);
+      setYearStart(Math.floor(parsed.getFullYear() / 12) * 12);
     }
   }, [value]);
 
@@ -56,6 +66,7 @@ export default function DatePicker({ value, onChange, className, placeholder = "
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
+        setViewMode('days');
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -70,21 +81,40 @@ export default function DatePicker({ value, onChange, className, placeholder = "
     return new Date(year, month, 1).getDay();
   };
 
-  const handlePrevMonth = (e: React.MouseEvent) => {
+  const handlePrev = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+    if (viewMode === 'days') {
+      const prev = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
+      setCurrentDate(prev);
+      setYearStart(Math.floor(prev.getFullYear() / 12) * 12);
+    } else if (viewMode === 'months') {
+      const prevYear = currentDate.getFullYear() - 1;
+      setCurrentDate(new Date(prevYear, currentDate.getMonth(), 1));
+      setYearStart(Math.floor(prevYear / 12) * 12);
+    } else if (viewMode === 'years') {
+      setYearStart(prev => prev - 12);
+    }
   };
 
-  const handleNextMonth = (e: React.MouseEvent) => {
+  const handleNext = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+    if (viewMode === 'days') {
+      const next = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
+      setCurrentDate(next);
+      setYearStart(Math.floor(next.getFullYear() / 12) * 12);
+    } else if (viewMode === 'months') {
+      const nextYear = currentDate.getFullYear() + 1;
+      setCurrentDate(new Date(nextYear, currentDate.getMonth(), 1));
+      setYearStart(Math.floor(nextYear / 12) * 12);
+    } else if (viewMode === 'years') {
+      setYearStart(prev => prev + 12);
+    }
   };
 
   const handleDateClick = (day: number) => {
     const newDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
     setSelectedDate(newDate);
 
-    // Format as YYYY-MM-DD for standard input values if needed, or however preferred
     const year = newDate.getFullYear();
     const month = String(newDate.getMonth() + 1).padStart(2, '0');
     const d = String(day).padStart(2, '0');
@@ -93,9 +123,20 @@ export default function DatePicker({ value, onChange, className, placeholder = "
       onChange(`${year}-${month}-${d}`);
     }
     setIsOpen(false);
+    setViewMode('days');
   };
 
-  const renderCalendar = () => {
+  const handleMonthSelect = (monthIndex: number) => {
+    setCurrentDate(new Date(currentDate.getFullYear(), monthIndex, 1));
+    setViewMode('days');
+  };
+
+  const handleYearSelect = (selectedYear: number) => {
+    setCurrentDate(new Date(selectedYear, currentDate.getMonth(), 1));
+    setViewMode('months');
+  };
+
+  const renderDaysView = () => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     const daysInMonth = getDaysInMonth(year, month);
@@ -103,12 +144,10 @@ export default function DatePicker({ value, onChange, className, placeholder = "
 
     const days = [];
 
-    // Empty cells for days before the first day of the month
     for (let i = 0; i < firstDay; i++) {
       days.push(<div key={`empty-${i}`} className="w-8 h-8"></div>);
     }
 
-    // Days of the month
     for (let i = 1; i <= daysInMonth; i++) {
       const isSelected = selectedDate &&
         selectedDate.getDate() === i &&
@@ -137,7 +176,78 @@ export default function DatePicker({ value, onChange, className, placeholder = "
       );
     }
 
-    return days;
+    return (
+      <>
+        <div className="grid grid-cols-7 gap-1 mb-2">
+          {DAYS.map(day => (
+            <div key={day} className="w-8 flex items-center justify-center text-xs font-bold text-gray-400">
+              {day}
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-7 gap-1">
+          {days}
+        </div>
+      </>
+    );
+  };
+
+  const renderMonthsView = () => {
+    return (
+      <div className="grid grid-cols-3 gap-2.5 py-1">
+        {MONTHS_SHORT.map((month, idx) => {
+          const isCurrentMonth = currentDate.getMonth() === idx;
+          const isSelectedMonth = selectedDate &&
+            selectedDate.getMonth() === idx &&
+            selectedDate.getFullYear() === currentDate.getFullYear();
+
+          return (
+            <button
+              key={month}
+              type="button"
+              onClick={(e) => { e.preventDefault(); handleMonthSelect(idx); }}
+              className={`py-2.5 px-2 rounded-xl text-xs font-bold transition-all duration-200 ${isSelectedMonth
+                ? 'bg-[#2B4399] text-white shadow-md'
+                : isCurrentMonth
+                  ? 'bg-blue-50 text-[#2B4399] border border-[#2B4399]/30 font-extrabold'
+                  : 'text-gray-700 hover:bg-gray-100 hover:text-[#2B4399]'
+                }`}
+            >
+              {month}
+            </button>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const renderYearsView = () => {
+    const years = Array.from({ length: 12 }, (_, i) => yearStart + i);
+
+    return (
+      <div className="grid grid-cols-3 gap-2.5 py-1">
+        {years.map((y) => {
+          const isCurrentYear = currentDate.getFullYear() === y;
+          const isSelectedYear = selectedDate && selectedDate.getFullYear() === y;
+
+          return (
+            <button
+              key={y}
+              type="button"
+              onClick={(e) => { e.preventDefault(); handleYearSelect(y); }}
+              className={`py-2.5 px-2 rounded-xl text-xs font-bold transition-all duration-200 ${isSelectedYear
+                ? 'bg-[#2B4399] text-white shadow-md'
+                : isCurrentYear
+                  ? 'bg-blue-50 text-[#2B4399] border border-[#2B4399]/30 font-extrabold'
+                  : 'text-gray-700 hover:bg-gray-100 hover:text-[#2B4399]'
+                }`}
+            >
+              {y}
+            </button>
+          );
+        })}
+      </div>
+    );
   };
 
   const formatDate = (date: Date | null) => {
@@ -145,13 +255,36 @@ export default function DatePicker({ value, onChange, className, placeholder = "
     const d = String(date.getDate()).padStart(2, '0');
     const m = String(date.getMonth() + 1).padStart(2, '0');
     const y = date.getFullYear();
-    return `${d}-${m}-${y}`; // DD-MM-YYYY format
+    return `${d}-${m}-${y}`;
+  };
+
+  const getHeaderText = () => {
+    if (viewMode === 'days') {
+      return `${MONTHS[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
+    }
+    if (viewMode === 'months') {
+      return `${currentDate.getFullYear()}`;
+    }
+    return `${yearStart} - ${yearStart + 11}`;
+  };
+
+  const handleHeaderClick = () => {
+    if (viewMode === 'days') {
+      setViewMode('months');
+    } else if (viewMode === 'months') {
+      setViewMode('years');
+    } else {
+      setViewMode('days');
+    }
   };
 
   return (
     <div className="relative w-full text-[14px]" ref={dropdownRef}>
       <div
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          setIsOpen(!isOpen);
+          if (!isOpen) setViewMode('days');
+        }}
         className={`w-full h-[42px] px-3.5 py-2 bg-white border rounded-xl text-sm flex items-center justify-between cursor-pointer transition-all shadow-2xs ${error
           ? 'border-red-500 ring-2 ring-red-500/20'
           : isOpen
@@ -167,42 +300,40 @@ export default function DatePicker({ value, onChange, className, placeholder = "
       {error && <p className="text-xs text-red-500 font-semibold mt-1">{error}</p>}
 
       {isOpen && (
-        <div className="absolute z-[9999] w-[280px] mt-2 bg-white border border-[#d2d6f0] rounded-2xl shadow-xl overflow-hidden flex flex-col p-4 right-0 lg:right-auto animate-in fade-in zoom-in-95 duration-200">
+        <div className="absolute z-[1] w-[280px] mt-2 bg-white border border-[#d2d6f0] rounded-2xl shadow-xl overflow-hidden flex flex-col p-4 right-0 lg:right-auto animate-in fade-in zoom-in-95 duration-200">
 
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
             <button
               type="button"
-              onClick={handlePrevMonth}
+              onClick={handlePrev}
               className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors"
+              title="Previous"
             >
               <ChevronLeft size={18} />
             </button>
-            <div className="font-bold text-[var(--primary)] text-sm">
-              {MONTHS[currentDate.getMonth()]} {currentDate.getFullYear()}
-            </div>
             <button
               type="button"
-              onClick={handleNextMonth}
+              onClick={handleHeaderClick}
+              className="font-bold text-[#2B4399] text-sm px-2.5 py-1 rounded-lg hover:bg-blue-50 transition-colors flex items-center gap-1 cursor-pointer"
+              title="Click to change view"
+            >
+              <span>{getHeaderText()}</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleNext}
               className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors"
+              title="Next"
             >
               <ChevronRight size={18} />
             </button>
           </div>
 
-          {/* Days Header */}
-          <div className="grid grid-cols-7 gap-1 mb-2">
-            {DAYS.map(day => (
-              <div key={day} className="w-8 flex items-center justify-center text-xs font-bold text-gray-400">
-                {day}
-              </div>
-            ))}
-          </div>
-
-          {/* Calendar Grid */}
-          <div className="grid grid-cols-7 gap-1">
-            {renderCalendar()}
-          </div>
+          {/* Dynamic Content View */}
+          {viewMode === 'days' && renderDaysView()}
+          {viewMode === 'months' && renderMonthsView()}
+          {viewMode === 'years' && renderYearsView()}
 
           {/* Today Button */}
           <div className="mt-4 pt-3 border-t border-gray-100">
@@ -210,16 +341,18 @@ export default function DatePicker({ value, onChange, className, placeholder = "
               type="button"
               onClick={(e) => {
                 e.preventDefault();
-                setCurrentDate(new Date());
                 const today = new Date();
+                setCurrentDate(today);
+                setSelectedDate(today);
+                setYearStart(Math.floor(today.getFullYear() / 12) * 12);
                 const year = today.getFullYear();
                 const month = String(today.getMonth() + 1).padStart(2, '0');
                 const d = String(today.getDate()).padStart(2, '0');
-                setSelectedDate(today);
                 if (onChange) onChange(`${year}-${month}-${d}`);
                 setIsOpen(false);
+                setViewMode('days');
               }}
-              className="w-full py-2 text-[13px] font-bold text-[var(--primary)] hover:bg-blue-50 rounded-lg transition-colors"
+              className="w-full py-2 text-[13px] font-bold text-[#2B4399] hover:bg-blue-50 rounded-lg transition-colors"
             >
               Today
             </button>
