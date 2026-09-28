@@ -226,7 +226,7 @@ const FormInput: React.FC<FormInputProps> = ({
                 >
                   {label}
                   {required && (
-                    <span className="text-red-700 ml-1">*</span>
+                    <span className="text-red-500 ml-1">*</span>
                   )}
                 </label>
 
@@ -254,7 +254,7 @@ const FormInput: React.FC<FormInputProps> = ({
         <div className="flex items-center justify-between mb-2">
           <label className={`text-sm font-semibold text-gray-700 ${labelClassName}`}>
             {label}
-            {required && <span className="text-red-700 ml-1">*</span>}
+            {required && <span className="text-red-500 ml-1">*</span>}
           </label>
           {helperText && !hasError && (
             <span className="text-xs text-gray-500">{helperText}</span>

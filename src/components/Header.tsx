@@ -22,7 +22,9 @@ import {
   HeartPulse,
   Stethoscope,
   Car,
-  Umbrella
+  Umbrella,
+  Crown,
+  Sparkles
 } from 'lucide-react';
 
 const NAV_LINKS = [
@@ -47,7 +49,11 @@ const NAV_LINKS = [
   { name: 'Masters', path: '/masters', icon: Database, animClass: 'animate-icon-database' },
 ];
 
-export default function Header() {
+interface HeaderProps {
+  onOpenSubscription?: () => void;
+}
+
+export default function Header({ onOpenSubscription }: HeaderProps) {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileExpandedMenu, setMobileExpandedMenu] = useState<number | null>(null);
@@ -163,6 +169,19 @@ export default function Header() {
             <span className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white text-[10px] font-bold h-5 w-5 flex items-center justify-center rounded-full shadow-md animate-pulse group-hover:animate-none">59</span>
           </div>
 
+          {/* Upgrade Plan Button */}
+          {onOpenSubscription && (
+            <button
+              type="button"
+              onClick={onOpenSubscription}
+              className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-500 text-white font-extrabold text-xs shadow-md hover:shadow-lg hover:scale-105 active:scale-95 transition-all animate-pulse"
+              title="View Membership Plans"
+            >
+              <Crown size={14} className="fill-current text-white" />
+              <span>Upgrade Plan</span>
+            </button>
+          )}
+
           {/* Profile Dropdown Section */}
           <div className="relative" ref={profileRef}>
             <button
@@ -215,6 +234,28 @@ export default function Header() {
                 {/* Action Items List */}
                 <div className="p-2 space-y-1">
                   {/* Profile Item */}
+                  {onOpenSubscription && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsProfileOpen(false);
+                        onOpenSubscription();
+                      }}
+                      className="w-full text-left flex items-center gap-3.5 px-3.5 py-3 rounded-xl bg-gradient-to-r from-amber-500/10 to-yellow-500/10 hover:from-amber-500/20 hover:to-yellow-500/20 transition-all duration-200 group/item border border-amber-200/50"
+                    >
+                      <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-sm">
+                        <Crown size={19} className="fill-current" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-extrabold text-amber-900 flex items-center gap-1.5">
+                          Membership Plans
+                          <span className="bg-amber-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase">NEW</span>
+                        </p>
+                        <p className="text-xs text-amber-700/80 font-medium truncate">Explore Free, 6M & 12M Plans</p>
+                      </div>
+                    </button>
+                  )}
+
                   <Link
                     href="/profile"
                     onClick={() => setIsProfileOpen(false)}

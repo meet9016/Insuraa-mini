@@ -28,7 +28,7 @@ export default function AddCustomer() {
 
   const [formValues, setFormValues] = useState({
     customerId: id ? String(id) : '',
-    customerType: '',
+    customerType: '1',
     firstName: '',
     middleName: '',
     lastName: '',
@@ -169,6 +169,12 @@ export default function AddCustomer() {
     }
     if (field === 'age') {
       sanitizedValue = value.replace(/\D/g, '').slice(0, 3);
+    }
+    if (field === 'adharCardNo') {
+      sanitizedValue = value.replace(/\D/g, '').slice(0, 12);
+    }
+    if (field === 'pancardNo') {
+      sanitizedValue = value.toUpperCase().slice(0, 10);
     }
 
     setFormValues(prev => {
@@ -362,15 +368,17 @@ export default function AddCustomer() {
                 />
               </div>
 
-              <div>
-                <label className={labelClass}>Middle Name</label>
-                <Input
-                  name="middleName"
-                  placeholder="Enter Middle Name"
-                  value={formValues.middleName}
-                  onChange={(e: any) => handleChange('middleName', e.target.value)}
-                />
-              </div>
+              {formValues.customerType !== '2' && (
+                <div>
+                  <label className={labelClass}>Middle Name</label>
+                  <Input
+                    name="middleName"
+                    placeholder="Enter Middle Name"
+                    value={formValues.middleName}
+                    onChange={(e: any) => handleChange('middleName', e.target.value)}
+                  />
+                </div>
+              )}
 
               <div>
                 <label className={labelClass}>Last Name <span className="text-red-500">*</span></label>
@@ -419,15 +427,17 @@ export default function AddCustomer() {
                 />
               </div>
 
-              <div>
-                <label className={labelClass}>Reference By</label>
-                <Input
-                  name="referenceBy"
-                  placeholder="Reference By"
-                  value={formValues.referenceBy}
-                  onChange={(e: any) => handleChange('referenceBy', e.target.value)}
-                />
-              </div>
+              {formValues.customerType !== '2' && (
+                <div>
+                  <label className={labelClass}>Reference By</label>
+                  <Input
+                    name="referenceBy"
+                    placeholder="Reference By"
+                    value={formValues.referenceBy}
+                    onChange={(e: any) => handleChange('referenceBy', e.target.value)}
+                  />
+                </div>
+              )}
 
               {/* Row 3 */}
               <div>
@@ -446,109 +456,118 @@ export default function AddCustomer() {
                   name="age"
                   placeholder="Enter Year ( Age )"
                   value={formValues.age}
+                  readOnly
                   onChange={(e: any) => handleChange('age', e.target.value)}
                 />
               </div>
 
-              <div>
-                <label className={labelClass}>Gender</label>
-                <Select
-                  className={selectClass}
-                  value={formValues.gender}
-                  onChange={(e: any) => handleChange('gender', e.target.value)}
-                >
-                  <option value="">Select Gender</option>
-                  {dropdownData?.gender?.map((item) => (
-                    <option key={item.id} value={String(item.id)}>
-                      {item.name}
-                    </option>
-                  ))}
-                </Select>
-              </div>
+              {formValues.customerType !== '2' && (
+                <>
+                  <div>
+                    <label className={labelClass}>Gender</label>
+                    <Select
+                      className={selectClass}
+                      value={formValues.gender}
+                      onChange={(e: any) => handleChange('gender', e.target.value)}
+                    >
+                      <option value="">Select Gender</option>
+                      {dropdownData?.gender?.map((item) => (
+                        <option key={item.id} value={String(item.id)}>
+                          {item.name}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
 
-              <div>
-                <label className={labelClass}>Height</label>
-                <Input
-                  name="height"
-                  placeholder="Enter Height"
-                  value={formValues.height}
-                  onChange={(e: any) => handleChange('height', e.target.value)}
-                />
-              </div>
+                  <div>
+                    <label className={labelClass}>Height</label>
+                    <Input
+                      name="height"
+                      placeholder="Enter Height"
+                      value={formValues.height}
+                      onChange={(e: any) => handleChange('height', e.target.value)}
+                    />
+                  </div>
 
-              {/* Row 4 */}
-              <div>
-                <label className={labelClass}>Weight</label>
-                <Input
-                  name="weight"
-                  placeholder="Enter Weight"
-                  value={formValues.weight}
-                  onChange={(e: any) => handleChange('weight', e.target.value)}
-                />
-              </div>
+                  {/* Row 4 */}
+                  <div>
+                    <label className={labelClass}>Weight</label>
+                    <Input
+                      name="weight"
+                      placeholder="Enter Weight"
+                      value={formValues.weight}
+                      onChange={(e: any) => handleChange('weight', e.target.value)}
+                    />
+                  </div>
 
-              <div>
-                <label className={labelClass}>Marital Status</label>
-                <Select
-                  className={selectClass}
-                  value={formValues.maritalStatus}
-                  onChange={(e: any) => handleChange('maritalStatus', e.target.value)}
-                >
-                  <option value="">Select Marital Status</option>
-                  {dropdownData?.marital_status?.map((item) => (
-                    <option key={item.id} value={String(item.id)}>
-                      {item.name}
-                    </option>
-                  ))}
-                </Select>
-              </div>
+                  <div>
+                    <label className={labelClass}>Marital Status</label>
+                    <Select
+                      className={selectClass}
+                      value={formValues.maritalStatus}
+                      onChange={(e: any) => handleChange('maritalStatus', e.target.value)}
+                    >
+                      <option value="">Select Marital Status</option>
+                      {dropdownData?.marital_status?.map((item) => (
+                        <option key={item.id} value={String(item.id)}>
+                          {item.name}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
 
-              <div>
-                <label className={labelClass}>Anniversary Date</label>
-                <DatePicker
-                  className={selectClass}
-                  value={formValues.anniversaryDate}
-                  onChange={(dateStr: string) => handleChange('anniversaryDate', dateStr)}
-                  placeholder="Select Anniversary Date"
-                />
-              </div>
+                  <div>
+                    <label className={labelClass}>Anniversary Date</label>
+                    <DatePicker
+                      className={selectClass}
+                      value={formValues.anniversaryDate}
+                      onChange={(dateStr: string) => handleChange('anniversaryDate', dateStr)}
+                      placeholder="Select Anniversary Date"
+                    />
+                  </div>
 
-              <div>
-                <label className={labelClass}>Education</label>
-                <Select
-                  className={selectClass}
-                  value={formValues.education}
-                  onChange={(e: any) => handleChange('education', e.target.value)}
-                >
-                  <option value="">Select Education</option>
-                  {dropdownData?.education?.map((item) => (
-                    <option key={item.id} value={String(item.id)}>
-                      {item.name}
-                    </option>
-                  ))}
-                </Select>
-              </div>
+                  <div>
+                    <label className={labelClass}>Education</label>
+                    <Select
+                      className={selectClass}
+                      value={formValues.education}
+                      onChange={(e: any) => handleChange('education', e.target.value)}
+                    >
+                      <option value="">Select Education</option>
+                      {dropdownData?.education?.map((item) => (
+                        <option key={item.id} value={String(item.id)}>
+                          {item.name}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
 
-              {/* Row 5 */}
-              <div>
-                <label className={labelClass}>Adhar Card Number</label>
-                <Input
-                  name="adharCardNo"
-                  placeholder="Enter Adhar Card Number"
-                  value={formValues.adharCardNo}
-                  onChange={(e: any) => handleChange('adharCardNo', e.target.value)}
-                />
-              </div>
+                  {/* Row 5 */}
+                  <div>
+                    <label className={labelClass}>Adhar Card Number</label>
+                    <Input
+                      name="adharCardNo"
+                      placeholder="Enter Adhar Card Number"
+                      value={formValues.adharCardNo}
+                      maxLength={12}
+                      onChange={(e: any) => handleChange('adharCardNo', e.target.value)}
+                      error={errors.adharCardNo}
+                    />
+                  </div>
 
-              <div>
-                <label className={labelClass}>Pancard Number</label>
-                <Input
-                  name="pancardNo"
-                  placeholder="Enter Pancard Number"
-                  value={formValues.pancardNo}
-                  onChange={(e: any) => handleChange('pancardNo', e.target.value)}
-                />
-              </div>
+                  <div>
+                    <label className={labelClass}>Pancard Number</label>
+                    <Input
+                      name="pancardNo"
+                      placeholder="Enter Pancard Number"
+                      value={formValues.pancardNo}
+                      maxLength={10}
+                      onChange={(e: any) => handleChange('pancardNo', e.target.value)}
+                      error={errors.pancardNo}
+                    />
+                  </div>
+                </>
+              )}
             </div>
           </div>
 

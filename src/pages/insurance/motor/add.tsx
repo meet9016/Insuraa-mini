@@ -534,6 +534,7 @@ export default function AddMotorInsurance() {
         const formattedEndDate = `${yyyy}-${mm}-${dd}`;
 
         setFormData(prev => ({ ...prev, policy_end_date: formattedEndDate }));
+        setErrors(prev => ({ ...prev, policy_end_date: '' }));
       }
     }
   }, [formData.policy_start_date]);
@@ -546,6 +547,7 @@ export default function AddMotorInsurance() {
     if (!isNaN(od) || !isNaN(tp)) {
       const net = (isNaN(od) ? 0 : od) + (isNaN(tp) ? 0 : tp);
       setFormData(prev => prev.net_premium !== String(net) ? { ...prev, net_premium: String(net) } : prev);
+      setErrors(prev => ({ ...prev, net_premium: '' }));
     } else if (formData.own_damage_premimum === '' && formData.tp_premium === '') {
       setFormData(prev => prev.net_premium !== '' ? { ...prev, net_premium: '' } : prev);
     }

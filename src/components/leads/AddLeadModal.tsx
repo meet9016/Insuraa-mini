@@ -306,6 +306,7 @@ export default function AddLeadModal({ isOpen, onClose, editData }: AddLeadModal
               label="Phone Number"
               name="number"
               required
+              maxLength={10}
               placeholder="Enter Phone Number"
               value={formData.number}
               onChange={(e: any) => handleChange('number', e.target.value)}
@@ -315,6 +316,7 @@ export default function AddLeadModal({ isOpen, onClose, editData }: AddLeadModal
             <Input
               label="Whatsapp Number"
               name="whatsapp_number"
+              maxLength={10}
               placeholder="Enter Whatsapp Number"
               value={formData.whatsapp_number}
               onChange={(e: any) => handleChange('whatsapp_number', e.target.value)}

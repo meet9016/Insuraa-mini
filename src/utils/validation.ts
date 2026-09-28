@@ -280,6 +280,22 @@ export const customerSchema = Joi.object({
   pincode: Joi.string().trim().required().messages({
     'string.empty': 'Pincode is required',
   }),
+
+  adharCardNo: Joi.string()
+    .trim()
+    .allow('', null)
+    .pattern(/^\d{12}$/)
+    .messages({
+      'string.pattern.base': 'Please enter a valid 12-digit Aadhaar Card Number',
+    }),
+
+  pancardNo: Joi.string()
+    .trim()
+    .allow('', null)
+    .pattern(/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/i)
+    .messages({
+      'string.pattern.base': 'Please enter a valid PAN Card Number (e.g., ABCDE1234F)',
+    }),
 });
 
 // Helper function to validate Customer form data using Joi
@@ -980,6 +996,10 @@ export const otherInsuranceSchema = Joi.object({
 
   policy_end_date: Joi.string().required().messages({
     'string.empty': 'Please select Policy End Date',
+  }),
+
+  shop_address: Joi.string().trim().required().messages({
+    'string.empty': 'Please enter Shop Address',
   }),
 
   sum_assured: Joi.string()

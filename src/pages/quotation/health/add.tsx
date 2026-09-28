@@ -245,11 +245,8 @@ export default function AddHealthQuotation() {
             sanitizedValue = String(value).replace(/\D/g, '').slice(0, 3);
           }
           const updatedMember = { ...m, [field]: sanitizedValue };
-          if (field === 'dob' && value) {
-            const autoAge = calculateAge(value);
-            if (autoAge) {
-              updatedMember.age = autoAge;
-            }
+          if (field === 'dob') {
+            updatedMember.age = value ? calculateAge(value) : '';
           }
           return updatedMember;
         }
@@ -828,6 +825,7 @@ export default function AddHealthQuotation() {
                       name="age"
                       placeholder="0"
                       value={member.age}
+                      readOnly
                       onChange={(e: any) =>
                         handleMemberChange(member.id, 'age', e.target.value)
                       }

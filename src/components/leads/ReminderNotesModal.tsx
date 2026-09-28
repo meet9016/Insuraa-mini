@@ -236,6 +236,14 @@ export default function ReminderNotesModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
+      <style>{`
+        .reminder-notes-table img[alt="No Data Available"],
+        .reminder-notes-table img[alt="No Data Found"] {
+          width: 150px !important;
+          max-height: 120px !important;
+          margin: 0 auto;
+        }
+      `}</style>
       {/* Modal Container */}
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden border border-gray-100 flex flex-col transition-all transform animate-scaleUp">
 
@@ -337,7 +345,7 @@ export default function ReminderNotesModal({
                       className="!bg-white"
                     />
                   </div>
-                  <div className="mb-4">
+                  <div>
                     <button
                       type="submit"
                       disabled={!noteInput.trim()}
@@ -351,7 +359,7 @@ export default function ReminderNotesModal({
               </form>
 
               {/* Notes Table */}
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-xs">
+              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-xs reminder-notes-table">
                 <AgGridTable
                   rowData={notes}
                   columnDefs={noteColumnDefs}
@@ -368,7 +376,7 @@ export default function ReminderNotesModal({
               <form onSubmit={handleSaveReminder} className="bg-[#F0F4FA] border border-[#DCE4EC] rounded-xl p-4 shadow-2xs">
                 <div className="flex items-end gap-3">
                   {/* Date Input */}
-                  <div className="w-44 shrink-0 mb-4">
+                  <div className="w-44 shrink-0">
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                       Date
                     </label>
@@ -404,7 +412,7 @@ export default function ReminderNotesModal({
                   </div>
 
                   {/* Save Button */}
-                  <div className="mb-4">
+                  <div>
                     <button
                       type="submit"
                       disabled={!reminderMessage.trim()}
@@ -418,7 +426,7 @@ export default function ReminderNotesModal({
               </form>
 
               {/* Reminders Table */}
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-xs">
+              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-xs reminder-notes-table">
                 <AgGridTable
                   rowData={reminders}
                   columnDefs={reminderColumnDefs}

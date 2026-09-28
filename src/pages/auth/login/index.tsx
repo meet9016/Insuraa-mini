@@ -91,6 +91,10 @@ export default function LoginPage() {
             if (res?.message) {
               toast.success(res.message);
             }
+            if (typeof window !== 'undefined') {
+              sessionStorage.setItem('insuraa_just_logged_in', 'true');
+              sessionStorage.removeItem('insuraa_subscription_shown');
+            }
             window.location.href = '/';
           },
           onError: (err: any) => {

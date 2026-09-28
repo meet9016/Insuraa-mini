@@ -46,11 +46,11 @@ export default function HealthInsuranceViewModal({
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-bold">Health Insurance Details</h2>
-                {data?.policy_number && (
+                {/* {data?.policy_number && (
                   <span className="bg-white/20 text-white text-xs px-2.5 py-0.5 rounded-full font-mono">
                     #{String(data.policy_number).trim()}
                   </span>
-                )}
+                )} */}
               </div>
               <p className="text-xs text-blue-100 mt-0.5">Comprehensive view of health policy records & members</p>
             </div>

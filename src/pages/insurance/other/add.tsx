@@ -860,12 +860,14 @@ export default function AddOtherInsurance() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
               <div className="lg:col-span-2">
-                <label className={labelClass}>Shop Address</label>
+                <label className={labelClass}>Shop Address <span className="text-red-500">*</span></label>
                 <Input
                   name="shop_address"
                   placeholder="Enter Shop Address"
                   value={formData.shop_address}
                   onChange={(e: any) => handleChange('shop_address', e.target.value)}
+                  onBlur={() => handleBlur('shop_address')}
+                  error={errors.shop_address}
                 />
               </div>
             </div>

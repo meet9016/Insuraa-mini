@@ -53,8 +53,8 @@ export default function DeleteConfirmationModal({
           <p className="text-sm text-gray-600 leading-relaxed">
             {description || (
               <>
-                Are you sure you want to delete{' '}
-                {itemName ? <span className="font-semibold text-gray-900">{itemName}</span> : 'this item'}?
+                You are about to delete{' '}
+                {itemName ? <span className="font-semibold text-gray-900">{itemName}</span> : 'this item'}.
                 This action cannot be undone.
               </>
             )}

@@ -442,11 +442,8 @@ export default function AddHealthInsurance() {
     setMembers(prev => prev.map(m => {
       if (m.id === id) {
         const updated = { ...m, [field]: value };
-        if (field === 'member_dob' && value) {
-          const autoAge = calculateAge(value);
-          if (autoAge) {
-            updated.member_age = autoAge;
-          }
+        if (field === 'member_dob') {
+          updated.member_age = value ? calculateAge(value) : '';
         }
         return updated;
       }
@@ -494,6 +491,7 @@ export default function AddHealthInsurance() {
           const formattedEndDate = `${yyyy}-${mm}-${dd}`;
 
           setFormData(prev => ({ ...prev, policy_end_date: formattedEndDate }));
+          setErrors(prev => ({ ...prev, policy_end_date: '' }));
         }
       }
     }
