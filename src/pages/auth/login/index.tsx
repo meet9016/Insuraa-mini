@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import { Shield, ArrowRight, Activity, Phone, Edit2, RefreshCw } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useFormik } from 'formik';
@@ -6,7 +7,7 @@ import * as Yup from 'yup';
 
 // Redux
 import { useAppDispatch, useAppSelector } from '@/redux/hooks';
-import { resetOtpState } from '@/redux/slices/authSlice';
+import { resetOtpState, setUser, User } from '@/redux/slices/authSlice';
 
 // React Query Hooks
 import { useSendLoginOtp, useVerifyLoginOtp } from '@/hooks/useAuthOtp';
@@ -16,6 +17,7 @@ import { useSendLoginOtp, useVerifyLoginOtp } from '@/hooks/useAuthOtp';
 import OtpBoxInput from '@/components/OtpBoxInput';
 
 export default function LoginPage() {
+  const router = useRouter();
   const dispatch = useAppDispatch();
 
   // Redux state
@@ -91,11 +93,26 @@ export default function LoginPage() {
             if (res?.message) {
               toast.success(res.message);
             }
+            const rawUser = res?.data?.user || res?.user;
+            if (rawUser) {
+              const userPayload: User = {
+                id: rawUser.id ? String(rawUser.id) : undefined,
+                full_name: rawUser.full_name || '',
+                name: rawUser.full_name || rawUser.name || rawUser.username || '',
+                email: rawUser.email || '',
+                number: rawUser.number || '',
+                company_name: rawUser.company_name || '',
+                user_role_id: rawUser.user_role_id ? String(rawUser.user_role_id) : undefined,
+                role: rawUser.user_role_id ? String(rawUser.user_role_id) : undefined,
+                username: rawUser.username || '',
+              };
+              dispatch(setUser(userPayload));
+            }
             if (typeof window !== 'undefined') {
               sessionStorage.setItem('insuraa_just_logged_in', 'true');
               sessionStorage.removeItem('insuraa_subscription_shown');
             }
-            window.location.href = '/';
+            router.push('/');
           },
           onError: (err: any) => {
             if (err?.response?.data?.message || err?.message) {

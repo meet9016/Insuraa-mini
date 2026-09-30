@@ -24,8 +24,11 @@ import {
   Car,
   Umbrella,
   Crown,
-  Sparkles
+  Sparkles,
+  Receipt
 } from 'lucide-react';
+
+import { useAppSelector } from '@/redux/hooks';
 
 const NAV_LINKS = [
   { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, animClass: 'animate-icon-dashboard' },
@@ -51,9 +54,23 @@ const NAV_LINKS = [
 
 interface HeaderProps {
   onOpenSubscription?: () => void;
+  onOpenSubscriptionHistory?: () => void;
 }
 
-export default function Header({ onOpenSubscription }: HeaderProps) {
+export default function Header({ onOpenSubscription, onOpenSubscriptionHistory }: HeaderProps) {
+  const [mounted, setMounted] = useState(false);
+  const user = useAppSelector((state) => state.auth.user);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const currentUser = mounted ? user : null;
+  const displayName = currentUser?.full_name || currentUser?.name || 'Insuraa Admin';
+  const displaySubText = currentUser?.email || (currentUser?.number ? `+91-${currentUser.number}` : '+91-01234567890');
+  const displayTag = currentUser?.company_name || 'Admin Account';
+  const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=2F439D&color=fff&bold=true`;
+
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileExpandedMenu, setMobileExpandedMenu] = useState<number | null>(null);
@@ -170,7 +187,7 @@ export default function Header({ onOpenSubscription }: HeaderProps) {
           </div>
 
           {/* Upgrade Plan Button */}
-          {onOpenSubscription && (
+          {/* {onOpenSubscription && (
             <button
               type="button"
               onClick={onOpenSubscription}
@@ -180,7 +197,7 @@ export default function Header({ onOpenSubscription }: HeaderProps) {
               <Crown size={14} className="fill-current text-white" />
               <span>Upgrade Plan</span>
             </button>
-          )}
+          )} */}
 
           {/* Profile Dropdown Section */}
           <div className="relative" ref={profileRef}>
@@ -190,14 +207,14 @@ export default function Header({ onOpenSubscription }: HeaderProps) {
             >
               <div className="hidden sm:flex flex-col items-end leading-tight">
                 <p className="text-[14px] font-bold text-gray-900 group-hover:text-[#2F439D] transition-colors flex items-center gap-1">
-                  INSURAA
+                  {displayName}
                   <ChevronDown size={14} className={`text-gray-400 transition-transform duration-200 ${isProfileOpen ? 'rotate-180 text-[#2F439D]' : 'group-hover:text-[#2F439D]'}`} />
                 </p>
-                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">ADMIN</p>
+                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">{displayTag}</p>
               </div>
               <div className="relative">
                 <div className="w-10 h-10 rounded-full border-2 border-white shadow-[0_0_0_2px_#2F439D20] flex items-center justify-center overflow-hidden transition-transform group-hover:scale-105 bg-[#2F439D]/10">
-                  <img src="https://ui-avatars.com/api/?name=INSURAA+ADMIN&background=2F439D&color=fff&bold=true" alt="Admin" className="w-full h-full object-cover" />
+                  <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
                 </div>
                 <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full"></span>
               </div>
@@ -214,7 +231,7 @@ export default function Header({ onOpenSubscription }: HeaderProps) {
                   <div className="relative shrink-0">
                     <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#2E3192] to-[#2BBF8C] p-0.5 shadow-md">
                       <div className="w-full h-full bg-white rounded-[14px] flex items-center justify-center overflow-hidden">
-                        <img src="https://ui-avatars.com/api/?name=INSURAA+ADMIN&background=2F439D&color=fff&bold=true" alt="Admin" className="w-full h-full object-cover" />
+                        <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
                       </div>
                     </div>
                     <span className="absolute -bottom-1 -right-1 bg-emerald-500 text-white p-0.5 rounded-full border-2 border-white shadow-sm">
@@ -223,38 +240,32 @@ export default function Header({ onOpenSubscription }: HeaderProps) {
                   </div>
 
                   <div className="overflow-hidden">
-                    <h4 className="font-bold text-gray-900 text-base truncate tracking-tight">Insuraa Admin</h4>
-                    <p className="text-xs font-semibold text-gray-500 truncate mt-0.5">+91-01234567890</p>
+                    <h4 className="font-bold text-gray-900 text-base truncate tracking-tight">{displayName}</h4>
+                    <p className="text-xs font-semibold text-gray-500 truncate mt-0.5">{displaySubText}</p>
                     <span className="inline-flex items-center gap-1 mt-1.5 px-2.5 py-0.5 rounded-full bg-[#2E3192]/10 text-[#2E3192] text-[10px] font-bold uppercase tracking-wider">
-                      Admin Account
+                      {displayTag}
                     </span>
                   </div>
                 </div>
 
                 {/* Action Items List */}
                 <div className="p-2 space-y-1">
-                  {/* Profile Item */}
-                  {onOpenSubscription && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsProfileOpen(false);
-                        onOpenSubscription();
-                      }}
-                      className="w-full text-left flex items-center gap-3.5 px-3.5 py-3 rounded-xl bg-gradient-to-r from-amber-500/10 to-yellow-500/10 hover:from-amber-500/20 hover:to-yellow-500/20 transition-all duration-200 group/item border border-amber-200/50"
-                    >
-                      <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-sm">
-                        <Crown size={19} className="fill-current" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-extrabold text-amber-900 flex items-center gap-1.5">
-                          Membership Plans
-                          <span className="bg-amber-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase">NEW</span>
-                        </p>
-                        <p className="text-xs text-amber-700/80 font-medium truncate">Explore Free, 6M & 12M Plans</p>
-                      </div>
-                    </button>
-                  )}
+                  
+
+                  {/* My Subscription / History */}
+                  <Link
+                    href="/subscription"
+                    onClick={() => setIsProfileOpen(false)}
+                    className="w-full text-left flex items-center gap-3.5 px-3.5 py-3 rounded-xl hover:bg-indigo-50/70 transition-all duration-200 group/item"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-indigo-100/60 text-[#2E3192] flex items-center justify-center shrink-0 group-hover/item:bg-[#2E3192] group-hover/item:text-white transition-colors shadow-sm">
+                      <Receipt size={19} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-gray-800 group-hover/item:text-[#2E3192] transition-colors">My Subscription</p>
+                      <p className="text-xs text-gray-400 font-medium truncate">View Invoices & Billing History</p>
+                    </div>
+                  </Link>
 
                   <Link
                     href="/profile"

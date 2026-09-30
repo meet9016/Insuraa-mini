@@ -4,6 +4,9 @@ export interface EndPointApi {
     VERIFY_LOGIN_OTP: string;
     SEND_SIGN_UP_OTP: string;
     VERIFY_SIGN_UP_OTP: string;
+    PLAN_LIST: string;
+    SUBSCRIPTION_POPUP: string;
+    SUBSCRIPTION_LIST: string;
   };
   CUSTOMER: {
     CUSTOMER_LIST_DROP_DOWN: string;
@@ -135,6 +138,9 @@ const endPointApi: EndPointApi = {
     VERIFY_LOGIN_OTP: 'verify_login_otp',
     SEND_SIGN_UP_OTP: 'send_sign_up_otp',
     VERIFY_SIGN_UP_OTP: 'verify_sign_up_otp',
+    PLAN_LIST: 'plan_list',
+    SUBSCRIPTION_POPUP: 'subscription_popup',
+    SUBSCRIPTION_LIST: 'subscription_list',
   },
   CUSTOMER: {
     CUSTOMER_LIST_DROP_DOWN: 'customer_list_drop_down',

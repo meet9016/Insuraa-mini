@@ -2,7 +2,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { api } from '@/utils/axiosInstance';
 import endPointApi from '@/utils/endPointApi';
 import { useAppDispatch } from '@/redux/hooks';
-import { setAuthTokenRedux, setOtpPhoneNumber, setOtpSent } from '@/redux/slices/authSlice';
+import { setAuthTokenRedux, setOtpPhoneNumber, setOtpSent, setUser, User } from '@/redux/slices/authSlice';
 import { setAuthToken } from '@/config';
 
 export interface SendOtpPayload {
@@ -93,12 +93,33 @@ export const useVerifyLoginOtp = () => {
   }, []);
 
   const onSuccess = useCallback((data: OtpResponse) => {
-    const token = data?.token || data?.data?.token || (typeof data?.data === 'string' ? data.data : null) || data?.access_token || data?.auth_token;
+    const token =
+      data?.data?.token ||
+      data?.token ||
+      (typeof data?.data === 'string' ? data.data : null) ||
+      data?.access_token ||
+      data?.auth_token;
+
     if (token) {
       setAuthToken(token);
       dispatch(setAuthTokenRedux(token));
     } else {
       setAuthToken('logged_in_user_token');
+    }
+
+    const rawUser = data?.data?.user || data?.user;
+    if (rawUser) {
+      const userPayload: User = {
+        id: rawUser.id ? String(rawUser.id) : undefined,
+        full_name: rawUser.full_name,
+        name: rawUser.full_name || rawUser.name || '',
+        email: rawUser.email,
+        number: rawUser.number,
+        company_name: rawUser.company_name,
+        user_role_id: rawUser.user_role_id ? String(rawUser.user_role_id) : undefined,
+        role: rawUser.user_role_id ? String(rawUser.user_role_id) : undefined,
+      };
+      dispatch(setUser(userPayload));
     }
   }, [dispatch]);
 
@@ -171,12 +192,33 @@ export const useVerifySignUpOtp = () => {
   }, []);
 
   const onSuccess = useCallback((data: OtpResponse) => {
-    const token = data?.token || data?.data?.token || (typeof data?.data === 'string' ? data.data : null) || data?.access_token || data?.auth_token;
+    const token =
+      data?.data?.token ||
+      data?.token ||
+      (typeof data?.data === 'string' ? data.data : null) ||
+      data?.access_token ||
+      data?.auth_token;
+
     if (token) {
       setAuthToken(token);
       dispatch(setAuthTokenRedux(token));
     } else {
       setAuthToken('logged_in_user_token');
+    }
+
+    const rawUser = data?.data?.user || data?.user;
+    if (rawUser) {
+      const userPayload: User = {
+        id: rawUser.id ? String(rawUser.id) : undefined,
+        full_name: rawUser.full_name,
+        name: rawUser.full_name || rawUser.name || '',
+        email: rawUser.email,
+        number: rawUser.number,
+        company_name: rawUser.company_name,
+        user_role_id: rawUser.user_role_id ? String(rawUser.user_role_id) : undefined,
+        role: rawUser.user_role_id ? String(rawUser.user_role_id) : undefined,
+      };
+      dispatch(setUser(userPayload));
     }
   }, [dispatch]);
 
