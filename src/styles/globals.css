@@ -494,6 +494,13 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   padding-right: 16px;
 }
 
+.ag-theme-alpine .ag-header-cell-menu-button,
+.ag-theme-quartz .ag-header-cell-menu-button,
+.ag-theme-alpine .ag-header-cell-filter-button,
+.ag-theme-quartz .ag-header-cell-filter-button {
+  display: none !important;
+}
+
 .ag-theme-alpine .ag-header-cell-label,
 .ag-theme-quartz .ag-header-cell-label {
   font-weight: 500;

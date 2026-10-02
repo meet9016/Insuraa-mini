@@ -362,55 +362,40 @@ export default function AddMotorQuotation() {
     }
   };
 
+  const sectionHeaderClass = "bg-[#EEF1FA] text-[#2B4399] px-5 py-3 text-[15px] font-bold rounded-xl flex items-center justify-between gap-2 mb-5 border-l-4 border-[#2B4399]";
   const labelClass = 'text-[13px] font-bold text-gray-700 mb-1.5 block';
 
   return (
-    <div className="bg-[#f8fafc] min-h-[calc(100vh-72px-56px)] p-0">
+    <div className="bg-[#f8fafc] min-h-screen p-4 sm:p-6 lg:p-0">
       <Head>
         <title>{quotationId ? 'Edit' : 'Add'} Motor Quotation - Insuraa</title>
       </Head>
 
-      <div className="w-full mx-auto animate-in fade-in duration-500 bg-white p-6 rounded-2xl shadow-sm border border-gray-200/70 space-y-6">
-        {/* Top Header Section */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-100 pb-5">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => router.back()}
-              type="button"
-              className="p-2 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
-              title="Go Back"
-            >
-              <ArrowLeft size={18} />
-            </button>
-            <h1 className="text-xl font-semibold text-gray-900">
-              {quotationId ? 'Edit Motor Quotation' : 'Add Motor Quotation'}
-            </h1>
-          </div>
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <button
-              type="button"
-              onClick={() => router.back()}
-              className="flex-1 sm:flex-none px-5 py-2 border border-gray-300 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors bg-white"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={isSubmitting || isDetailLoading}
-              className="flex-1 sm:flex-none bg-[#2B4399] text-white px-6 py-2 rounded-xl text-sm font-semibold hover:bg-[#203378] transition-colors shadow-sm disabled:opacity-50"
-            >
-              {isSubmitting ? 'Saving...' : 'Save Quotation'}
-            </button>
-          </div>
+      <div className="w-full mx-auto animate-in fade-in duration-500 space-y-4 sm:space-y-6">
+
+        {/* Page Header */}
+        <div className="flex items-center gap-3 font-bold text-gray-900">
+          <button
+            onClick={() => router.back()}
+            type="button"
+            className="p-2 bg-white border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors shadow-2xs"
+            title="Go Back"
+          >
+            <ArrowLeft size={18} />
+          </button>
+          <h1 className="text-xl font-semibold tracking-tight text-gray-900">
+            {quotationId ? 'Edit Motor Quotation' : 'Add Motor Quotation'}
+          </h1>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Form Container Card */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200/80">
+
+          <form onSubmit={handleSubmit} className="space-y-6 bg-white">
           {/* Section 1: Motor Information / Proposal Information */}
-          <div className="border border-gray-200/70 rounded-2xl p-6 bg-white shadow-2xs space-y-5">
-            {/* Section Banner Header with Left Blue Curved Border Accent matching image exactly */}
-            <div className="bg-[#EEF1FA] border-l-[4px] border-[#2B4399] rounded-xl px-4 py-3 flex justify-between items-center">
-              <div className="flex items-center gap-2.5 text-[#2B4399] font-bold text-[15px]">
+          <div>
+            <div className={sectionHeaderClass}>
+              <div className="flex items-center gap-2">
                 <User size={18} />
                 <span>Motor Information</span>
               </div>
@@ -513,10 +498,9 @@ export default function AddMotorQuotation() {
           </div>
 
           {/* Section 2: Vehicle Details */}
-          <div className="border border-gray-200/70 rounded-2xl p-6 bg-white shadow-2xs space-y-5">
-            {/* Section Banner Header with Left Blue Curved Border Accent matching image exactly */}
-            <div className="bg-[#EEF1FA] border-l-[4px] border-[#2B4399] rounded-xl px-4 py-3 flex justify-between items-center">
-              <div className="flex items-center gap-2.5 text-[#2B4399] font-bold text-[15px]">
+          <div>
+            <div className={sectionHeaderClass}>
+              <div className="flex items-center gap-2">
                 <Car size={18} />
                 <span>Vehicle Details</span>
               </div>
@@ -642,21 +626,22 @@ export default function AddMotorQuotation() {
           </div>
 
           {/* Section 3: Quotation Details / Comparison Details */}
-          <div className="border border-gray-200/70 rounded-2xl p-6 bg-white shadow-2xs space-y-5">
-            {/* Section Banner Header with Left Blue Curved Border Accent matching image exactly */}
-            <div className="bg-[#EEF1FA] border-l-[4px] border-[#2B4399] rounded-xl px-4 py-2.5 flex justify-between items-center">
-              <div className="flex items-center gap-2.5 text-[#2B4399] font-bold text-[15px]">
-                <Building2 size={18} />
-                <span>Quotation Details</span>
+          <div>
+            <div className={sectionHeaderClass}>
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-2">
+                  <Building2 size={18} />
+                  <span>Quotation Details</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={addQuote}
+                  className="w-[36px] h-[36px] bg-[#2B4399] hover:bg-[#203378] text-white rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
+                  title="Add Quote"
+                >
+                  <Plus size={18} />
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={addQuote}
-                className="w-[36px] h-[36px] bg-[#2B4399] hover:bg-[#203378] text-white rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
-                title="Add Quote"
-              >
-                <Plus size={18} />
-              </button>
             </div>
 
             <div className="space-y-4">
@@ -803,10 +788,9 @@ export default function AddMotorQuotation() {
           </div>
 
           {/* Section 4: Other Details */}
-          <div className="border border-gray-200/70 rounded-2xl p-6 bg-white shadow-2xs space-y-5">
-            {/* Section Banner Header with Left Blue Curved Border Accent matching image exactly */}
-            <div className="bg-[#EEF1FA] border-l-[4px] border-[#2B4399] rounded-xl px-4 py-3 flex justify-between items-center">
-              <div className="flex items-center gap-2.5 text-[#2B4399] font-bold text-[15px]">
+          <div>
+            <div className={sectionHeaderClass}>
+              <div className="flex items-center gap-2">
                 <FileText size={18} />
                 <span>Other Details</span>
               </div>
@@ -823,8 +807,28 @@ export default function AddMotorQuotation() {
               />
             </div>
           </div>
+
+          {/* Bottom Action Bar */}
+          <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-200/80">
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="px-6 py-2.5 border border-gray-300 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors shadow-2xs"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={isSubmitting || isDetailLoading}
+              className="bg-[#2B4399] text-white px-8 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#203378] transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {isSubmitting ? 'Saving...' : 'Save Quotation'}
+            </button>
+          </div>
         </form>
       </div>
     </div>
-  );
+  </div>
+);
 }

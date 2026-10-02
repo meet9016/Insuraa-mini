@@ -343,7 +343,7 @@ export default function AddHealthQuotation() {
   };
 
   const sectionHeaderClass =
-    "bg-[#EEF1FA] text-[#2B4399] px-5 py-3 text-[15px] font-bold rounded-xl flex items-center justify-between gap-2 mb-6 border-l-4 border-[#2B4399]";
+    "bg-[#EEF1FA] text-[#2B4399] px-5 py-3 text-[15px] font-bold rounded-xl flex items-center justify-between gap-2 mb-5 border-l-4 border-[#2B4399]";
   const labelClass = "text-[13px] font-bold text-gray-700 mb-1.5 block";
   const selectClass =
     "w-full h-[42px] px-3.5 py-2 border border-gray-300 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#2B4399]/20 focus:border-[#2B4399] transition-all bg-white shadow-2xs";
@@ -365,44 +365,29 @@ export default function AddHealthQuotation() {
         `}</style>
       </Head>
 
-      <div className="w-full mx-auto animate-in fade-in duration-500 bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-gray-200/80">
+      <div className="w-full mx-auto animate-in fade-in duration-500 space-y-4 sm:space-y-6">
+
         {/* Page Header */}
-        <div className="sticky top-0 z-40 backdrop-blur-md bg-white/90 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200/80 pb-5 mb-8 pt-4 -mt-6 -mx-6 px-6 rounded-t-2xl">
-          <div className="flex items-center gap-3 font-bold text-gray-900">
-            <button
-              onClick={() => router.back()}
-              type="button"
-              className="p-2 border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors shadow-2xs"
-              title="Go Back"
-            >
-              <ArrowLeft size={18} />
-            </button>
-            <h1 className="text-xl font-semibold tracking-tight text-gray-900">
-              {quotationId ? 'Edit Health Quotation' : 'Add Health Quotation'}
-            </h1>
-          </div>
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <button
-              type="button"
-              onClick={() => router.back()}
-              className="flex-1 sm:flex-none px-5 py-2.5 border border-gray-300 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors shadow-2xs"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSubmit()}
-              disabled={isSubmitting}
-              className="flex-1 sm:flex-none bg-[#2B4399] text-white px-7 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#203378] transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {isSubmitting ? 'Saving...' : 'Save Quotation'}
-            </button>
-          </div>
+        <div className="flex items-center gap-3 font-bold text-gray-900">
+          <button
+            onClick={() => router.back()}
+            type="button"
+            className="p-2 bg-white border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors shadow-2xs"
+            title="Go Back"
+          >
+            <ArrowLeft size={18} />
+          </button>
+          <h1 className="text-xl font-semibold tracking-tight text-gray-900">
+            {quotationId ? 'Edit Health Quotation' : 'Add Health Quotation'}
+          </h1>
         </div>
 
-        <form className="space-y-8 bg-white" onSubmit={handleSubmit}>
+        {/* Form Container Card */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200/80">
+
+          <form className="space-y-6 bg-white" onSubmit={handleSubmit}>
           {/* Proposal Information */}
-          <div className="bg-white rounded-2xl border border-gray-200/80 p-5 sm:p-6 shadow-2xs">
+          <div>
             <div className={sectionHeaderClass}>
               <div className="flex items-center gap-2">
                 <User size={18} />
@@ -577,7 +562,7 @@ export default function AddHealthQuotation() {
           </div>
 
           {/* Quotation Details */}
-          <div className="bg-white rounded-2xl border border-gray-200/80 p-5 sm:p-6 shadow-2xs">
+          <div>
             <div className={sectionHeaderClass}>
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center gap-2">
@@ -754,7 +739,7 @@ export default function AddHealthQuotation() {
           </div>
 
           {/* Member Details */}
-          <div className="bg-white rounded-2xl border border-gray-200/80 p-5 sm:p-6 shadow-2xs">
+          <div>
             <div className={sectionHeaderClass}>
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center gap-2">
@@ -877,8 +862,28 @@ export default function AddHealthQuotation() {
               ))}
             </div>
           </div>
+
+          {/* Bottom Action Bar */}
+          <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-200/80">
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="px-6 py-2.5 border border-gray-300 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors shadow-2xs"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSubmit()}
+              disabled={isSubmitting}
+              className="bg-[#2B4399] text-white px-8 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#203378] transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {isSubmitting ? 'Saving...' : 'Save Quotation'}
+            </button>
+          </div>
         </form>
       </div>
     </div>
-  );
+  </div>
+);
 }

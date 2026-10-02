@@ -86,7 +86,10 @@ export default function AgGridTable<T = any>({
     return {
       flex: 1,
       minWidth: 100,
-      filter: true,
+      filter: false,
+      suppressHeaderMenuButton: true,
+      suppressMenu: true,
+      menuTabs: [],
     };
   }, []);
 

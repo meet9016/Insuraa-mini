@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
-import PageHeader from '@/components/ui/PageHeader';
 import { useRouter } from 'next/router';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import DatePicker from '@/components/ui/DatePicker';
-import { User, Info, Calendar, Building2, FileText } from 'lucide-react';
+import { ArrowLeft, User, Info, Calendar, Building2, FileText } from 'lucide-react';
 import { api } from '@/utils/axiosInstance';
 import endPointApi from '@/utils/endPointApi';
 import { useCustomerList } from '@/hooks/useCustomerApi';
@@ -157,396 +156,419 @@ export default function AddClaim() {
     }
   };
 
+  const sectionHeaderClass = "bg-[#EEF1FA] text-[#2B4399] px-5 py-3 text-[15px] font-bold rounded-xl flex items-center justify-between gap-2 mb-5 border-l-4 border-[#2B4399]";
   const labelClass = "text-[13px] font-bold text-gray-700 mb-1.5 block";
 
   return (
-    <div className="bg-[#f8fafc] min-h-[calc(100vh-72px-56px)] p-0">
+    <div className="bg-[#f8fafc] min-h-screen p-4 sm:p-6 lg:p-0">
       <Head>
         <title>{isEditMode ? 'Edit Claim - Insuraa' : 'Add Claim - Insuraa'}</title>
       </Head>
 
-      <div className="w-full mx-auto animate-in fade-in duration-500 bg-white p-6  rounded-2xl shadow-sm border border-gray-200/70 space-y-6">
+      <div className="w-full mx-auto animate-in fade-in duration-500 space-y-4 sm:space-y-6">
+
         {/* Page Header */}
-        <PageHeader
-          title={isEditMode ? 'Edit Claim' : 'Add Claim'}
-          submitText={isEditMode ? 'Update Claim' : 'Save Claim'}
-          onSubmit={handleSubmit}
-          isSubmitting={isSubmitting || isInserting}
-        />
+        <div className="flex items-center gap-3 font-bold text-gray-900">
+          <button onClick={() => router.back()} type="button" className="p-2 bg-white border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors shadow-2xs" title="Go Back">
+            <ArrowLeft size={18} />
+          </button>
+          <h1 className="text-xl font-semibold tracking-tight text-gray-900">{isEditMode ? 'Edit Claim' : 'Add Claim'}</h1>
+        </div>
 
-        {/* Form Content */}
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Section 1: Customer Information */}
-          <div className="border border-gray-200/70 rounded-2xl p-6 bg-white shadow-2xs space-y-5">
-            <div className="bg-[#EEF1FA] border-l-[4px] border-[#2B4399] rounded-xl px-4 py-3 flex justify-between items-center">
-              <div className="flex items-center gap-2.5 text-[#2B4399] font-bold text-[15px]">
-                <User size={18} />
-                <span>Customer Information</span>
-              </div>
-            </div>
+        {/* Form Container Card */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200/80">
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5 items-start">
-              <div>
-                <div className="flex justify-between items-center mb-1.5">
-                  <label className="text-[13px] font-bold text-gray-700">
-                    Customer Name <span className="text-red-500">*</span>
-                  </label>
-                  <button
-                    type="button"
-                    className="text-xs text-[#2B4399] font-bold hover:underline"
-                    onClick={() => router.push('/customer/add')}
-                  >
-                    + Add Customer
-                  </button>
-                </div>
-                <Select
-                  value={formData.customer_id}
-                  onChange={(e: any) => handleChange('customer_id', e.target.value)}
-                  error={errors.customer_id}
-                >
-                  <option value="">Select Customer Name</option>
-                  {customerList.map((cust: any) => {
-                    const custId = cust.customer_id || cust.id;
-                    const custName = cust.full_name || cust.name || (cust.first_name ? `${cust.first_name} ${cust.last_name || ''}`.trim() : `Customer #${custId}`);
-                    const phone = cust.number || cust.mobile || cust.phone || '';
-                    return (
-                      <option key={custId} value={custId}>
-                        {custName} {phone ? `(${phone})` : ''}
-                      </option>
-                    );
-                  })}
-                </Select>
-                {errors.customer_id && <p className="text-xs text-red-500 font-semibold mt-1">{errors.customer_id}</p>}
-              </div>
-
-              <div>
-                <label className={labelClass}>
-                  Insurance Type <span className="text-red-500">*</span>
-                </label>
-                <Select
-                  value={formData.insurance_type}
-                  onChange={(e: any) => handleChange('insurance_type', e.target.value)}
-                  error={errors.insurance_type}
-                >
-                  <option value="">Select Insurance Type</option>
-                  {insuranceTypes.map((item: any) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name || item.value}
-                    </option>
-                  ))}
-                </Select>
-                {errors.insurance_type && <p className="text-xs text-red-500 font-semibold mt-1">{errors.insurance_type}</p>}
-              </div>
-
-              <div>
-                <label className={labelClass}>
-                  Customer Policy <span className="text-red-500">*</span>
-                </label>
-                <Select
-                  value={formData.customer_insurance_id}
-                  onChange={(e: any) => handleChange('customer_insurance_id', e.target.value)}
-                  error={errors.customer_insurance_id}
-                >
-                  <option value="">Select Customer Policy</option>
-                  {customerPolicyList.map((item: any) => {
-                    const id = item.customer_insurance_id || item.id || item.policy_id;
-                    const label =
-                      item.policy_number ||
-                      item.policy_no ||
-                      item.value ||
-                      item.name ||
-                      item.title ||
-                      item.plan_name ||
-                      (item.company_name ? `${item.policy_number || 'Policy'} - ${item.company_name}` : `Policy #${id}`);
-                    return (
-                      <option key={id} value={id}>
-                        {label}
-                      </option>
-                    );
-                  })}
-                </Select>
-                {errors.customer_insurance_id && <p className="text-xs text-red-500 font-semibold mt-1">{errors.customer_insurance_id}</p>}
-              </div>
-            </div>
-          </div>
-
-          {/* Section 2: Claim Details */}
-          <div className="border border-gray-200/70 rounded-2xl p-6 bg-white shadow-2xs space-y-5">
-            <div className="bg-[#EEF1FA] border-l-[4px] border-[#2B4399] rounded-xl px-4 py-3 flex justify-between items-center">
-              <div className="flex items-center gap-2.5 text-[#2B4399] font-bold text-[15px]">
-                <Info size={18} />
-                <span>Claim Details</span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5 items-start">
-              <div>
-                <label className={labelClass}>
-                  Admitted Date <span className="text-red-500">*</span>
-                </label>
-                <DatePicker
-                  value={formData.admited_date}
-                  onChange={(dateStr: string) => handleChange('admited_date', dateStr)}
-                  error={errors.admited_date}
-                />
-              </div>
-
-              <div>
-                <label className={labelClass}>
-                  Discharge Date <span className="text-red-500">*</span>
-                </label>
-                <DatePicker
-                  value={formData.discharge_date}
-                  onChange={(dateStr: string) => handleChange('discharge_date', dateStr)}
-                  error={errors.discharge_date}
-                />
-              </div>
-
-              <Input
-                label="Claim Amount"
-                name="calim_amount"
-                placeholder="Enter Claim Amount"
-                value={formData.calim_amount}
-                onChange={(e) => handleChange('calim_amount', e.target.value)}
-                onBlur={() => handleBlur('calim_amount')}
-                error={errors.calim_amount}
-                required
-              />
-
-              <Input
-                label="Deducted Amount"
-                name="deducted_amount"
-                placeholder="Enter Deducted Amount"
-                value={formData.deducted_amount}
-                onChange={(e) => handleChange('deducted_amount', e.target.value)}
-                onBlur={() => handleBlur('deducted_amount')}
-                error={errors.deducted_amount}
-                required
-              />
-
-              <Input
-                label="Settled Amount"
-                name="setteled_amount"
-                placeholder="Enter Settled Amount"
-                value={formData.setteled_amount}
-                onChange={(e) => handleChange('setteled_amount', e.target.value)}
-                onBlur={() => handleBlur('setteled_amount')}
-                error={errors.setteled_amount}
-                required
-              />
-
-              <Input
-                label="Claim Number"
-                name="claim_number"
-                placeholder="Enter Claim Number (e.g. CLM0000012)"
-                value={formData.claim_number}
-                onChange={(e) => handleChange('claim_number', e.target.value)}
-                onBlur={() => handleBlur('claim_number')}
-                error={errors.claim_number}
-                required
-              />
-            </div>
-          </div>
-
-          {/* Section 3: Important Dates & Status */}
-          <div className="border border-gray-200/70 rounded-2xl p-6 bg-white shadow-2xs space-y-5">
-            <div className="bg-[#EEF1FA] border-l-[4px] border-[#2B4399] rounded-xl px-4 py-3 flex justify-between items-center">
-              <div className="flex items-center gap-2.5 text-[#2B4399] font-bold text-[15px]">
-                <Calendar size={18} />
-                <span>Important Dates & Status</span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5 items-start">
-              <div>
-                <label className={labelClass}>
-                  File At Office Date <span className="text-red-500">*</span>
-                </label>
-                <DatePicker
-                  value={formData.file_at_office}
-                  onChange={(dateStr: string) => handleChange('file_at_office', dateStr)}
-                  error={errors.file_at_office}
-                />
-              </div>
-
-              <div>
-                <label className={labelClass}>
-                  File At Company Date <span className="text-red-500">*</span>
-                </label>
-                <DatePicker
-                  value={formData.file_at_company}
-                  onChange={(dateStr: string) => handleChange('file_at_company', dateStr)}
-                  error={errors.file_at_company}
-                />
-              </div>
-
-              <div>
-                <label className={labelClass}>
-                  Next Followup Date <span className="text-red-500">*</span>
-                </label>
-                <DatePicker
-                  value={formData.next_followup_date}
-                  onChange={(dateStr: string) => handleChange('next_followup_date', dateStr)}
-                  error={errors.next_followup_date}
-                />
-              </div>
-
-              <div>
-                <label className={labelClass}>
-                  Query Date <span className="text-red-500">*</span>
-                </label>
-                <DatePicker
-                  value={formData.query}
-                  onChange={(dateStr: string) => handleChange('query', dateStr)}
-                  error={errors.query}
-                />
-              </div>
-
-              <div>
-                <label className={labelClass}>
-                  Claim Settled Date <span className="text-red-500">*</span>
-                </label>
-                <DatePicker
-                  value={formData.claim_satteled_date}
-                  onChange={(dateStr: string) => handleChange('claim_satteled_date', dateStr)}
-                  error={errors.claim_satteled_date}
-                />
-              </div>
-
-              <Input
-                label="Diagnosis"
-                name="diagnosis"
-                placeholder="Enter Diagnosis (e.g. Fever)"
-                value={formData.diagnosis}
-                onChange={(e) => handleChange('diagnosis', e.target.value)}
-                onBlur={() => handleBlur('diagnosis')}
-                error={errors.diagnosis}
-                required
-              />
-
-              <div>
-                <label className={labelClass}>
-                  Claim Status <span className="text-red-500">*</span>
-                </label>
-                <Select
-                  value={formData.claim_status}
-                  onChange={(e: any) => handleChange('claim_status', e.target.value)}
-                  error={errors.claim_status}
-                >
-                  <option value="">Select Claim Status</option>
-                  {claimStatuses.map((item: any) => (
-                    <option key={item.id} value={item.id}>
-                      {item.value || item.name}
-                    </option>
-                  ))}
-                </Select>
-                {errors.claim_status && <p className="text-xs text-red-500 font-semibold mt-1">{errors.claim_status}</p>}
-              </div>
-            </div>
-          </div>
-
-          {/* Section 4: Doctor & Hospital Information */}
-          <div className="border border-gray-200/70 rounded-2xl p-6 bg-white shadow-2xs space-y-5">
-            <div className="bg-[#EEF1FA] border-l-[4px] border-[#2B4399] rounded-xl px-4 py-3 flex justify-between items-center">
-              <div className="flex items-center gap-2.5 text-[#2B4399] font-bold text-[15px]">
-                <Building2 size={18} />
-                <span>Doctor & Hospital Information</span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5 items-start">
-              <Input
-                label="Name Of Doctor"
-                name="name_of_doctor"
-                placeholder="Enter Doctor Name (e.g. Dr. ABC)"
-                value={formData.name_of_doctor}
-                onChange={(e) => handleChange('name_of_doctor', e.target.value)}
-                onBlur={() => handleBlur('name_of_doctor')}
-                error={errors.name_of_doctor}
-                required
-              />
-
-              <Input
-                label="Name Of Hospital"
-                name="name_of_hospital"
-                placeholder="Enter Hospital Name (e.g. Apollo Hospital)"
-                value={formData.name_of_hospital}
-                onChange={(e) => handleChange('name_of_hospital', e.target.value)}
-                onBlur={() => handleBlur('name_of_hospital')}
-                error={errors.name_of_hospital}
-                required
-              />
-
-              <Input
-                label="Location Of Hospital"
-                name="location_of_hospital"
-                placeholder="Enter Hospital Location (e.g. Ahmedabad)"
-                value={formData.location_of_hospital}
-                onChange={(e) => handleChange('location_of_hospital', e.target.value)}
-                onBlur={() => handleBlur('location_of_hospital')}
-                error={errors.location_of_hospital}
-                required
-              />
-
-              <Input
-                label="Hospital Type"
-                name="hospital_type"
-                placeholder="Enter Hospital Type"
-                value={formData.hospital_type}
-                onChange={(e) => handleChange('hospital_type', e.target.value)}
-                onBlur={() => handleBlur('hospital_type')}
-                error={errors.hospital_type}
-                required
-              />
-
-              <div>
-                <label className={labelClass}>
-                  Rating Of Hospital <span className="text-red-500">*</span>
-                </label>
-                <Select
-                  value={formData.rating_of_hospital}
-                  onChange={(e: any) => handleChange('rating_of_hospital', e.target.value)}
-                  error={errors.rating_of_hospital}
-                >
-                  <option value="">Select Rating</option>
-                  {hospitalRatings.map((item: any) => (
-                    <option key={item.id} value={item.id}>
-                      {item.value || item.name}
-                    </option>
-                  ))}
-                </Select>
-                {errors.rating_of_hospital && <p className="text-xs text-red-500 font-semibold mt-1">{errors.rating_of_hospital}</p>}
-              </div>
-            </div>
-          </div>
-
-          {/* Section 5: Note Details */}
-          <div className="border border-gray-200/70 rounded-2xl p-6 bg-white shadow-2xs space-y-5">
-            <div className="bg-[#EEF1FA] border-l-[4px] border-[#2B4399] rounded-xl px-4 py-3 flex justify-between items-center">
-              <div className="flex items-center gap-2.5 text-[#2B4399] font-bold text-[15px]">
-                <FileText size={18} />
-                <span>Note Details</span>
-              </div>
-            </div>
-
+          {/* Form Content */}
+          <form onSubmit={handleSubmit} className="space-y-6 bg-white">
+            {/* Section 1: Customer Information */}
             <div>
-              <Input
-                label="Note"
-                name="note"
-                as="textarea"
-                placeholder="Enter any additional notes..."
-                value={formData.note}
-                onChange={(e) => handleChange('note', e.target.value)}
-                onBlur={() => handleBlur('note')}
-                error={errors.note}
-                required
-              />
+              <div className={sectionHeaderClass}>
+                <div className="flex items-center gap-2">
+                  <User size={18} />
+                  <span>Customer Information</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
+                <div>
+                  <div className="flex justify-between items-center h-[20px] mb-1.5">
+                    <label className="text-[13px] font-bold text-gray-700 block">
+                      Customer Name <span className="text-red-500">*</span>
+                    </label>
+                    <button
+                      type="button"
+                      className="text-xs text-[#2B4399] font-bold hover:underline"
+                      onClick={() => router.push('/customer/add')}
+                    >
+                      + Add Customer
+                    </button>
+                  </div>
+                  <Select
+                    value={formData.customer_id}
+                    onChange={(e: any) => handleChange('customer_id', e.target.value)}
+                    error={errors.customer_id}
+                  >
+                    <option value="">Select Customer Name</option>
+                    {customerList.map((cust: any) => {
+                      const custId = cust.customer_id || cust.id;
+                      const custName = cust.full_name || cust.name || (cust.first_name ? `${cust.first_name} ${cust.last_name || ''}`.trim() : `Customer #${custId}`);
+                      const phone = cust.number || cust.mobile || cust.phone || '';
+                      return (
+                        <option key={custId} value={custId}>
+                          {custName} {phone ? `(${phone})` : ''}
+                        </option>
+                      );
+                    })}
+                  </Select>
+                  {errors.customer_id && <p className="text-xs text-red-500 font-semibold mt-1">{errors.customer_id}</p>}
+                </div>
+
+                <div>
+                  <label className={labelClass}>
+                    Insurance Type <span className="text-red-500">*</span>
+                  </label>
+                  <Select
+                    value={formData.insurance_type}
+                    onChange={(e: any) => handleChange('insurance_type', e.target.value)}
+                    error={errors.insurance_type}
+                  >
+                    <option value="">Select Insurance Type</option>
+                    {insuranceTypes.map((item: any) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name || item.value}
+                      </option>
+                    ))}
+                  </Select>
+                  {errors.insurance_type && <p className="text-xs text-red-500 font-semibold mt-1">{errors.insurance_type}</p>}
+                </div>
+
+                <div>
+                  <label className={labelClass}>
+                    Customer Policy <span className="text-red-500">*</span>
+                  </label>
+                  <Select
+                    value={formData.customer_insurance_id}
+                    onChange={(e: any) => handleChange('customer_insurance_id', e.target.value)}
+                    error={errors.customer_insurance_id}
+                  >
+                    <option value="">Select Customer Policy</option>
+                    {customerPolicyList.map((item: any) => {
+                      const id = item.customer_insurance_id || item.id || item.policy_id;
+                      const label =
+                        item.policy_number ||
+                        item.policy_no ||
+                        item.value ||
+                        item.name ||
+                        item.title ||
+                        item.plan_name ||
+                        (item.company_name ? `${item.policy_number || 'Policy'} - ${item.company_name}` : `Policy #${id}`);
+                      return (
+                        <option key={id} value={id}>
+                          {label}
+                        </option>
+                      );
+                    })}
+                  </Select>
+                  {errors.customer_insurance_id && <p className="text-xs text-red-500 font-semibold mt-1">{errors.customer_insurance_id}</p>}
+                </div>
+              </div>
             </div>
-          </div>
-        </form>
+
+            {/* Section 2: Claim Details */}
+            <div>
+              <div className={sectionHeaderClass}>
+                <div className="flex items-center gap-2">
+                  <Info size={18} />
+                  <span>Claim Details</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
+                <div>
+                  <label className={labelClass}>
+                    Admitted Date <span className="text-red-500">*</span>
+                  </label>
+                  <DatePicker
+                    value={formData.admited_date}
+                    onChange={(dateStr: string) => handleChange('admited_date', dateStr)}
+                    error={errors.admited_date}
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>
+                    Discharge Date <span className="text-red-500">*</span>
+                  </label>
+                  <DatePicker
+                    value={formData.discharge_date}
+                    onChange={(dateStr: string) => handleChange('discharge_date', dateStr)}
+                    error={errors.discharge_date}
+                  />
+                </div>
+
+                <Input
+                  label="Claim Amount"
+                  name="calim_amount"
+                  placeholder="Enter Claim Amount"
+                  value={formData.calim_amount}
+                  onChange={(e) => handleChange('calim_amount', e.target.value)}
+                  onBlur={() => handleBlur('calim_amount')}
+                  error={errors.calim_amount}
+                  required
+                />
+
+                <Input
+                  label="Deducted Amount"
+                  name="deducted_amount"
+                  placeholder="Enter Deducted Amount"
+                  value={formData.deducted_amount}
+                  onChange={(e) => handleChange('deducted_amount', e.target.value)}
+                  onBlur={() => handleBlur('deducted_amount')}
+                  error={errors.deducted_amount}
+                  required
+                />
+
+                <Input
+                  label="Settled Amount"
+                  name="setteled_amount"
+                  placeholder="Enter Settled Amount"
+                  value={formData.setteled_amount}
+                  onChange={(e) => handleChange('setteled_amount', e.target.value)}
+                  onBlur={() => handleBlur('setteled_amount')}
+                  error={errors.setteled_amount}
+                  required
+                />
+
+                <Input
+                  label="Claim Number"
+                  name="claim_number"
+                  placeholder="Enter Claim Number (e.g. CLM0000012)"
+                  value={formData.claim_number}
+                  onChange={(e) => handleChange('claim_number', e.target.value)}
+                  onBlur={() => handleBlur('claim_number')}
+                  error={errors.claim_number}
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Section 3: Important Dates & Status */}
+            <div>
+              <div className={sectionHeaderClass}>
+                <div className="flex items-center gap-2">
+                  <Calendar size={18} />
+                  <span>Important Dates & Status</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
+                <div>
+                  <label className={labelClass}>
+                    File At Office Date <span className="text-red-500">*</span>
+                  </label>
+                  <DatePicker
+                    value={formData.file_at_office}
+                    onChange={(dateStr: string) => handleChange('file_at_office', dateStr)}
+                    error={errors.file_at_office}
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>
+                    File At Company Date <span className="text-red-500">*</span>
+                  </label>
+                  <DatePicker
+                    value={formData.file_at_company}
+                    onChange={(dateStr: string) => handleChange('file_at_company', dateStr)}
+                    error={errors.file_at_company}
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>
+                    Next Followup Date <span className="text-red-500">*</span>
+                  </label>
+                  <DatePicker
+                    value={formData.next_followup_date}
+                    onChange={(dateStr: string) => handleChange('next_followup_date', dateStr)}
+                    error={errors.next_followup_date}
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>
+                    Query Date <span className="text-red-500">*</span>
+                  </label>
+                  <DatePicker
+                    value={formData.query}
+                    onChange={(dateStr: string) => handleChange('query', dateStr)}
+                    error={errors.query}
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>
+                    Claim Settled Date <span className="text-red-500">*</span>
+                  </label>
+                  <DatePicker
+                    value={formData.claim_satteled_date}
+                    onChange={(dateStr: string) => handleChange('claim_satteled_date', dateStr)}
+                    error={errors.claim_satteled_date}
+                  />
+                </div>
+
+                <Input
+                  label="Diagnosis"
+                  name="diagnosis"
+                  placeholder="Enter Diagnosis (e.g. Fever)"
+                  value={formData.diagnosis}
+                  onChange={(e) => handleChange('diagnosis', e.target.value)}
+                  onBlur={() => handleBlur('diagnosis')}
+                  error={errors.diagnosis}
+                  required
+                />
+
+                <div>
+                  <label className={labelClass}>
+                    Claim Status <span className="text-red-500">*</span>
+                  </label>
+                  <Select
+                    value={formData.claim_status}
+                    onChange={(e: any) => handleChange('claim_status', e.target.value)}
+                    error={errors.claim_status}
+                  >
+                    <option value="">Select Claim Status</option>
+                    {claimStatuses.map((item: any) => (
+                      <option key={item.id} value={item.id}>
+                        {item.value || item.name}
+                      </option>
+                    ))}
+                  </Select>
+                  {errors.claim_status && <p className="text-xs text-red-500 font-semibold mt-1">{errors.claim_status}</p>}
+                </div>
+              </div>
+            </div>
+
+            {/* Section 4: Doctor & Hospital Information */}
+            <div>
+              <div className={sectionHeaderClass}>
+                <div className="flex items-center gap-2">
+                  <Building2 size={18} />
+                  <span>Doctor & Hospital Information</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
+                <Input
+                  label="Name Of Doctor"
+                  name="name_of_doctor"
+                  placeholder="Enter Doctor Name (e.g. Dr. ABC)"
+                  value={formData.name_of_doctor}
+                  onChange={(e) => handleChange('name_of_doctor', e.target.value)}
+                  onBlur={() => handleBlur('name_of_doctor')}
+                  error={errors.name_of_doctor}
+                  required
+                />
+
+                <Input
+                  label="Name Of Hospital"
+                  name="name_of_hospital"
+                  placeholder="Enter Hospital Name (e.g. Apollo Hospital)"
+                  value={formData.name_of_hospital}
+                  onChange={(e) => handleChange('name_of_hospital', e.target.value)}
+                  onBlur={() => handleBlur('name_of_hospital')}
+                  error={errors.name_of_hospital}
+                  required
+                />
+
+                <Input
+                  label="Location Of Hospital"
+                  name="location_of_hospital"
+                  placeholder="Enter Hospital Location (e.g. Ahmedabad)"
+                  value={formData.location_of_hospital}
+                  onChange={(e) => handleChange('location_of_hospital', e.target.value)}
+                  onBlur={() => handleBlur('location_of_hospital')}
+                  error={errors.location_of_hospital}
+                  required
+                />
+
+                <Input
+                  label="Hospital Type"
+                  name="hospital_type"
+                  placeholder="Enter Hospital Type"
+                  value={formData.hospital_type}
+                  onChange={(e) => handleChange('hospital_type', e.target.value)}
+                  onBlur={() => handleBlur('hospital_type')}
+                  error={errors.hospital_type}
+                  required
+                />
+
+                <div>
+                  <label className={labelClass}>
+                    Rating Of Hospital <span className="text-red-500">*</span>
+                  </label>
+                  <Select
+                    value={formData.rating_of_hospital}
+                    onChange={(e: any) => handleChange('rating_of_hospital', e.target.value)}
+                    error={errors.rating_of_hospital}
+                  >
+                    <option value="">Select Rating</option>
+                    {hospitalRatings.map((item: any) => (
+                      <option key={item.id} value={item.id}>
+                        {item.value || item.name}
+                      </option>
+                    ))}
+                  </Select>
+                  {errors.rating_of_hospital && <p className="text-xs text-red-500 font-semibold mt-1">{errors.rating_of_hospital}</p>}
+                </div>
+              </div>
+            </div>
+
+            {/* Section 5: Note Details */}
+            <div>
+              <div className={sectionHeaderClass}>
+                <div className="flex items-center gap-2">
+                  <FileText size={18} />
+                  <span>Note Details</span>
+                </div>
+              </div>
+
+              <div>
+                <Input
+                  label="Note"
+                  name="note"
+                  as="textarea"
+                  placeholder="Enter any additional notes..."
+                  value={formData.note}
+                  onChange={(e) => handleChange('note', e.target.value)}
+                  onBlur={() => handleBlur('note')}
+                  error={errors.note}
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Bottom Action Bar */}
+            <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-200/80">
+              <button
+                type="button"
+                onClick={() => router.back()}
+                className="px-6 py-2.5 border border-gray-300 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors shadow-2xs"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSubmit()}
+                disabled={isSubmitting || isInserting}
+                className="bg-[#2B4399] text-white px-8 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#203378] transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isSubmitting || isInserting ? (isEditMode ? 'Updating...' : 'Saving...') : (isEditMode ? 'Update Claim' : 'Save Claim')}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );
 }
-
-

@@ -147,10 +147,10 @@ export default function OtherInsuranceList() {
       {/* Delete Confirmation Modal */}
       <DeleteConfirmationModal
         isOpen={deleteModalState.isOpen}
-        title="Delete Other Insurance"
-        message={`Are you sure you want to delete ${deleteModalState.name}?`}
+        onClose={() => setDeleteModalState({ isOpen: false, id: '', name: '', isDeleting: false })}
         onConfirm={handleConfirmDelete}
-        onCancel={() => setDeleteModalState({ isOpen: false, id: '', name: '', isDeleting: false })}
+        title="Delete Other Insurance"
+        itemName={deleteModalState.name}
         isDeleting={deleteModalState.isDeleting}
       />
 

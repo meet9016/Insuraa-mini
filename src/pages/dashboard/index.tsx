@@ -358,8 +358,7 @@ export default function Dashboard() {
                 ) : (
                   <PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                     <Pie
-                      activeIndex={activeCompanyIndex}
-                      activeShape={renderActiveShape}
+                      {...({ activeIndex: activeCompanyIndex, activeShape: renderActiveShape } as any)}
                       data={COMPANY_OVERVIEW_DATA}
                       cx="50%"
                       cy="50%"
@@ -425,8 +424,7 @@ export default function Dashboard() {
                 ) : (
                   <PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                     <Pie
-                      activeIndex={activeTypeIndex}
-                      activeShape={renderActiveShape}
+                      {...({ activeIndex: activeTypeIndex, activeShape: renderActiveShape } as any)}
                       data={TYPE_OVERVIEW_DATA}
                       cx="50%"
                       cy="50%"

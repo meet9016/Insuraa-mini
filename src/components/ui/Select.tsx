@@ -79,7 +79,7 @@ export default function Select({ children, className, onChange, value, error, dr
       {/* Trigger Button (Identical height to standard inputs) */}
       <div
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full h-[42px] px-3.5 py-2 bg-white border rounded-xl text-sm flex items-center justify-between cursor-pointer transition-all shadow-2xs ${error
+        className={`w-full h-[42px] px-3.5 py-2 bg-white border rounded-lg text-sm flex items-center justify-between cursor-pointer transition-all shadow-2xs ${error
           ? 'border-red-500 ring-2 ring-red-500/20'
           : isOpen
             ? 'border-[#2B4399] ring-2 ring-[#2B4399]/20'
