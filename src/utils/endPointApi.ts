@@ -129,10 +129,35 @@ export interface EndPointApi {
     DELETE_OTHER_INSURANCE: string;
     VIEW_OTHER_INSURANCE: string;
   };
+  DASHBOARD: {
+    DASHBOARD_SUMMARY: string;
+    DASHBOARD_CALENDAR_EVENTS: string;
+    DASHBOARD_DAY_DETAILS: string;
+    DASHBOARD_PAYMENT_PENDING: string;
+    DASHBOARD_RENEWAL_TYPE_LIST: string;
+    DASHBOARD_RENEWAL_PENDING: string;
+    DASHBOARD_CHART_COMPANY: string;
+    DASHBOARD_CHART_TYPE: string;
+    DASHBOARD_CHART_POLICY: string;
+  };
+  STAFF: {
+    INSERT_STAFF: string;
+    STAFF_LIST: string;
+    VIEW_STAFF: string;
+    DELETE_STAFF: string;
+    UPDATE_STAFF_STATUS: string;
+  };
 }
 
 // Define and export the standard API endpoint object
 const endPointApi: EndPointApi = {
+  STAFF: {
+    INSERT_STAFF: 'insert_staff',
+    STAFF_LIST: 'staff_list',
+    VIEW_STAFF: 'view_staff',
+    DELETE_STAFF: 'delete_staff',
+    UPDATE_STAFF_STATUS: 'update_staff_status',
+  },
   AUTH: {
     SEND_LOGIN_OTP: 'send_login_otp',
     VERIFY_LOGIN_OTP: 'verify_login_otp',
@@ -262,6 +287,17 @@ const endPointApi: EndPointApi = {
     OTHER_INSURANCE_LIST: 'other_insurance_list',
     DELETE_OTHER_INSURANCE: 'delete_other_insurance',
     VIEW_OTHER_INSURANCE: 'view_other_insurance',
+  },
+  DASHBOARD: {
+    DASHBOARD_SUMMARY: 'dashboard_summary',
+    DASHBOARD_CALENDAR_EVENTS: 'dashboard_calendar_events',
+    DASHBOARD_DAY_DETAILS: 'dashboard_day_details',
+    DASHBOARD_PAYMENT_PENDING: 'dashboard_payment_pending',
+    DASHBOARD_RENEWAL_TYPE_LIST: 'dashboard_renewal_type_list',
+    DASHBOARD_RENEWAL_PENDING: 'dashboard_renewal_pending',
+    DASHBOARD_CHART_COMPANY: 'dashboard_chart_company',
+    DASHBOARD_CHART_TYPE: 'dashboard_chart_type',
+    DASHBOARD_CHART_POLICY: 'dashboard_chart_policy',
   },
 };
 

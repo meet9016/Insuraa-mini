@@ -46,7 +46,7 @@ const CustomNoRowsOverlay = () => {
       <img
         src="/images/no-data.png"
         alt="No Data Found"
-        className="w-72 sm:w-80 h-auto max-w-full object-contain mb-2"
+        className="w-58 sm:w-68 h-auto max-w-full object-contain mb-3"
       />
       <h3 className="text-base font-bold text-gray-800">No Data Available</h3>
       <p className="text-xs text-gray-400 mt-1 max-w-xs">There are no records to display at the moment.</p>
@@ -56,9 +56,9 @@ const CustomNoRowsOverlay = () => {
 
 const overlayNoRowsTemplate = `
   <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 16px; text-align:center;">
-    <img src="/images/no-data.png" alt="No Data Available" style="width:280px; height:auto; max-width:100%; object-fit:contain; margin-bottom:8px; margin-left:auto; margin-right:auto;" />
+    <img src="/images/no-data.png" alt="No Data Available" style="width:220px; height:auto; max-width:100%; object-fit:contain; margin-bottom:10px; margin-left:auto; margin-right:auto;" />
     <span style="font-size:16px; font-weight:700; color:#1e293b; display:block;">No Data Available</span>
-    <span style="font-size:12px; color:#94A3B8; margin-top:4px; display:block;">There are no records to display at the moment.</span>
+    <span style="font-size:13px; color:#94A3B8; margin-top:4px; display:block;">There are no records to display at the moment.</span>
   </div>
 `;
 

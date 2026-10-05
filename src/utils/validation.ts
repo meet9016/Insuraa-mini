@@ -1058,5 +1058,57 @@ export const validateOtherInsurance = (formData: any) => {
   };
 };
 
+// Staff Form Joi Validation Schema
+export const staffSchema = Joi.object({
+  full_name: Joi.string().trim().required().messages({
+    'string.empty': 'Please enter Full Name',
+  }),
+
+  number: Joi.string()
+    .trim()
+    .required()
+    .pattern(/^[0-9]{10}$/)
+    .messages({
+      'string.empty': 'Please enter Mobile Number',
+      'string.pattern.base': 'Please enter a valid 10-digit Mobile Number',
+    }),
+
+  email: Joi.string()
+    .trim()
+    .allow('', null)
+    .email({ tlds: { allow: false } })
+    .messages({
+      'string.email': 'Please enter a valid Email Address',
+    }),
+
+  address: Joi.string().trim().allow('', null),
+
+  data_access: Joi.string().trim().required().messages({
+    'string.empty': 'Please select Data Access',
+  }),
+});
+
+// Helper function to validate Staff form data using Joi
+export const validateStaff = (formData: any) => {
+  const errors: Record<string, string> = {};
+
+  const { error } = staffSchema.validate(formData, { abortEarly: false, allowUnknown: true });
+
+  if (error) {
+    error.details.forEach((detail) => {
+      const key = detail.path[0] as string;
+      if (key && !errors[key]) {
+        errors[key] = detail.message;
+      }
+    });
+  }
+
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors,
+  };
+};
+
+
 
 

@@ -1590,3 +1590,144 @@ export const getOtherInsuranceColumns = ({ onView, onEdit, onDelete }: OtherInsu
     },
   }
 ];
+
+export interface StaffColumnProps {
+  onView?: (data: any) => void;
+  onStatusToggle?: (data: any, newStatus: number) => void;
+  onEdit?: (data: any) => void;
+  onDelete?: (data: any) => void;
+}
+
+export const getStaffColumns = ({ onView, onStatusToggle, onEdit, onDelete }: StaffColumnProps = {}) => [
+  {
+    headerName: 'Full Name',
+    field: 'full_name',
+    flex: 1.3,
+    minWidth: 140,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      const val = params.data?.full_name || 'N/A';
+      return (
+        <span className="font-bold text-gray-900 text-xs truncate">
+          {val}
+        </span>
+      );
+    },
+  },
+  {
+    headerName: 'Mobile Number',
+    field: 'number',
+    flex: 1,
+    minWidth: 120,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      const num = params.data?.number;
+      return num ? (
+        <a href={`tel:${num}`} className="text-[#2F439D] font-semibold text-xs flex items-center gap-1.5 hover:underline">
+          <Phone size={13} className="text-[#2F439D]" />
+          {num}
+        </a>
+      ) : <span className="text-gray-400 text-xs">N/A</span>;
+    },
+  },
+  {
+    headerName: 'Email Address',
+    field: 'email',
+    flex: 1.3,
+    minWidth: 150,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      const mail = params.data?.email;
+      return mail ? (
+        <a href={`mailto:${mail}`} className="text-gray-700 font-medium text-xs flex items-center gap-1.5 hover:text-[#2F439D] truncate">
+          {mail}
+        </a>
+      ) : <span className="text-gray-400 text-xs">N/A</span>;
+    },
+  },
+  {
+    headerName: 'Address',
+    field: 'address',
+    flex: 1.2,
+    minWidth: 130,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      return (
+        <span className="text-gray-600 text-xs font-medium truncate">
+          {params.data?.address || 'N/A'}
+        </span>
+      );
+    },
+  },
+  {
+    headerName: 'Data Access',
+    field: 'data_access_name',
+    flex: 1.2,
+    minWidth: 130,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      const accessName = params.data?.data_access_name || (String(params.data?.data_access) === '2' ? 'Only Added By Staff' : 'All Added By');
+      return (
+        <span className="text-gray-700 font-medium text-xs truncate">
+          {accessName}
+        </span>
+      );
+    },
+  },
+  {
+    headerName: 'Status',
+    field: 'status',
+    flex: 1,
+    minWidth: 110,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      const currentStatus = Number(params.data?.status ?? 1);
+      const isActive = currentStatus === 1;
+
+      return (
+        <div className="flex items-center gap-2 h-full">
+          <button
+            type="button"
+            onClick={() => {
+              const newStatus = isActive ? 2 : 1;
+              if (onStatusToggle) {
+                onStatusToggle(params.data, newStatus);
+              }
+            }}
+            className={`relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+              isActive ? 'bg-emerald-500' : 'bg-gray-300'
+            }`}
+            title={isActive ? 'Click to Deactivate' : 'Click to Activate'}
+          >
+            <span
+              className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                isActive ? 'translate-x-5' : 'translate-x-0'
+              }`}
+            />
+          </button>
+          <span className={`text-xs font-semibold ${isActive ? 'text-emerald-600' : 'text-gray-500'}`}>
+            {isActive ? 'Active' : 'Inactive'}
+          </span>
+        </div>
+      );
+    },
+  },
+  {
+    headerName: 'Action',
+    field: 'actions',
+    flex: 0.9,
+    minWidth: 100,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      return (
+        <TableActions
+          data={params.data}
+          onView={onView}
+          onEdit={onEdit}
+          onDelete={onDelete}
+        />
+      );
+    },
+  },
+];
+

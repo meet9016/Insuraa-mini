@@ -13,8 +13,13 @@ import {
   Pie,
   Sector
 } from 'recharts';
-import { ChevronLeft, ChevronRight, Filter, Calendar, Shield, BarChart2, PieChart as PieChartIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Filter, Calendar, Shield, BarChart2, PieChart as PieChartIcon, X, Phone, Mail, User, Cake, Heart, UserCheck, Car, ChevronDown, Check } from 'lucide-react';
+import { toast } from 'react-toastify';
+import { ColDef } from 'ag-grid-community';
+import AgGridTable from '@/components/ui/tableaggrid/AgGridTable';
 import DataTable from '@/components/ui/DataTable';
+import DatePicker from '@/components/ui/DatePicker';
+import TableHeader from '@/components/ui/TableHeader';
 
 const LIFE_PAYMENT_COLUMNS = [
   { key: 'date', label: 'Date' },
@@ -124,13 +129,398 @@ const renderActiveShape = (props: any) => {
 };
 
 import { getAuthToken } from '@/config';
+import {
+  useDashboardSummary,
+  useCalendarEvents,
+  useDashboardDayDetails,
+  useDashboardPaymentPending,
+  useDashboardRenewalTypeList,
+  useDashboardRenewalPending,
+  useDashboardChartCompany,
+  useDashboardChartType,
+  useDashboardChartPolicy,
+  PolicyRenewalItem,
+  PaymentPendingItem,
+  RenewalPendingItem
+} from '@/hooks/useDashboardApi';
+
+const PERIOD_FILTERS = [
+  { label: 'Today', value: 'today' },
+  { label: '7 Days', value: '7days' },
+  { label: '15 Days', value: '15days' },
+  { label: 'This Month', value: 'this_month' },
+  { label: 'Lapsed 7', value: 'lapsed_7' },
+  { label: 'Lapsed 15', value: 'lapsed_15' },
+  { label: 'Lapsed Month', value: 'lapsed_month' },
+  { label: 'Previous Month', value: 'prev_month' },
+  { label: 'Next Month', value: 'next_month' },
+  { label: 'Date Range', value: 'range' },
+];
+
+const EVENT_COLOR_MAP: Record<string, string> = {
+  birthday: 'bg-amber-400',
+  anniversary: 'bg-rose-400',
+  lead: 'bg-emerald-500',
+};
+
+const RENEWAL_COLOR_MAP: Record<string, string> = {
+  health: 'bg-rose-500',
+  motor: 'bg-blue-400',
+  life: 'bg-emerald-500',
+  other: 'bg-gray-400',
+};
+
+const getDynamicLegends = (
+  eventsData: any,
+  colorMap: Record<string, string>
+) => {
+  const typeMap = new Map<string, string>();
+
+  const apiList = eventsData?.event_types || eventsData?.legends || eventsData?.categories || eventsData?.types;
+
+  if (Array.isArray(apiList) && apiList.length > 0) {
+    apiList.forEach((item: any) => {
+      const name = typeof item === 'string' ? item : item?.name || item?.label || item?.title;
+      if (name) {
+        const str = String(name).trim();
+        typeMap.set(str.toLowerCase(), str);
+      }
+    });
+  } else if (apiList && typeof apiList === 'object') {
+    Object.keys(apiList).forEach((key) => {
+      typeMap.set(key.trim().toLowerCase(), key.trim());
+    });
+  }
+
+  const eventsObj = eventsData?.events || {};
+  if (eventsObj && typeof eventsObj === 'object') {
+    Object.values(eventsObj).forEach((evtList: any) => {
+      if (Array.isArray(evtList)) {
+        evtList.forEach((e: any) => {
+          if (e && typeof e === 'string') {
+            const str = e.trim();
+            if (str && !typeMap.has(str.toLowerCase())) {
+              typeMap.set(str.toLowerCase(), str);
+            }
+          }
+        });
+      }
+    });
+  }
+
+  const fallbackColors = [
+    'bg-amber-400',
+    'bg-rose-400',
+    'bg-emerald-500',
+    'bg-blue-400',
+    'bg-purple-500',
+    'bg-pink-400',
+    'bg-indigo-500',
+    'bg-gray-400'
+  ];
+
+  return Array.from(typeMap.entries()).map(([rawKey, displayName], idx) => {
+    const formattedName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
+    const color = colorMap[rawKey] || fallbackColors[idx % fallbackColors.length];
+    return { name: formattedName, raw: rawKey, color };
+  });
+};
 
 export default function Dashboard() {
   const [activeTaskFilter, setActiveTaskFilter] = useState('Today');
-  const [companyChartMode, setCompanyChartMode] = useState('Bar');
-  const [typeChartMode, setTypeChartMode] = useState('Bar');
-  const [activeCompanyIndex, setActiveCompanyIndex] = useState(0);
+
+  // General, Life, Type & Policy Chart States
+  const [generalYearFilter, setGeneralYearFilter] = useState('all');
+  const [lifeYearFilter, setLifeYearFilter] = useState('all');
+  const [typeYearFilter, setTypeYearFilter] = useState('all');
+  const [policyMode, setPolicyMode] = useState('general');
+  const [policyYear, setPolicyYear] = useState('2026');
+  const [generalChartMode, setGeneralChartMode] = useState<'Bar' | 'Pie'>('Bar');
+  const [lifeChartMode, setLifeChartMode] = useState<'Bar' | 'Pie'>('Bar');
+  const [typeChartMode, setTypeChartMode] = useState<'Bar' | 'Pie'>('Bar');
+  const [activeGeneralIndex, setActiveGeneralIndex] = useState(0);
+  const [activeLifeIndex, setActiveLifeIndex] = useState(0);
   const [activeTypeIndex, setActiveTypeIndex] = useState(0);
+
+  const [eventDate, setEventDate] = useState(() => new Date());
+  const [renewalDate, setRenewalDate] = useState(() => new Date());
+
+  const [selectedDayModal, setSelectedDayModal] = useState<{
+    isOpen: boolean;
+    side: 'left' | 'right';
+    date: string;
+  } | null>(null);
+
+  // Payment Pending Filter & Modal States (Default: today)
+  const [activePaymentPeriod, setActivePaymentPeriod] = useState('today');
+  const [paymentDateRange, setPaymentDateRange] = useState({ from: '', to: '' });
+  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
+  const [isDateRangeModalOpen, setIsDateRangeModalOpen] = useState(false);
+  const [tempFromDate, setTempFromDate] = useState('');
+  const [tempToDate, setTempToDate] = useState('');
+
+  // Renewal Pending States (Default: today, type: all)
+  const [activeRenewalType, setActiveRenewalType] = useState('all');
+  const [activeRenewalPeriod, setActiveRenewalPeriod] = useState('today');
+  const [renewalDateRange, setRenewalDateRange] = useState({ from: '', to: '' });
+  const [isRenewalTypeDropdownOpen, setIsRenewalTypeDropdownOpen] = useState(false);
+  const [isRenewalPeriodDropdownOpen, setIsRenewalPeriodDropdownOpen] = useState(false);
+  const [isRenewalDateRangeModalOpen, setIsRenewalDateRangeModalOpen] = useState(false);
+  const [tempRenewalFromDate, setTempRenewalFromDate] = useState('');
+  const [tempRenewalToDate, setTempRenewalToDate] = useState('');
+
+  const { data: renewalTypeList } = useDashboardRenewalTypeList();
+
+  const { data: renewalPendingData, isLoading: loadingRenewalPending } = useDashboardRenewalPending({
+    period: activeRenewalPeriod,
+    type: activeRenewalType,
+    from: activeRenewalPeriod === 'range' ? renewalDateRange.from : '',
+    to: activeRenewalPeriod === 'range' ? renewalDateRange.to : '',
+  });
+
+  const { data: paymentPendingData, isLoading: loadingPaymentPending } = useDashboardPaymentPending({
+    period: activePaymentPeriod,
+    from: activePaymentPeriod === 'range' ? paymentDateRange.from : '',
+    to: activePaymentPeriod === 'range' ? paymentDateRange.to : '',
+  });
+
+  const { data: generalCompanyData, isLoading: loadingGeneralCompany } = useDashboardChartCompany({
+    yearFilter: generalYearFilter,
+    companyType: 'general',
+  });
+
+  const { data: lifeCompanyData, isLoading: loadingLifeCompany } = useDashboardChartCompany({
+    yearFilter: lifeYearFilter,
+    companyType: 'life',
+  });
+
+  const { data: typeChartData, isLoading: loadingTypeChart } = useDashboardChartType({
+    yearFilter: typeYearFilter,
+  });
+
+  const { data: policyChartData, isLoading: loadingPolicyChart } = useDashboardChartPolicy({
+    mode: policyMode,
+    year: policyYear,
+  });
+
+  const handlePeriodFilterClick = (periodVal: string) => {
+    if (periodVal === 'range') {
+      setIsDateRangeModalOpen(true);
+    } else {
+      setActivePaymentPeriod(periodVal);
+      setPaymentDateRange({ from: '', to: '' });
+    }
+  };
+
+  const handleApplyDateRange = () => {
+    if (!tempFromDate || !tempToDate) {
+      toast.error('Please select both From Date and To Date');
+      return;
+    }
+    setPaymentDateRange({ from: tempFromDate, to: tempToDate });
+    setActivePaymentPeriod('range');
+    setIsDateRangeModalOpen(false);
+  };
+
+  const paymentPendingColumnDefs = React.useMemo<ColDef<PaymentPendingItem>[]>(() => [
+    {
+      headerName: 'Type',
+      field: 'ins_type',
+      width: 110,
+      cellRenderer: (params: any) => (
+        <span className="bg-[#2F439D]/10 text-[#2F439D] font-bold text-xs px-2 py-0.5 rounded border border-[#2F439D]/20">
+          {params.value || 'Life'}
+        </span>
+      ),
+    },
+    {
+      headerName: 'Policy No',
+      field: 'policy_number',
+      minWidth: 140,
+      cellRenderer: (params: any) => (
+        <span className="font-mono font-semibold text-gray-800 text-xs bg-gray-50 px-2 py-0.5 rounded border border-gray-200">
+          {params.value || 'N/A'}
+        </span>
+      ),
+    },
+    {
+      headerName: 'Customer Name',
+      field: 'customer_name',
+      minWidth: 180,
+      cellRenderer: (params: any) => (
+        <span className="font-semibold text-gray-900 text-xs">
+          {params.value || 'N/A'}
+        </span>
+      ),
+    },
+    {
+      headerName: 'Mobile',
+      field: 'phone',
+      minWidth: 140,
+      cellRenderer: (params: any) => (
+        params.value ? (
+          <a href={`tel:${params.value}`} className="text-[#2F439D] font-medium hover:underline text-xs flex items-center gap-1">
+            <Phone size={12} /> {params.value}
+          </a>
+        ) : <span className="text-gray-400 text-xs">N/A</span>
+      ),
+    },
+    {
+      headerName: 'Due Date',
+      field: 'due_date',
+      minWidth: 130,
+      cellRenderer: (params: any) => (
+        <span className="text-xs font-semibold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-100">
+          {params.value || 'N/A'}
+        </span>
+      ),
+    },
+    {
+      headerName: 'Amount',
+      field: 'amount',
+      minWidth: 110,
+      cellRenderer: (params: any) => (
+        <span className="font-semibold text-gray-700 text-xs">
+          ₹{params.value ?? 0}
+        </span>
+      ),
+    },
+    {
+      headerName: 'GST Amount',
+      field: 'gst_amount',
+      minWidth: 110,
+      cellRenderer: (params: any) => (
+        <span className="text-gray-500 text-xs font-medium">
+          ₹{params.value ?? 0}
+        </span>
+      ),
+    },
+    {
+      headerName: 'Final Amount',
+      field: 'final_amount',
+      minWidth: 130,
+      cellRenderer: (params: any) => (
+        <span className="font-bold text-emerald-700 text-xs bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
+          ₹{params.value ?? 0}
+        </span>
+      ),
+    },
+    {
+      headerName: 'Status',
+      field: 'payment_status',
+      minWidth: 120,
+      cellRenderer: (params: any) => {
+        const val = params.value;
+        const isPending = val === 1 || val === '1' || !val || String(val).toLowerCase() === 'pending';
+        return (
+          <div className="flex items-center h-full">
+            <span className={`font-bold text-[11px] px-2.5 py-0.5 rounded-md border uppercase tracking-wider ${isPending
+              ? 'bg-amber-50 text-amber-700 border-amber-200'
+              : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+              }`}>
+              {isPending ? 'Pending' : String(val)}
+            </span>
+          </div>
+        );
+      },
+    },
+  ], []);
+
+  const renewalPendingColumnDefs = React.useMemo<ColDef<RenewalPendingItem>[]>(() => [
+    {
+      headerName: 'Type',
+      field: 'ins_type',
+      minWidth: 140,
+      cellRenderer: (params: any) => (
+        <span className="bg-[#2F439D]/10 text-[#2F439D] font-bold text-xs px-2.5 py-0.5 rounded border border-[#2F439D]/20">
+          {params.value || 'Insurance'}
+        </span>
+      ),
+    },
+    {
+      headerName: 'Customer',
+      field: 'customer_name',
+      minWidth: 180,
+      cellRenderer: (params: any) => (
+        <span className="font-semibold text-gray-900 text-xs">
+          {params.value || 'N/A'}
+        </span>
+      ),
+    },
+    {
+      headerName: 'Mobile',
+      field: 'phone',
+      minWidth: 140,
+      cellRenderer: (params: any) => (
+        params.value ? (
+          <a href={`tel:${params.value}`} className="text-[#2F439D] font-medium hover:underline text-xs flex items-center gap-1">
+            <Phone size={12} /> {params.value}
+          </a>
+        ) : <span className="text-gray-400 text-xs">N/A</span>
+      ),
+    },
+    {
+      headerName: 'Policy No',
+      field: 'policy_number',
+      minWidth: 150,
+      cellRenderer: (params: any) => (
+        <span className="font-mono font-semibold text-gray-800 text-xs bg-gray-50 px-2 py-0.5 rounded border border-gray-200">
+          {params.value?.trim() || 'N/A'}
+        </span>
+      ),
+    },
+    {
+      headerName: 'End Date',
+      field: 'policy_end_date',
+      minWidth: 130,
+      cellRenderer: (params: any) => (
+        <span className="text-xs font-semibold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-100">
+          {params.value || 'N/A'}
+        </span>
+      ),
+    },
+    {
+      headerName: 'Days',
+      field: 'days_left',
+      minWidth: 100,
+      cellRenderer: (params: any) => {
+        const days = params.value;
+        const isExpired = params.data?.is_expired === 1 || Number(days) <= 0;
+        return (
+          <span className={`font-bold text-[11px] px-2.5 py-0.5 rounded-full border ${isExpired
+            ? 'bg-rose-100 text-rose-700 border-rose-200'
+            : 'bg-amber-100 text-amber-800 border-amber-200'
+            }`}>
+            {isExpired ? 'Expired' : `${days} days`}
+          </span>
+        );
+      },
+    },
+    {
+      headerName: 'Premium Amount',
+      field: 'premium_amount',
+      minWidth: 140,
+      cellRenderer: (params: any) => (
+        <span className="font-bold text-emerald-700 text-xs bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
+          ₹{params.value ?? 0}
+        </span>
+      ),
+    },
+  ], []);
+
+  const { data: summaryData, isLoading: loadingSummary } = useDashboardSummary();
+
+  const { data: eventCalendarData } = useCalendarEvents({
+    side: 'left',
+    year: eventDate.getFullYear(),
+    month: eventDate.getMonth() + 1,
+  });
+
+  const { data: renewalCalendarData } = useCalendarEvents({
+    side: 'right',
+    year: renewalDate.getFullYear(),
+    month: renewalDate.getMonth() + 1,
+  });
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -141,6 +531,25 @@ export default function Dashboard() {
     }
   }, []);
 
+  const metricsList = [
+    { title: "Total Policy", value: summaryData?.total_policy ?? 0 },
+    { title: "Total Quotation", value: summaryData?.total_quotation ?? 0 },
+    { title: "Total Renewal", value: summaryData?.total_renewal ?? 0 },
+    { title: "Total Customer", value: summaryData?.total_customer ?? 0 },
+    { title: "Total Lead", value: summaryData?.total_lead ?? 0 },
+    { title: "Total Claim", value: summaryData?.total_claim ?? 0 },
+  ];
+
+  const leftLegends = getDynamicLegends(
+    eventCalendarData,
+    EVENT_COLOR_MAP
+  );
+
+  const rightLegends = getDynamicLegends(
+    renewalCalendarData,
+    RENEWAL_COLOR_MAP
+  );
+
   return (
     <div className="bg-[#f8fafc] min-h-screen">
       <Head>
@@ -150,12 +559,9 @@ export default function Dashboard() {
       <div className="w-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">
         {/* Metric Cards */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-5">
-          <MetricCard title="Total Policy" value="18" percentage="18%" />
-          <MetricCard title="Total Quatation" value="₹ 6.5 K" percentage="0.07%" />
-          <MetricCard title="Total Renewal" value="4" percentage="0%" />
-          <MetricCard title="Total Customer" value="49" percentage="8.83%" />
-          <MetricCard title="Total Lead" value="34" percentage="0.01%" />
-          <MetricCard title="Total Calim" value="₹ 6.5 K" percentage="0.07%" />
+          {metricsList.map((metric, idx) => (
+            <MetricCard key={idx} title={metric.title} value={loadingSummary ? "..." : metric.value} />
+          ))}
         </div>
 
         {/* Calendars Row */}
@@ -165,22 +571,33 @@ export default function Dashboard() {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-5 sm:p-6 border-b border-[#2B4399]/20 bg-[#F2F7FF]">
               <h3 className="font-semibold text-gray-900 text-lg">Event Details</h3>
               <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-gray-500">
-                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-sm shadow-amber-400/50"></span> Birthday</div>
-                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-rose-400 shadow-sm shadow-rose-400/50"></span> Anniversary</div>
-                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50"></span> Lead</div>
+                {leftLegends.map((item, idx) => (
+                  <div key={idx} className="flex items-center gap-1.5">
+                    <span className={`w-2.5 h-2.5 rounded-full ${item.color} shadow-sm`} />
+                    <span>{item.name}</span>
+                  </div>
+                ))}
 
                 <div className="flex items-center gap-2 sm:ml-2 bg-gray-50 rounded-lg p-1 border border-gray-100">
-                  <span className="font-medium text-gray-700 px-2">August 2026</span>
+                  <span className="font-medium text-gray-700 px-2 min-w-[110px] text-center select-none">
+                    {eventDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                  </span>
                   <div className="flex items-center gap-1">
-                    <button className="p-1 rounded-md hover:bg-white hover:shadow-sm text-gray-400 hover:text-gray-800 transition-all"><ChevronLeft size={16} /></button>
-                    <button className="px-3 py-1 rounded-md bg-white shadow-sm text-[#2F439D] font-medium">Today</button>
-                    <button className="p-1 rounded-md hover:bg-white hover:shadow-sm text-gray-400 hover:text-gray-800 transition-all"><ChevronRight size={16} /></button>
+                    <button onClick={() => setEventDate(new Date(eventDate.getFullYear(), eventDate.getMonth() - 1, 1))} className="p-1 rounded-md hover:bg-white hover:shadow-sm text-gray-400 hover:text-gray-800 transition-all"><ChevronLeft size={16} /></button>
+                    <button onClick={() => setEventDate(new Date())} className="px-3 py-1 rounded-md bg-white shadow-sm text-[#2F439D] font-medium">Today</button>
+                    <button onClick={() => setEventDate(new Date(eventDate.getFullYear(), eventDate.getMonth() + 1, 1))} className="p-1 rounded-md hover:bg-white hover:shadow-sm text-gray-400 hover:text-gray-800 transition-all"><ChevronRight size={16} /></button>
                   </div>
                 </div>
               </div>
             </div>
             <div className="p-5 bg-white">
-              <CalendarGrid highlights={[{ day: 11, color: 'bg-[#2F439D] text-white shadow-md shadow-[#2F439D]/30' }, { day: 13, dot: 'bg-emerald-500' }, { day: 20, dot: 'bg-amber-400' }]} />
+              <CalendarGrid
+                year={eventDate.getFullYear()}
+                month={eventDate.getMonth() + 1}
+                events={eventCalendarData?.events}
+                colorMap={EVENT_COLOR_MAP}
+                onDateClick={(dateStr) => setSelectedDayModal({ isOpen: true, side: 'left', date: dateStr })}
+              />
             </div>
           </div>
 
@@ -189,40 +606,223 @@ export default function Dashboard() {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-5 sm:p-6 border-b border-[#2B4399]/20 bg-[#F2F7FF]">
               <h3 className="font-semibold text-gray-900 text-lg">Policy Renewal</h3>
               <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-gray-500">
-                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-sm shadow-rose-500/50"></span> Health</div>
-                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-blue-400 shadow-sm shadow-blue-400/50"></span> Motor</div>
-                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50"></span> Life</div>
-                <div className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-gray-400 shadow-sm shadow-gray-400/50"></span> Other</div>
+                {rightLegends.map((item, idx) => (
+                  <div key={idx} className="flex items-center gap-1.5">
+                    <span className={`w-2.5 h-2.5 rounded-full ${item.color} shadow-sm`} />
+                    <span>{item.name}</span>
+                  </div>
+                ))}
 
                 <div className="flex items-center gap-2 sm:ml-2 bg-gray-50 rounded-lg p-1 border border-gray-100">
-                  <span className="font-medium text-gray-700 px-2">August 2026</span>
+                  <span className="font-medium text-gray-700 px-2 min-w-[110px] text-center select-none">
+                    {renewalDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                  </span>
                   <div className="flex items-center gap-1">
-                    <button className="p-1 rounded-md hover:bg-white hover:shadow-sm text-gray-400 hover:text-gray-800 transition-all"><ChevronLeft size={16} /></button>
-                    <button className="px-3 py-1 rounded-md bg-white shadow-sm text-[#2F439D] font-medium">Today</button>
-                    <button className="p-1 rounded-md hover:bg-white hover:shadow-sm text-gray-400 hover:text-gray-800 transition-all"><ChevronRight size={16} /></button>
+                    <button onClick={() => setRenewalDate(new Date(renewalDate.getFullYear(), renewalDate.getMonth() - 1, 1))} className="p-1 rounded-md hover:bg-white hover:shadow-sm text-gray-400 hover:text-gray-800 transition-all"><ChevronLeft size={16} /></button>
+                    <button onClick={() => setRenewalDate(new Date())} className="px-3 py-1 rounded-md bg-white shadow-sm text-[#2F439D] font-medium">Today</button>
+                    <button onClick={() => setRenewalDate(new Date(renewalDate.getFullYear(), renewalDate.getMonth() + 1, 1))} className="p-1 rounded-md hover:bg-white hover:shadow-sm text-gray-400 hover:text-gray-800 transition-all"><ChevronRight size={16} /></button>
                   </div>
                 </div>
               </div>
             </div>
             <div className="p-5 bg-white">
-              <CalendarGrid highlights={[{ day: 11, color: 'bg-[#2F439D] text-white shadow-md shadow-[#2F439D]/30' }]} />
+              <CalendarGrid
+                year={renewalDate.getFullYear()}
+                month={renewalDate.getMonth() + 1}
+                events={renewalCalendarData?.events}
+                colorMap={RENEWAL_COLOR_MAP}
+                onDateClick={(dateStr) => setSelectedDayModal({ isOpen: true, side: 'right', date: dateStr })}
+              />
             </div>
           </div>
         </div>
 
         {/* Life Insurance Payment Pending */}
-        <DataTable
-          title="Life Insurance Payment Pending"
-          columns={LIFE_PAYMENT_COLUMNS}
-          data={[]}
-        />
+        <div className="bg-white rounded-2xl border border-[#2B4399]/20 shadow-[0_8px_30px_-4px_rgba(0,0,0,0.02)] overflow-hidden">
+          <TableHeader
+            title="Life Insurance Payment Pending"
+            showSearch={false}
+            extraActions={
+              <div className="relative">
+                <button
+                  onClick={() => setIsFilterDropdownOpen((prev) => !prev)}
+                  className="px-4 py-2 text-xs font-semibold rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 shadow-sm flex items-center gap-2.5 transition-all"
+                >
+                  <Filter size={14} className="text-[#2F439D]" />
+                  <span>
+                    Filter: <strong className="text-[#2F439D]">{PERIOD_FILTERS.find((f) => f.value === activePaymentPeriod)?.label || 'Today'}</strong>
+                  </span>
+                  <ChevronDown size={14} className={`text-gray-400 transition-transform duration-200 ${isFilterDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
 
-        {/* General Insurance Renewal Pending */}
-        <DataTable
-          title="General Insurance Renewal Pending"
-          columns={RENEWAL_COLUMNS}
-          data={[]}
-        />
+                {isFilterDropdownOpen && (
+                  <>
+                    <div className="fixed inset-0 z-20" onClick={() => setIsFilterDropdownOpen(false)} />
+                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-30 animate-in fade-in slide-in-from-top-2 duration-150">
+                      <div className="px-3.5 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100 mb-1">
+                        Select Filter Period
+                      </div>
+                      {PERIOD_FILTERS.map((f) => {
+                        const isActive = activePaymentPeriod === f.value;
+                        return (
+                          <button
+                            key={f.value}
+                            onClick={() => {
+                              setIsFilterDropdownOpen(false);
+                              handlePeriodFilterClick(f.value);
+                            }}
+                            className={`w-full text-left px-4 py-2 text-xs font-medium flex items-center justify-between transition-colors ${isActive
+                              ? 'bg-indigo-50 text-[#2F439D] font-bold'
+                              : 'text-gray-700 hover:bg-gray-50'
+                              }`}
+                          >
+                            <span>{f.label}</span>
+                            {isActive && <Check size={14} className="text-[#2F439D]" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+              </div>
+            }
+          />
+
+          <div className="p-4">
+            <AgGridTable
+              rowData={paymentPendingData?.list || []}
+              columnDefs={paymentPendingColumnDefs}
+              loading={loadingPaymentPending}
+              height="380px"
+            />
+          </div>
+        </div>
+
+        {/* Insurance Renewal Pending */}
+        <div className="bg-white rounded-2xl border border-[#2B4399]/20 shadow-[0_8px_30px_-4px_rgba(0,0,0,0.02)] overflow-hidden">
+          <TableHeader
+            title="Insurance Renewal Pending"
+            showSearch={false}
+            extraActions={
+              <div className="flex items-center gap-2.5 flex-wrap">
+                {/* Type Filter Dropdown */}
+                <div className="relative">
+                  <button
+                    onClick={() => {
+                      setIsRenewalTypeDropdownOpen((prev) => !prev);
+                      setIsRenewalPeriodDropdownOpen(false);
+                    }}
+                    className="px-4 py-2 text-xs font-semibold rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 shadow-sm flex items-center gap-2 transition-all"
+                  >
+                    <Shield size={14} className="text-[#2F439D]" />
+                    <span>
+                      Type: <strong className="text-[#2F439D]">
+                        {renewalTypeList?.find((t) => String(t.id) === String(activeRenewalType))?.name || 'All'}
+                      </strong>
+                    </span>
+                    <ChevronDown size={14} className={`text-gray-400 transition-transform duration-200 ${isRenewalTypeDropdownOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {isRenewalTypeDropdownOpen && (
+                    <>
+                      <div className="fixed inset-0 z-20" onClick={() => setIsRenewalTypeDropdownOpen(false)} />
+                      <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-30 max-h-64 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-150">
+                        <div className="px-3.5 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100 mb-1">
+                          Select Insurance Type
+                        </div>
+                        {(renewalTypeList && renewalTypeList.length > 0
+                          ? renewalTypeList
+                          : [{ id: 'all', name: 'All' }, { id: 'health', name: 'Health' }, { id: 'motor', name: 'Motor' }]
+                        ).map((t) => {
+                          const isActive = String(activeRenewalType) === String(t.id);
+                          return (
+                            <button
+                              key={t.id}
+                              onClick={() => {
+                                setActiveRenewalType(String(t.id));
+                                setIsRenewalTypeDropdownOpen(false);
+                              }}
+                              className={`w-full text-left px-4 py-2 text-xs font-medium flex items-center justify-between transition-colors ${isActive
+                                ? 'bg-indigo-50 text-[#2F439D] font-bold'
+                                : 'text-gray-700 hover:bg-gray-50'
+                                }`}
+                            >
+                              <span>{t.name}</span>
+                              {isActive && <Check size={14} className="text-[#2F439D]" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Period Filter Dropdown */}
+                <div className="relative">
+                  <button
+                    onClick={() => {
+                      setIsRenewalPeriodDropdownOpen((prev) => !prev);
+                      setIsRenewalTypeDropdownOpen(false);
+                    }}
+                    className="px-4 py-2 text-xs font-semibold rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 shadow-sm flex items-center gap-2.5 transition-all"
+                  >
+                    <Filter size={14} className="text-[#2F439D]" />
+                    <span>
+                      Filter: <strong className="text-[#2F439D]">
+                        {PERIOD_FILTERS.find((f) => f.value === activeRenewalPeriod)?.label || 'Today'}
+                      </strong>
+                    </span>
+                    <ChevronDown size={14} className={`text-gray-400 transition-transform duration-200 ${isRenewalPeriodDropdownOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {isRenewalPeriodDropdownOpen && (
+                    <>
+                      <div className="fixed inset-0 z-20" onClick={() => setIsRenewalPeriodDropdownOpen(false)} />
+                      <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-30 animate-in fade-in slide-in-from-top-2 duration-150">
+                        <div className="px-3.5 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100 mb-1">
+                          Select Filter Period
+                        </div>
+                        {PERIOD_FILTERS.map((f) => {
+                          const isActive = activeRenewalPeriod === f.value;
+                          return (
+                            <button
+                              key={f.value}
+                              onClick={() => {
+                                setIsRenewalPeriodDropdownOpen(false);
+                                if (f.value === 'range') {
+                                  setIsRenewalDateRangeModalOpen(true);
+                                } else {
+                                  setActiveRenewalPeriod(f.value);
+                                  setRenewalDateRange({ from: '', to: '' });
+                                }
+                              }}
+                              className={`w-full text-left px-4 py-2 text-xs font-medium flex items-center justify-between transition-colors ${isActive
+                                ? 'bg-indigo-50 text-[#2F439D] font-bold'
+                                : 'text-gray-700 hover:bg-gray-50'
+                                }`}
+                            >
+                              <span>{f.label}</span>
+                              {isActive && <Check size={14} className="text-[#2F439D]" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            }
+          />
+
+          <div className="p-4">
+            <AgGridTable
+              rowData={renewalPendingData?.list || []}
+              columnDefs={renewalPendingColumnDefs}
+              loading={loadingRenewalPending}
+              height="380px"
+            />
+          </div>
+        </div>
 
         {/* Task Section */}
         {/* <div className="bg-white rounded-2xl border border-gray-100 shadow-[0_8px_30px_-4px_rgba(0,0,0,0.02)] overflow-hidden">
@@ -281,170 +881,595 @@ export default function Dashboard() {
           </div>
         </div> */}
 
-        {/* Charts Row */}
-        <div className="bg-white rounded-2xl border border-[#2B4399]/20 shadow-[0_8px_30px_-4px_rgba(0,0,0,0.02)] p-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-            <h3 className="font-semibold text-gray-900 text-lg tracking-tight">Policy Overview</h3>
-            <div className="flex flex-wrap items-center gap-3 text-xs font-medium">
-              <div className="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-100">
-                <button className="px-4 py-1.5 hover:bg-white hover:shadow-sm rounded-md flex items-center gap-1 text-gray-500 transition-all"><ChevronLeft size={14} /> 2025</button>
-                <button className="px-5 py-1.5 bg-white shadow-sm rounded-md text-[#2F439D]">2026</button>
-                <button className="px-4 py-1.5 hover:bg-white hover:shadow-sm rounded-md flex items-center gap-1 text-gray-500 transition-all">2027 <ChevronRight size={14} /></button>
+        {/* Company Overview Charts Row: General & Life Insurance */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* General Insurance Company Chart */}
+          <div className="bg-white rounded-2xl border border-[#2B4399]/20 shadow-[0_8px_30px_-4px_rgba(0,0,0,0.02)] p-6">
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-indigo-50 text-[#2F439D] rounded-lg"><Shield size={20} /></div>
+                <div>
+                  <h3 className="font-semibold text-gray-900 text-lg tracking-tight">
+                    {generalCompanyData?.title || 'General Insurance Company Overview'}
+                  </h3>
+                  {generalCompanyData?.total !== undefined && (
+                    <span className="text-xs text-gray-500 font-medium">Total: <strong className="text-[#2F439D]">{generalCompanyData.total}</strong></span>
+                  )}
+                </div>
               </div>
-              <div className="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-100">
-                <button className="px-5 py-1.5 bg-white shadow-sm rounded-md text-[#2F439D]">Monthly</button>
-                <button className="px-5 py-1.5 hover:bg-white hover:shadow-sm rounded-md text-gray-500 transition-all">By Type</button>
+              <div className="flex flex-wrap items-center gap-3 text-xs font-medium">
+                {/* Year Filter Options: All, Current Year, Previous Year */}
+                <div className="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-100">
+                  {[
+                    { label: 'All', value: 'all' },
+                    { label: 'Current Year', value: 'curr' },
+                    { label: 'Previous Year', value: 'prev' },
+                  ].map((filter) => (
+                    <button
+                      key={filter.value}
+                      onClick={() => setGeneralYearFilter(filter.value)}
+                      className={`px-3 py-1.5 rounded-md transition-all ${generalYearFilter === filter.value
+                          ? 'bg-white shadow-sm text-[#2F439D] font-bold'
+                          : 'text-gray-500 hover:bg-white'
+                        }`}
+                    >
+                      {filter.label}
+                    </button>
+                  ))}
+                </div>
+                {/* Bar / Pie Chart Toggle */}
+                <div className="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-100">
+                  <button
+                    onClick={() => setGeneralChartMode('Bar')}
+                    className={`px-3 py-1.5 rounded-md flex items-center gap-1.5 transition-all ${generalChartMode === 'Bar' ? 'bg-white shadow-sm text-[#2F439D] font-bold' : 'text-gray-500 hover:bg-white'
+                      }`}
+                  >
+                    <BarChart2 size={14} /> Bar
+                  </button>
+                  <button
+                    onClick={() => setGeneralChartMode('Pie')}
+                    className={`px-3 py-1.5 rounded-md flex items-center gap-1.5 transition-all ${generalChartMode === 'Pie' ? 'bg-white shadow-sm text-[#2F439D] font-bold' : 'text-gray-500 hover:bg-white'
+                      }`}
+                  >
+                    <PieChartIcon size={14} /> Pie
+                  </button>
+                </div>
               </div>
             </div>
+
+            {/* Color Legend Tags */}
+            {generalCompanyData?.items && generalCompanyData.items.length > 0 && (
+              <div className="flex flex-wrap gap-x-4 gap-y-2 mb-6 text-[11px] font-medium text-gray-600 bg-gray-50/50 p-4 rounded-xl border border-gray-50 max-h-24 overflow-y-auto">
+                {generalCompanyData.items.map((c, i) => (
+                  <div key={i} className="flex items-center gap-2 hover:text-gray-900 transition-colors">
+                    <span className="w-3 h-3 rounded-md shadow-sm flex-shrink-0" style={{ backgroundColor: c.color }} />
+                    <span className="truncate max-w-[150px]" title={c.name}>{c.name}</span>
+                    <span className="bg-white px-1.5 py-0.5 rounded border border-gray-100 font-bold text-[#2F439D]">{c.value}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Chart Area */}
+            <div className="h-[340px] flex items-center justify-center">
+              {loadingGeneralCompany ? (
+                <div className="flex flex-col items-center justify-center space-y-2">
+                  <div className="w-7 h-7 border-3 border-[#2F439D] border-t-transparent rounded-full animate-spin"></div>
+                  <span className="text-xs text-gray-400 font-medium">Loading chart data...</span>
+                </div>
+              ) : !generalCompanyData?.items || generalCompanyData.items.length === 0 ? (
+                <div className="flex flex-col items-center justify-center text-gray-400 space-y-1">
+                  <Shield size={32} className="opacity-20 mb-1" />
+                  <span className="text-xs font-semibold text-gray-500">No General Insurance Data Available</span>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  {generalChartMode === 'Bar' ? (
+                    <BarChart data={generalCompanyData.items} margin={{ top: 10, right: 10, left: -20, bottom: 50 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <XAxis
+                        dataKey="name"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 600 }}
+                        tickFormatter={(val) => (val.length > 15 ? val.substring(0, 15) + '...' : val)}
+                        angle={-25}
+                        textAnchor="end"
+                        dy={15}
+                      />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 600 }} dx={-10} />
+                      <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
+                      <Bar dataKey="value" radius={[6, 6, 0, 0]} barSize={44}>
+                        {generalCompanyData.items.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  ) : (
+                    <PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                      <Pie
+                        {...({ activeIndex: activeGeneralIndex, activeShape: renderActiveShape } as any)}
+                        data={generalCompanyData.items}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={75}
+                        outerRadius={105}
+                        dataKey="value"
+                        onMouseEnter={(_, index) => setActiveGeneralIndex(index)}
+                        stroke="none"
+                      >
+                        {generalCompanyData.items.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  )}
+                </ResponsiveContainer>
+              )}
+            </div>
           </div>
-          <div className="h-[320px] mt-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={POLICY_OVERVIEW_DATA} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 600 }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 600 }} dx={-10} />
-                <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
-                <Bar dataKey="value" fill="#4F46E5" radius={[6, 6, 0, 0]} barSize={44} />
-              </BarChart>
-            </ResponsiveContainer>
+
+          {/* Life Insurance Company Chart */}
+          <div className="bg-white rounded-2xl border border-[#2B4399]/20 shadow-[0_8px_30px_-4px_rgba(0,0,0,0.02)] p-6">
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg"><Shield size={20} /></div>
+                <div>
+                  <h3 className="font-semibold text-gray-900 text-lg tracking-tight">
+                    {lifeCompanyData?.title || 'Life Insurance Company Overview'}
+                  </h3>
+                  {lifeCompanyData?.total !== undefined && (
+                    <span className="text-xs text-gray-500 font-medium">Total: <strong className="text-emerald-600">{lifeCompanyData.total}</strong></span>
+                  )}
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-3 text-xs font-medium">
+                {/* Year Filter Options: All, Current Year, Previous Year */}
+                <div className="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-100">
+                  {[
+                    { label: 'All', value: 'all' },
+                    { label: 'Current Year', value: 'curr' },
+                    { label: 'Previous Year', value: 'prev' },
+                  ].map((filter) => (
+                    <button
+                      key={filter.value}
+                      onClick={() => setLifeYearFilter(filter.value)}
+                      className={`px-3 py-1.5 rounded-md transition-all ${lifeYearFilter === filter.value
+                          ? 'bg-white shadow-sm text-[#2F439D] font-bold'
+                          : 'text-gray-500 hover:bg-white'
+                        }`}
+                    >
+                      {filter.label}
+                    </button>
+                  ))}
+                </div>
+                {/* Bar / Pie Chart Toggle */}
+                <div className="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-100">
+                  <button
+                    onClick={() => setLifeChartMode('Bar')}
+                    className={`px-3 py-1.5 rounded-md flex items-center gap-1.5 transition-all ${lifeChartMode === 'Bar' ? 'bg-white shadow-sm text-[#2F439D] font-bold' : 'text-gray-500 hover:bg-white'
+                      }`}
+                  >
+                    <BarChart2 size={14} /> Bar
+                  </button>
+                  <button
+                    onClick={() => setLifeChartMode('Pie')}
+                    className={`px-3 py-1.5 rounded-md flex items-center gap-1.5 transition-all ${lifeChartMode === 'Pie' ? 'bg-white shadow-sm text-[#2F439D] font-bold' : 'text-gray-500 hover:bg-white'
+                      }`}
+                  >
+                    <PieChartIcon size={14} /> Pie
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Color Legend Tags */}
+            {lifeCompanyData?.items && lifeCompanyData.items.length > 0 && (
+              <div className="flex flex-wrap gap-x-4 gap-y-2 mb-6 text-[11px] font-medium text-gray-600 bg-gray-50/50 p-4 rounded-xl border border-gray-50 max-h-24 overflow-y-auto">
+                {lifeCompanyData.items.map((c, i) => (
+                  <div key={i} className="flex items-center gap-2 hover:text-gray-900 transition-colors">
+                    <span className="w-3 h-3 rounded-md shadow-sm flex-shrink-0" style={{ backgroundColor: c.color }} />
+                    <span className="truncate max-w-[150px]" title={c.name}>{c.name}</span>
+                    <span className="bg-white px-1.5 py-0.5 rounded border border-gray-100 font-bold text-[#2F439D]">{c.value}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Chart Area */}
+            <div className="h-[340px] flex items-center justify-center">
+              {loadingLifeCompany ? (
+                <div className="flex flex-col items-center justify-center space-y-2">
+                  <div className="w-7 h-7 border-3 border-[#2F439D] border-t-transparent rounded-full animate-spin"></div>
+                  <span className="text-xs text-gray-400 font-medium">Loading chart data...</span>
+                </div>
+              ) : !lifeCompanyData?.items || lifeCompanyData.items.length === 0 ? (
+                <div className="flex flex-col items-center justify-center text-gray-400 space-y-1">
+                  <Shield size={32} className="opacity-20 mb-1" />
+                  <span className="text-xs font-semibold text-gray-500">No Life Insurance Data Available</span>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  {lifeChartMode === 'Bar' ? (
+                    <BarChart data={lifeCompanyData.items} margin={{ top: 10, right: 10, left: -20, bottom: 50 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <XAxis
+                        dataKey="name"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 600 }}
+                        tickFormatter={(val) => (val.length > 15 ? val.substring(0, 15) + '...' : val)}
+                        angle={-25}
+                        textAnchor="end"
+                        dy={15}
+                      />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 600 }} dx={-10} />
+                      <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
+                      <Bar dataKey="value" radius={[6, 6, 0, 0]} barSize={44}>
+                        {lifeCompanyData.items.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  ) : (
+                    <PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                      <Pie
+                        {...({ activeIndex: activeLifeIndex, activeShape: renderActiveShape } as any)}
+                        data={lifeCompanyData.items}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={75}
+                        outerRadius={105}
+                        dataKey="value"
+                        onMouseEnter={(_, index) => setActiveLifeIndex(index)}
+                        stroke="none"
+                      >
+                        {lifeCompanyData.items.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  )}
+                </ResponsiveContainer>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Company and Type Charts Row */}
+        {/* Policy Overview & Insurance Type-Wise Overview Row (Side-by-Side) */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Company-Wise */}
+          {/* Policy Overview (Left Side) */}
           <div className="bg-white rounded-2xl border border-[#2B4399]/20 shadow-[0_8px_30px_-4px_rgba(0,0,0,0.02)] p-6">
-            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-indigo-50 text-[#2F439D] rounded-lg"><Shield size={20} /></div>
-                <h3 className="font-semibold text-gray-900 text-lg tracking-tight">Company-Wise Insurance Overview</h3>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+              <div>
+                <h3 className="font-semibold text-gray-900 text-lg tracking-tight">Policy Overview</h3>
+                <span className="text-xs text-gray-500 font-medium">
+                  Mode: <strong className="text-[#2F439D] capitalize">{policyMode}</strong> | Year: <strong className="text-[#2F439D]">{policyYear}</strong>
+                </span>
               </div>
               <div className="flex flex-wrap items-center gap-3 text-xs font-medium">
+                {/* Year Selection */}
                 <div className="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-100">
-                  <button className="px-5 py-1.5 bg-white shadow-sm rounded-md text-[#2F439D]">All</button>
-                  <button className="px-4 py-1.5 hover:bg-white hover:shadow-sm rounded-md text-gray-500 transition-all">2026</button>
-                  <button className="px-4 py-1.5 hover:bg-white hover:shadow-sm rounded-md text-gray-500 transition-all">2025</button>
+                  <button
+                    onClick={() => setPolicyYear(String(Number(policyYear) - 1))}
+                    className="px-3 py-1.5 hover:bg-white hover:shadow-sm rounded-md flex items-center gap-1 text-gray-500 transition-all"
+                  >
+                    <ChevronLeft size={14} /> {Number(policyYear) - 1}
+                  </button>
+                  <button className="px-4 py-1.5 bg-white shadow-sm rounded-md text-[#2F439D] font-bold">
+                    {policyYear}
+                  </button>
+                  <button
+                    onClick={() => setPolicyYear(String(Number(policyYear) + 1))}
+                    className="px-3 py-1.5 hover:bg-white hover:shadow-sm rounded-md flex items-center gap-1 text-gray-500 transition-all"
+                  >
+                    {Number(policyYear) + 1} <ChevronRight size={14} />
+                  </button>
                 </div>
+                {/* Mode Selection: General vs Life */}
                 <div className="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-100">
-                  <button onClick={() => setCompanyChartMode('Bar')} className={`px-4 py-1.5 shadow-sm rounded-md flex items-center gap-1.5 transition-all ${companyChartMode === 'Bar' ? 'bg-white text-[#2F439D]' : 'text-gray-500 hover:bg-white'}`}><BarChart2 size={14} /> Bar</button>
-                  <button onClick={() => setCompanyChartMode('Pie')} className={`px-4 py-1.5 shadow-sm rounded-md flex items-center gap-1.5 transition-all ${companyChartMode === 'Pie' ? 'bg-white text-[#2F439D]' : 'text-gray-500 hover:bg-white'}`}><PieChartIcon size={14} /> Pie</button>
+                  <button
+                    onClick={() => setPolicyMode('general')}
+                    className={`px-4 py-1.5 rounded-md transition-all ${policyMode === 'general'
+                        ? 'bg-white shadow-sm text-[#2F439D] font-bold'
+                        : 'text-gray-500 hover:bg-white'
+                      }`}
+                  >
+                    General
+                  </button>
+                  <button
+                    onClick={() => setPolicyMode('life')}
+                    className={`px-4 py-1.5 rounded-md transition-all ${policyMode === 'life'
+                        ? 'bg-white shadow-sm text-[#2F439D] font-bold'
+                        : 'text-gray-500 hover:bg-white'
+                      }`}
+                  >
+                    Life
+                  </button>
                 </div>
               </div>
             </div>
-
-            <div className="flex flex-wrap gap-x-5 gap-y-3 mb-8 text-[11px] font-medium text-gray-600 bg-gray-50/50 p-4 rounded-xl border border-gray-50">
-              {COMPANY_OVERVIEW_DATA.map((c, i) => (
-                <div key={i} className="flex items-center gap-2 hover:text-gray-900 transition-colors cursor-pointer">
-                  <span className="w-3 h-3 rounded-md shadow-sm" style={{ backgroundColor: c.color }}></span>
-                  {c.name.substring(0, 20)}... <span className="bg-white px-1.5 py-0.5 rounded border border-gray-100">{c.value}</span>
+            <div className="h-[340px] flex items-center justify-center">
+              {loadingPolicyChart ? (
+                <div className="flex flex-col items-center justify-center space-y-2">
+                  <div className="w-7 h-7 border-3 border-[#2F439D] border-t-transparent rounded-full animate-spin"></div>
+                  <span className="text-xs text-gray-400 font-medium">Loading policy chart data...</span>
                 </div>
-              ))}
-            </div>
-
-            <div className="h-[340px]">
-              <ResponsiveContainer width="100%" height="100%">
-                {companyChartMode === 'Bar' ? (
-                  <BarChart data={COMPANY_OVERVIEW_DATA} margin={{ top: 10, right: 10, left: -20, bottom: 40 }}>
+              ) : !policyChartData?.items || policyChartData.items.length === 0 ? (
+                <div className="flex flex-col items-center justify-center text-gray-400 space-y-1">
+                  <Shield size={32} className="opacity-20 mb-1" />
+                  <span className="text-xs font-semibold text-gray-500">No Policy Chart Data Available</span>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={policyChartData.items} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11, fontWeight: 600 }} tickFormatter={(val) => val.substring(0, 15) + '...'} angle={-25} textAnchor="end" dy={15} />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 600 }} dy={10} />
                     <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 600 }} dx={-10} />
                     <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
-                    <Bar dataKey="value" radius={[6, 6, 0, 0]} barSize={48}>
-                      {COMPANY_OVERVIEW_DATA.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Bar>
+                    <Bar dataKey="value" fill="#4F46E5" radius={[6, 6, 0, 0]} barSize={44} />
                   </BarChart>
-                ) : (
-                  <PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                    <Pie
-                      {...({ activeIndex: activeCompanyIndex, activeShape: renderActiveShape } as any)}
-                      data={COMPANY_OVERVIEW_DATA}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={80}
-                      outerRadius={110}
-                      dataKey="value"
-                      onMouseEnter={(_, index) => setActiveCompanyIndex(index)}
-                      stroke="none"
-                    >
-                      {COMPANY_OVERVIEW_DATA.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                  </PieChart>
-                )}
-              </ResponsiveContainer>
+                </ResponsiveContainer>
+              )}
             </div>
           </div>
 
-          {/* Type-Wise */}
+          {/* Insurance Type-Wise Overview (Right Side) */}
           <div className="bg-white rounded-2xl border border-[#2B4399]/20 shadow-[0_8px_30px_-4px_rgba(0,0,0,0.02)] p-6">
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-indigo-50 text-[#2F439D] rounded-lg"><Shield size={20} /></div>
-                <h3 className="font-semibold text-gray-900 text-lg tracking-tight">Insurance Type-Wise Overview</h3>
+                <div>
+                  <h3 className="font-semibold text-gray-900 text-lg tracking-tight">Insurance Type-Wise Overview</h3>
+                  {typeChartData?.year && (
+                    <span className="text-xs text-gray-500 font-medium">Year: <strong className="text-[#2F439D]">{typeChartData.year}</strong></span>
+                  )}
+                </div>
               </div>
               <div className="flex flex-wrap items-center gap-3 text-xs font-medium">
+                {/* Year Filter Options: All, Current Year, Previous Year */}
                 <div className="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-100">
-                  <button className="px-5 py-1.5 bg-white shadow-sm rounded-md text-[#2F439D]">All</button>
-                  <button className="px-4 py-1.5 hover:bg-white hover:shadow-sm rounded-md text-gray-500 transition-all">2026</button>
-                  <button className="px-4 py-1.5 hover:bg-white hover:shadow-sm rounded-md text-gray-500 transition-all">2025</button>
+                  {[
+                    { label: 'All', value: 'all' },
+                    { label: 'Current Year', value: 'curr' },
+                    { label: 'Previous Year', value: 'prev' },
+                  ].map((filter) => (
+                    <button
+                      key={filter.value}
+                      onClick={() => setTypeYearFilter(filter.value)}
+                      className={`px-3 py-1.5 rounded-md transition-all ${typeYearFilter === filter.value
+                          ? 'bg-white shadow-sm text-[#2F439D] font-bold'
+                          : 'text-gray-500 hover:bg-white'
+                        }`}
+                    >
+                      {filter.label}
+                    </button>
+                  ))}
                 </div>
+                {/* Bar / Pie Chart Toggle */}
                 <div className="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-100">
-                  <button onClick={() => setTypeChartMode('Bar')} className={`px-4 py-1.5 shadow-sm rounded-md flex items-center gap-1.5 transition-all ${typeChartMode === 'Bar' ? 'bg-white text-[#2F439D]' : 'text-gray-500 hover:bg-white'}`}><BarChart2 size={14} /> Bar</button>
-                  <button onClick={() => setTypeChartMode('Pie')} className={`px-4 py-1.5 shadow-sm rounded-md flex items-center gap-1.5 transition-all ${typeChartMode === 'Pie' ? 'bg-white text-[#2F439D]' : 'text-gray-500 hover:bg-white'}`}><PieChartIcon size={14} /> Donut</button>
+                  <button
+                    onClick={() => setTypeChartMode('Bar')}
+                    className={`px-3 py-1.5 rounded-md flex items-center gap-1.5 transition-all ${typeChartMode === 'Bar' ? 'bg-white shadow-sm text-[#2F439D] font-bold' : 'text-gray-500 hover:bg-white'
+                      }`}
+                  >
+                    <BarChart2 size={14} /> Bar
+                  </button>
+                  <button
+                    onClick={() => setTypeChartMode('Pie')}
+                    className={`px-3 py-1.5 rounded-md flex items-center gap-1.5 transition-all ${typeChartMode === 'Pie' ? 'bg-white shadow-sm text-[#2F439D] font-bold' : 'text-gray-500 hover:bg-white'
+                      }`}
+                  >
+                    <PieChartIcon size={14} /> Pie
+                  </button>
                 </div>
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-x-5 gap-y-3 mb-8 text-[11px] font-medium text-gray-600 bg-gray-50/50 p-4 rounded-xl border border-gray-50">
-              {TYPE_OVERVIEW_DATA.map((c, i) => (
-                <div key={i} className="flex items-center gap-2 hover:text-gray-900 transition-colors cursor-pointer">
-                  <span className="w-3 h-3 rounded-md shadow-sm" style={{ backgroundColor: c.color }}></span>
-                  {c.name} <span className="bg-white px-1.5 py-0.5 rounded border border-gray-100">{c.value}</span>
-                </div>
-              ))}
-            </div>
+            {/* Color Legend Tags */}
+            {typeChartData?.items && typeChartData.items.length > 0 && (
+              <div className="flex flex-wrap gap-x-4 gap-y-2 mb-6 text-[11px] font-medium text-gray-600 bg-gray-50/50 p-4 rounded-xl border border-gray-50 max-h-24 overflow-y-auto">
+                {typeChartData.items.map((c, i) => (
+                  <div key={i} className="flex items-center gap-2 hover:text-gray-900 transition-colors">
+                    <span className="w-3 h-3 rounded-md shadow-sm flex-shrink-0" style={{ backgroundColor: c.color }} />
+                    <span className="truncate max-w-[150px]" title={c.name}>{c.name}</span>
+                    <span className="bg-white px-1.5 py-0.5 rounded border border-gray-100 font-bold text-[#2F439D]">{c.value}</span>
+                  </div>
+                ))}
+              </div>
+            )}
 
-            <div className="h-[340px]">
-              <ResponsiveContainer width="100%" height="100%">
-                {typeChartMode === 'Bar' ? (
-                  <BarChart data={TYPE_OVERVIEW_DATA} margin={{ top: 10, right: 10, left: -20, bottom: 40 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 11, fontWeight: 600 }} tickFormatter={(val) => val.substring(0, 15) + '...'} angle={-25} textAnchor="end" dy={15} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 600 }} dx={-10} />
-                    <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
-                    <Bar dataKey="value" radius={[6, 6, 0, 0]} barSize={48}>
-                      {TYPE_OVERVIEW_DATA.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                ) : (
-                  <PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                    <Pie
-                      {...({ activeIndex: activeTypeIndex, activeShape: renderActiveShape } as any)}
-                      data={TYPE_OVERVIEW_DATA}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={80}
-                      outerRadius={110}
-                      dataKey="value"
-                      onMouseEnter={(_, index) => setActiveTypeIndex(index)}
-                      stroke="none"
-                    >
-                      {TYPE_OVERVIEW_DATA.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                  </PieChart>
-                )}
-              </ResponsiveContainer>
+            {/* Chart Area */}
+            <div className="h-[340px] flex items-center justify-center">
+              {loadingTypeChart ? (
+                <div className="flex flex-col items-center justify-center space-y-2">
+                  <div className="w-7 h-7 border-3 border-[#2F439D] border-t-transparent rounded-full animate-spin"></div>
+                  <span className="text-xs text-gray-400 font-medium">Loading type chart data...</span>
+                </div>
+              ) : !typeChartData?.items || typeChartData.items.length === 0 ? (
+                <div className="flex flex-col items-center justify-center text-gray-400 space-y-1">
+                  <Shield size={32} className="opacity-20 mb-1" />
+                  <span className="text-xs font-semibold text-gray-500">No Type Chart Data Available</span>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  {typeChartMode === 'Bar' ? (
+                    <BarChart data={typeChartData.items} margin={{ top: 10, right: 10, left: -20, bottom: 50 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <XAxis
+                        dataKey="name"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 600 }}
+                        tickFormatter={(val) => (val.length > 15 ? val.substring(0, 15) + '...' : val)}
+                        angle={-25}
+                        textAnchor="end"
+                        dy={15}
+                      />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 600 }} dx={-10} />
+                      <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
+                      <Bar dataKey="value" radius={[6, 6, 0, 0]} barSize={44}>
+                        {typeChartData.items.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  ) : (
+                    <PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                      <Pie
+                        {...({ activeIndex: activeTypeIndex, activeShape: renderActiveShape } as any)}
+                        data={typeChartData.items}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={75}
+                        outerRadius={105}
+                        dataKey="value"
+                        onMouseEnter={(_, index) => setActiveTypeIndex(index)}
+                        stroke="none"
+                      >
+                        {typeChartData.items.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  )}
+                </ResponsiveContainer>
+              )}
             </div>
           </div>
         </div>
       </div>
+
+      {/* Day Details Popup Modal */}
+      {selectedDayModal?.isOpen && (
+        <DayDetailsModal
+          side={selectedDayModal.side}
+          date={selectedDayModal.date}
+          onClose={() => setSelectedDayModal(null)}
+        />
+      )}
+
+      {/* Select Date Range Modal for Renewal Pending */}
+      {isRenewalDateRangeModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-100 max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="bg-[#2F439D] text-white p-4 sm:p-5 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Calendar size={22} className="text-white" />
+                <h3 className="font-bold text-lg text-white tracking-wide">Select Renewal Date Range</h3>
+              </div>
+              <button
+                onClick={() => setIsRenewalDateRangeModalOpen(false)}
+                className="p-1 rounded-lg bg-white/20 hover:bg-white/30 text-white transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-5">
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-2">From Date</label>
+                <DatePicker
+                  value={tempRenewalFromDate}
+                  onChange={(dateStr) => setTempRenewalFromDate(dateStr)}
+                  placeholder="dd-mm-yyyy"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-2">To Date</label>
+                <DatePicker
+                  value={tempRenewalToDate}
+                  onChange={(dateStr) => setTempRenewalToDate(dateStr)}
+                  placeholder="dd-mm-yyyy"
+                />
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-3">
+              <button
+                onClick={() => setIsRenewalDateRangeModalOpen(false)}
+                className="px-5 py-2 text-sm font-semibold rounded-lg text-gray-600 border border-gray-200 hover:bg-white transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (!tempRenewalFromDate || !tempRenewalToDate) {
+                    toast.error('Please select both From Date and To Date');
+                    return;
+                  }
+                  setRenewalDateRange({ from: tempRenewalFromDate, to: tempRenewalToDate });
+                  setActiveRenewalPeriod('range');
+                  setIsRenewalDateRangeModalOpen(false);
+                }}
+                className="px-6 py-2 text-sm font-semibold rounded-lg bg-[#2F439D] hover:bg-[#253682] text-white shadow-md transition-all"
+              >
+                Apply
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {isDateRangeModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-100 max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="bg-[#2F439D] text-white p-4 sm:p-5 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Calendar size={22} className="text-white" />
+                <h3 className="font-bold text-lg text-white tracking-wide">Select Date Range</h3>
+              </div>
+              <button
+                onClick={() => setIsDateRangeModalOpen(false)}
+                className="p-1 rounded-lg bg-white/20 hover:bg-white/30 text-white transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-5">
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-2">From Date</label>
+                <DatePicker
+                  value={tempFromDate}
+                  onChange={(dateStr) => setTempFromDate(dateStr)}
+                  placeholder="dd-mm-yyyy"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-2">To Date</label>
+                <DatePicker
+                  value={tempToDate}
+                  onChange={(dateStr) => setTempToDate(dateStr)}
+                  placeholder="dd-mm-yyyy"
+                />
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-3">
+              <button
+                onClick={() => setIsDateRangeModalOpen(false)}
+                className="px-5 py-2 text-sm font-semibold rounded-lg text-gray-600 border border-gray-200 hover:bg-white transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleApplyDateRange}
+                className="px-6 py-2 text-sm font-semibold rounded-lg bg-[#2F439D] hover:bg-[#253682] text-white shadow-md transition-all"
+              >
+                Apply
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -474,10 +1499,25 @@ function MetricCard({ title, value }: any) {
   );
 }
 
-function CalendarGrid({ highlights }: any) {
+interface CalendarGridProps {
+  year: number;
+  month: number;
+  events?: Record<string, string[]>;
+  colorMap: Record<string, string>;
+  onDateClick?: (dateStr: string) => void;
+}
+
+function CalendarGrid({ year, month, events = {}, colorMap, onDateClick }: CalendarGridProps) {
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const dates = Array.from({ length: 31 }, (_, i) => i + 1);
-  const paddedDates = [null, null, null, null, null, null, ...dates];
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const firstDayIndex = new Date(year, month - 1, 1).getDay();
+
+  const dates = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+  const paddedDates = [...Array(firstDayIndex).fill(null), ...dates];
+
+  const today = new Date();
+  const isCurrentMonthAndYear = today.getFullYear() === year && (today.getMonth() + 1) === month;
+  const todayDate = today.getDate();
 
   return (
     <div className="w-full bg-white rounded-xl border border-gray-100 overflow-hidden">
@@ -490,22 +1530,38 @@ function CalendarGrid({ highlights }: any) {
         {paddedDates.map((date, idx) => {
           if (!date) return <div key={idx} className="p-2 border-r border-b border-gray-50 bg-gray-50/30 min-h-[44px]"></div>;
 
-          const highlight = highlights.find((h: any) => h.day === date);
+          const isToday = isCurrentMonthAndYear && date === todayDate;
+          const formattedMonth = String(month).padStart(2, '0');
+          const formattedDay = String(date).padStart(2, '0');
+          const dateKey = `${year}-${formattedMonth}-${formattedDay}`;
+
+          const dayEvents = events[dateKey] || events[`${year}-${month}-${date}`] || [];
 
           return (
-            <div key={idx} className={`relative p-2 border-r border-b border-gray-50 min-h-[44px] flex flex-col items-center justify-center transition-colors hover:bg-gray-50/80 cursor-pointer`}>
-              <div className={`w-7 h-7 flex items-center justify-center rounded-lg font-medium text-[13px] z-10 ${highlight?.color ? highlight.color : 'text-gray-700'}`}>
+            <div
+              key={idx}
+              onClick={() => onDateClick?.(dateKey)}
+              className={`relative p-2 border-r border-b border-gray-50 min-h-[44px] flex flex-col items-center justify-center transition-colors hover:bg-[#F2F7FF] cursor-pointer group`}
+            >
+              <div className={`w-7 h-7 flex items-center justify-center rounded-lg font-medium text-[13px] z-10 transition-transform group-hover:scale-110 ${isToday ? 'bg-[#2F439D] text-white shadow-md shadow-[#2F439D]/30' : 'text-gray-700'}`}>
                 {date}
               </div>
-              {highlight?.dot && (
-                <span className={`absolute bottom-1.5 w-1.5 h-1.5 rounded-full shadow-sm ${highlight.dot}`}></span>
+              {dayEvents.length > 0 && (
+                <div className="flex items-center gap-1 absolute bottom-1.5 z-10">
+                  {dayEvents.map((evt: string, eIdx: number) => {
+                    const dotColor = colorMap[evt.toLowerCase()] || 'bg-gray-400';
+                    return (
+                      <span key={eIdx} className={`w-1.5 h-1.5 rounded-full shadow-sm ${dotColor}`}></span>
+                    );
+                  })}
+                </div>
               )}
             </div>
-          )
+          );
         })}
       </div>
     </div>
-  )
+  );
 }
 
 function TaskStat({ label, value, color, bg = "bg-white" }: any) {
@@ -537,3 +1593,283 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   }
   return null;
 };
+
+// Day Details Popup Modal Component
+interface DayDetailsModalProps {
+  side: 'left' | 'right';
+  date: string;
+  onClose: () => void;
+}
+
+function DayDetailsModal({ side, date, onClose }: DayDetailsModalProps) {
+  const { data, isLoading } = useDashboardDayDetails({ side, date });
+
+  const events = data?.events || {};
+  const totalEvents = data?.total_events ?? 0;
+  const displayDate = data?.date || date;
+
+  const isLeft = side === 'left';
+
+  const birthdayList = events.birthday || [];
+  const anniversaryList = events.anniversary || [];
+  const leadList = events.lead || [];
+
+  const healthList = events.health || [];
+  const motorList = events.motor || [];
+  const lifeList = events.life || [];
+  const otherList = events.other || [];
+
+  const hasEvents = isLeft
+    ? birthdayList.length > 0 || anniversaryList.length > 0 || leadList.length > 0
+    : healthList.length > 0 || motorList.length > 0 || lifeList.length > 0 || otherList.length > 0;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-100 max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+        {/* Modal Header */}
+        <div className="flex items-center justify-between p-5 border-b border-[#2B4399]/20 bg-[#F2F7FF]">
+          <div className="flex items-center gap-3">
+            <div className={`p-2.5 rounded-xl ${isLeft ? 'bg-amber-100 text-amber-700' : 'bg-indigo-100 text-indigo-700'}`}>
+              <Calendar size={20} />
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-900 text-lg">
+                {isLeft ? 'Event Details' : 'Policy Renewal Details'}
+              </h3>
+              <p className="text-xs text-gray-500 font-medium">{displayDate}</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="bg-[#2F439D] text-white text-xs px-3 py-1 rounded-full font-semibold shadow-sm">
+              {totalEvents} {totalEvents === 1 ? 'Event' : 'Events'}
+            </span>
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg hover:bg-white text-gray-400 hover:text-gray-700 transition-colors"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+
+        {/* Modal Body */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/50">
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-16 space-y-3">
+              <div className="w-8 h-8 border-3 border-[#2F439D] border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-xs font-semibold text-gray-400">Loading details...</p>
+            </div>
+          ) : !hasEvents ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center space-y-3">
+              <div className="p-4 bg-gray-100 rounded-full text-gray-400">
+                <Calendar size={32} />
+              </div>
+              <h4 className="font-semibold text-gray-700 text-base">No Events Found</h4>
+              <p className="text-xs text-gray-400 max-w-xs">
+                There are no {isLeft ? 'birthday, anniversary, or lead events' : 'policy renewals'} recorded for {displayDate}.
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* Left Side View */}
+              {isLeft && (
+                <>
+                  {/* Birthdays */}
+                  {birthdayList.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-100 w-fit">
+                        <Cake size={14} /> Birthday ({birthdayList.length})
+                      </div>
+                      <div className="grid grid-cols-1 gap-3">
+                        {birthdayList.map((item, idx) => (
+                          <div key={idx} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div className="flex items-start gap-3">
+                              <div className="p-2.5 bg-amber-100/70 text-amber-700 rounded-xl mt-0.5">
+                                <User size={18} />
+                              </div>
+                              <div>
+                                <h4 className="font-semibold text-gray-900 text-sm capitalize">{item.name || 'N/A'}</h4>
+                                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 mt-1">
+                                  {item.phone && (
+                                    <a href={`tel:${item.phone}`} className="flex items-center gap-1 hover:text-[#2F439D]">
+                                      <Phone size={12} /> {item.phone}
+                                    </a>
+                                  )}
+                                  {item.email && (
+                                    <a href={`mailto:${item.email}`} className="flex items-center gap-1 hover:text-[#2F439D]">
+                                      <Mail size={12} /> {item.email}
+                                    </a>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 self-start sm:self-center">
+                              {item.age !== undefined && item.age !== null && (
+                                <span className="bg-amber-100 text-amber-800 text-[11px] font-semibold px-2.5 py-1 rounded-md border border-amber-200">
+                                  Age: {item.age}
+                                </span>
+                              )}
+                              {item.dob && (
+                                <span className="bg-gray-100 text-gray-600 text-[11px] font-medium px-2.5 py-1 rounded-md">
+                                  DOB: {item.dob}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Anniversaries */}
+                  {anniversaryList.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-rose-600 bg-rose-50 px-3 py-1.5 rounded-lg border border-rose-100 w-fit">
+                        <Heart size={14} /> Anniversary ({anniversaryList.length})
+                      </div>
+                      <div className="grid grid-cols-1 gap-3">
+                        {anniversaryList.map((item, idx) => (
+                          <div key={idx} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div className="flex items-start gap-3">
+                              <div className="p-2.5 bg-rose-100/70 text-rose-700 rounded-xl mt-0.5">
+                                <Heart size={18} />
+                              </div>
+                              <div>
+                                <h4 className="font-semibold text-gray-900 text-sm capitalize">{item.name || 'N/A'}</h4>
+                                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 mt-1">
+                                  {item.phone && (
+                                    <a href={`tel:${item.phone}`} className="flex items-center gap-1 hover:text-[#2F439D]">
+                                      <Phone size={12} /> {item.phone}
+                                    </a>
+                                  )}
+                                  {item.email && (
+                                    <a href={`mailto:${item.email}`} className="flex items-center gap-1 hover:text-[#2F439D]">
+                                      <Mail size={12} /> {item.email}
+                                    </a>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                            {item.anniversary_date && (
+                              <span className="bg-rose-100 text-rose-800 text-[11px] font-semibold px-2.5 py-1 rounded-md border border-rose-200 self-start sm:self-center">
+                                Date: {item.anniversary_date}
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Leads */}
+                  {leadList.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100 w-fit">
+                        <UserCheck size={14} /> Lead ({leadList.length})
+                      </div>
+                      <div className="grid grid-cols-1 gap-3">
+                        {leadList.map((item, idx) => (
+                          <div key={idx} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow flex items-center justify-between gap-3">
+                            <div className="flex items-start gap-3">
+                              <div className="p-2.5 bg-emerald-100/70 text-emerald-700 rounded-xl mt-0.5">
+                                <UserCheck size={18} />
+                              </div>
+                              <div>
+                                <h4 className="font-semibold text-gray-900 text-sm capitalize">{item.name || 'N/A'}</h4>
+                                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 mt-1">
+                                  {item.phone && (
+                                    <a href={`tel:${item.phone}`} className="flex items-center gap-1 hover:text-[#2F439D]">
+                                      <Phone size={12} /> {item.phone}
+                                    </a>
+                                  )}
+                                  {item.email && (
+                                    <a href={`mailto:${item.email}`} className="flex items-center gap-1 hover:text-[#2F439D]">
+                                      <Mail size={12} /> {item.email}
+                                    </a>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Right Side View */}
+              {!isLeft && (
+                <>
+                  {renderPolicyCategory('Health Insurance', healthList, 'bg-rose-50 border-rose-100 text-rose-700', 'bg-rose-500')}
+                  {renderPolicyCategory('Motor Insurance', motorList, 'bg-blue-50 border-blue-100 text-blue-700', 'bg-blue-500')}
+                  {renderPolicyCategory('Life Insurance', lifeList, 'bg-emerald-50 border-emerald-100 text-emerald-700', 'bg-emerald-500')}
+                  {renderPolicyCategory('Other Insurance', otherList, 'bg-gray-50 border-gray-200 text-gray-700', 'bg-gray-500')}
+                </>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function renderPolicyCategory(categoryTitle: string, items: PolicyRenewalItem[], headerStyle: string, badgeBg: string) {
+  if (!items || items.length === 0) return null;
+
+  return (
+    <div className="space-y-3">
+      <div className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-wider px-3 py-1.5 rounded-lg border w-fit ${headerStyle}`}>
+        <Shield size={14} /> {categoryTitle} ({items.length})
+      </div>
+      <div className="grid grid-cols-1 gap-3">
+        {items.map((item, idx) => (
+          <div key={idx} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-100 pb-2.5">
+              <div className="flex items-center gap-2">
+                <span className={`text-white text-[10px] font-bold px-2 py-0.5 rounded-md ${badgeBg}`}>
+                  {item.insurance_type_name || 'Policy'}
+                </span>
+                <span className="font-mono text-xs font-semibold text-gray-800 bg-gray-50 px-2 py-0.5 rounded border border-gray-100">
+                  {item.policy_number?.trim() || 'N/A'}
+                </span>
+              </div>
+              {item.expiry && (
+                <div className="text-xs text-rose-600 font-medium flex items-center gap-1">
+                  <Calendar size={12} /> Expiry: <span className="font-semibold">{item.expiry}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h4 className="font-semibold text-gray-900 text-sm capitalize">{item.name || 'N/A'}</h4>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 mt-1">
+                  {item.phone && (
+                    <a href={`tel:${item.phone}`} className="flex items-center gap-1 hover:text-[#2F439D]">
+                      <Phone size={12} /> {item.phone}
+                    </a>
+                  )}
+                  {item.email && (
+                    <a href={`mailto:${item.email}`} className="flex items-center gap-1 hover:text-[#2F439D]">
+                      <Mail size={12} /> {item.email}
+                    </a>
+                  )}
+                </div>
+              </div>
+
+              {item.premium_amount !== undefined && item.premium_amount !== null && (
+                <div className="bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-1.5 flex flex-col items-end self-start sm:self-center">
+                  <span className="text-[10px] uppercase font-semibold text-emerald-600">Premium</span>
+                  <span className="text-sm font-extrabold text-emerald-700">₹{item.premium_amount}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}

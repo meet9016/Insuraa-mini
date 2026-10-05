@@ -1,47 +1,43 @@
 "use client";
-import axios, { AxiosError, InternalAxiosRequestConfig, AxiosResponse } from "axios";
+import axios from "axios";
 
-// Default base URL from environment or fallback with proxy support for browser CORS
-const baseURL = process.env.NEXT_PUBLIC_APP_URL || 'https://api.insuraa.in/';
+// Default base URL from environment or a fallback
+const baseURL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000/api/v1/";
 
 const apiAdminInstance = axios.create({
   baseURL: baseURL,
-  timeout: 30000, // 30 seconds timeout
-  headers: {
-    "Content-Type": "application/json",
-  },
 });
 
 export const api = apiAdminInstance;
 
 // Request Interceptor
 apiAdminInstance.interceptors.request.use(
-  async (config: InternalAxiosRequestConfig) => {
+  async (config) => {
     const token = typeof window !== 'undefined' ? localStorage.getItem("auth_token") : null;
-
-    if (token && config.headers) {
+    
+    if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-
+    
     return config;
   },
-  (error: AxiosError) => Promise.reject(error)
+  (error) => Promise.reject(error)
 );
 
 // Response Interceptor
 apiAdminInstance.interceptors.response.use(
-  (response: AxiosResponse) => {
+  function (response) {
     // Add any common response handling logic here
     return response;
   },
-  (error: AxiosError) => {
+  (error) => {
     const { response } = error;
 
     // Handle Unauthorized errors
     if (response && response.status === 401) {
       if (typeof window !== 'undefined') {
         localStorage.removeItem("auth_token");
-        window.location.href = "/auth/login";
+        window.location.href = "/login";
       }
     }
     return Promise.reject(error);

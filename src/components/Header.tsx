@@ -25,7 +25,8 @@ import {
   Umbrella,
   Crown,
   Sparkles,
-  Receipt
+  Receipt,
+  UserCheck
 } from 'lucide-react';
 
 import { useAppSelector } from '@/redux/hooks';
@@ -50,6 +51,7 @@ const NAV_LINKS = [
   },
   { name: 'Manage Leads', path: '/manage-leads', icon: PhoneCall, animClass: 'animate-icon-phone' },
   { name: 'Masters', path: '/masters', icon: Database, animClass: 'animate-icon-database' },
+  { name: 'Staff', path: '/staff', icon: UserCheck, animClass: 'animate-icon-users' },
 ];
 
 interface HeaderProps {
@@ -250,7 +252,7 @@ export default function Header({ onOpenSubscription, onOpenSubscriptionHistory }
 
                 {/* Action Items List */}
                 <div className="p-2 space-y-1">
-                  
+
 
                   {/* My Subscription / History */}
                   <Link
