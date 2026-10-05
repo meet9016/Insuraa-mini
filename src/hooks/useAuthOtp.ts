@@ -7,11 +7,13 @@ import { setAuthToken } from '@/config';
 
 export interface SendOtpPayload {
   number: string;
+  login_type?: string;
 }
 
 export interface VerifyOtpPayload {
   number: string;
   otp: string;
+  login_type?: string;
 }
 
 export interface VerifySignUpPayload {
@@ -44,6 +46,9 @@ export const useSendLoginOtp = () => {
   const mutationFn = useCallback(async (payload: SendOtpPayload) => {
     const formData = new FormData();
     formData.append('number', payload.number);
+    if (payload.login_type) {
+      formData.append('login_type', payload.login_type);
+    }
 
     const response = await api.post(endPointApi.AUTH.SEND_LOGIN_OTP, formData, {
       headers: {
@@ -85,6 +90,9 @@ export const useVerifyLoginOtp = () => {
     const formData = new FormData();
     formData.append('number', payload.number);
     formData.append('otp', payload.otp);
+    if (payload.login_type) {
+      formData.append('login_type', payload.login_type);
+    }
 
     const response = await api.post(endPointApi.AUTH.VERIFY_LOGIN_OTP, formData, {
       headers: {

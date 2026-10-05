@@ -1,13 +1,14 @@
+import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { Shield, ArrowRight, Activity, Phone, Edit2, RefreshCw } from 'lucide-react';
+import { Shield, ArrowRight, Activity, Phone, Edit2, RefreshCw, User } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 
 // Redux
 import { useAppDispatch, useAppSelector } from '@/redux/hooks';
-import { resetOtpState, setUser, User } from '@/redux/slices/authSlice';
+import { resetOtpState, setUser, User as ReduxUser } from '@/redux/slices/authSlice';
 
 // React Query Hooks
 import { useSendLoginOtp, useVerifyLoginOtp } from '@/hooks/useAuthOtp';
@@ -19,6 +20,9 @@ import OtpBoxInput from '@/components/OtpBoxInput';
 export default function LoginPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
+
+  // Login Role Selection State ('admin' | 'staff')
+  const [loginType, setLoginType] = useState<'admin' | 'staff'>('admin');
 
   // Redux state
   const { otpPhoneNumber, isOtpSent } = useAppSelector((state) => state.auth);
@@ -39,7 +43,7 @@ export default function LoginPage() {
     }),
     onSubmit: (values) => {
       sendOtpMutation.mutate(
-        { number: values.number },
+        { number: values.number, login_type: loginType },
         {
           onSuccess: (res) => {
             const isError =
@@ -87,7 +91,7 @@ export default function LoginPage() {
       const activeNumber = otpPhoneNumber || sendOtpFormik.values.number;
 
       verifyOtpMutation.mutate(
-        { number: activeNumber, otp: values.otp },
+        { number: activeNumber, otp: values.otp, login_type: loginType },
         {
           onSuccess: (res) => {
             if (res?.message) {
@@ -95,7 +99,7 @@ export default function LoginPage() {
             }
             const rawUser = res?.data?.user || res?.user;
             if (rawUser) {
-              const userPayload: User = {
+              const userPayload: ReduxUser = {
                 id: rawUser.id ? String(rawUser.id) : undefined,
                 full_name: rawUser.full_name || '',
                 name: rawUser.full_name || rawUser.name || rawUser.username || '',
@@ -132,7 +136,7 @@ export default function LoginPage() {
     const activeNumber = otpPhoneNumber || sendOtpFormik.values.number;
     if (activeNumber) {
       sendOtpMutation.mutate(
-        { number: activeNumber },
+        { number: activeNumber, login_type: loginType },
         {
           onSuccess: (res) => {
             if (res?.message) {
@@ -215,11 +219,39 @@ export default function LoginPage() {
               <img src="/logo.png" alt="Insuraa Logo" className="h-10" />
             </div>
 
+            {/* Simple Small Width Buttons for Admin & Staff Role Selection */}
+            <div className="flex items-center justify-center gap-3 mb-8">
+              <button
+                type="button"
+                onClick={() => setLoginType('admin')}
+                className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 border min-w-[110px] ${loginType === 'admin'
+                    ? 'bg-[#2E3192] text-white border-[#2E3192] shadow-md'
+                    : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                  }`}
+              >
+                <Shield className="w-3.5 h-3.5" />
+                <span>Admin</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setLoginType('staff')}
+                className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 border min-w-[110px] ${loginType === 'staff'
+                    ? 'bg-[#2E3192] text-white border-[#2E3192] shadow-md'
+                    : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                  }`}
+              >
+                <User className="w-3.5 h-3.5" />
+                <span>Staff</span>
+              </button>
+            </div>
+
             {!isOtpSent ? (
               /* STEP 1: SEND OTP FORM */
               <div>
-                <div className="mb-20">
-                  <h2 className="text-2xl font-bold text-[#111827] mb-1.5 tracking-tight text-center">Login via Mobile OTP</h2>
+                <div className="mb-8">
+                  <h2 className="text-2xl font-bold text-[#111827] mb-1.5 tracking-tight text-center">
+                    Login as <span className="text-[#2E3192] capitalize">{loginType}</span>
+                  </h2>
                   <p className="text-gray-500 text-xs text-center">
                     Enter your mobile number to receive a verification code.
                   </p>
