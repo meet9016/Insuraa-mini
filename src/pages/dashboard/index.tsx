@@ -24,6 +24,7 @@ import DataTable from '@/components/ui/DataTable';
 import DatePicker from '@/components/ui/DatePicker';
 import TableHeader from '@/components/ui/TableHeader';
 import WalkingLottieCharacter from '@/components/dashboard/WalkingLottieCharacter';
+import Stepped3DPieChart from '@/components/dashboard/Stepped3DPieChart';
 
 interface CurvePoint {
   x: number;
@@ -418,9 +419,9 @@ export default function Dashboard() {
   const [typeYearFilter, setTypeYearFilter] = useState('all');
   const [policyMode, setPolicyMode] = useState('general');
   const [policyYear, setPolicyYear] = useState('2026');
-  const [generalChartMode, setGeneralChartMode] = useState<'Bar' | 'Pie'>('Bar');
+  const [generalChartMode, setGeneralChartMode] = useState<'Bar' | 'Pie'>('Pie');
   const [lifeChartMode, setLifeChartMode] = useState<'Bar' | 'Pie'>('Bar');
-  const [typeChartMode, setTypeChartMode] = useState<'Trend' | 'Bar' | 'Pie'>('Trend');
+  const [typeChartMode, setTypeChartMode] = useState<'Trend' | 'Bar'>('Trend');
   const [activeGeneralIndex, setActiveGeneralIndex] = useState(0);
   const [activeLifeIndex, setActiveLifeIndex] = useState(0);
   const [activeTypeIndex, setActiveTypeIndex] = useState(0);
@@ -1153,7 +1154,7 @@ export default function Dashboard() {
                     className={`px-3 py-1.5 rounded-md flex items-center gap-1.5 transition-all ${generalChartMode === 'Pie' ? 'bg-white shadow-sm text-[#2F439D] font-bold' : 'text-gray-500 hover:bg-white'
                       }`}
                   >
-                    <PieChartIcon size={14} /> Pie
+                    <PieChartIcon size={14} /> 3D Pie
                   </button>
                 </div>
               </div>
@@ -1173,7 +1174,7 @@ export default function Dashboard() {
             )}
 
             {/* Chart Area */}
-            <div className="h-[340px] flex items-center justify-center">
+            <div className={`${generalChartMode === 'Pie' ? 'h-[400px]' : 'h-[340px]'} flex items-center justify-center transition-all duration-300 relative`}>
               {loadingGeneralCompany ? (
                 <div className="flex flex-col items-center justify-center space-y-2">
                   <div className="w-7 h-7 border-3 border-[#2F439D] border-t-transparent rounded-full animate-spin"></div>
@@ -1184,49 +1185,35 @@ export default function Dashboard() {
                   <Shield size={32} className="opacity-20 mb-1" />
                   <span className="text-xs font-semibold text-gray-500">No General Insurance Data Available</span>
                 </div>
-              ) : (
+              ) : generalChartMode === 'Bar' ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  {generalChartMode === 'Bar' ? (
-                    <BarChart data={generalCompanyData.items} margin={{ top: 10, right: 10, left: -20, bottom: 50 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                      <XAxis
-                        dataKey="name"
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 600 }}
-                        tickFormatter={(val) => (val.length > 15 ? val.substring(0, 15) + '...' : val)}
-                        angle={-25}
-                        textAnchor="end"
-                        dy={15}
-                      />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 600 }} dx={-10} />
-                      <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
-                      <Bar dataKey="value" radius={[6, 6, 0, 0]} barSize={44}>
-                        {generalCompanyData.items.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  ) : (
-                    <PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                      <Pie
-                        {...({ activeIndex: activeGeneralIndex, activeShape: renderActiveShape } as any)}
-                        data={generalCompanyData.items}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={75}
-                        outerRadius={105}
-                        dataKey="value"
-                        onMouseEnter={(_, index) => setActiveGeneralIndex(index)}
-                        stroke="none"
-                      >
-                        {generalCompanyData.items.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                    </PieChart>
-                  )}
+                  <BarChart data={generalCompanyData.items} margin={{ top: 10, right: 10, left: -20, bottom: 50 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis
+                      dataKey="name"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 600 }}
+                      tickFormatter={(val) => (val.length > 15 ? val.substring(0, 15) + '...' : val)}
+                      angle={-25}
+                      textAnchor="end"
+                      dy={15}
+                    />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 600 }} dx={-10} />
+                    <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
+                    <Bar dataKey="value" radius={[6, 6, 0, 0]} barSize={44}>
+                      {generalCompanyData.items.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Bar>
+                  </BarChart>
                 </ResponsiveContainer>
+              ) : (
+                <Stepped3DPieChart
+                  data={generalCompanyData.items}
+                  total={generalCompanyData.total}
+                  title={generalCompanyData.title}
+                />
               )}
             </div>
           </div>
@@ -1468,7 +1455,7 @@ export default function Dashboard() {
                     </button>
                   ))}
                 </div>
-                {/* Trend / Bar / Pie Chart Toggle */}
+                {/* Trend / Bar Chart Toggle */}
                 <div className="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-100">
                   <button
                     onClick={() => setTypeChartMode('Trend')}
@@ -1483,13 +1470,6 @@ export default function Dashboard() {
                       }`}
                   >
                     <BarChart2 size={14} /> Bar
-                  </button>
-                  <button
-                    onClick={() => setTypeChartMode('Pie')}
-                    className={`px-3 py-1.5 rounded-md flex items-center gap-1.5 transition-all ${typeChartMode === 'Pie' ? 'bg-white shadow-sm text-[#2F439D] font-bold' : 'text-gray-500 hover:bg-white'
-                      }`}
-                  >
-                    <PieChartIcon size={14} /> Pie
                   </button>
                 </div>
               </div>
@@ -1523,7 +1503,7 @@ export default function Dashboard() {
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   {typeChartMode === 'Trend' ? (
-                    <AreaChart data={typeChartData.items} margin={{ top: 40, right: 20, left: -10, bottom: 45 }}>
+                    <AreaChart data={typeChartData.items} margin={{ top: 40, right: 20, left: 20, bottom: 20 }}>
                       <defs>
                         <linearGradient id="typeGradient" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="5%" stopColor="#2F439D" stopOpacity={0.25} />
@@ -1545,6 +1525,7 @@ export default function Dashboard() {
                         angle={-20}
                         textAnchor="end"
                         dy={12}
+                        height={60}
                       />
                       <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12, fontWeight: 600 }} dx={-5} />
                       <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#2F439D', strokeWidth: 1.5, strokeDasharray: '4 4' }} />
@@ -1599,8 +1580,8 @@ export default function Dashboard() {
                         </>
                       )}
                     </AreaChart>
-                  ) : typeChartMode === 'Bar' ? (
-                    <BarChart data={typeChartData.items} margin={{ top: 10, right: 10, left: -20, bottom: 50 }}>
+                  ) : (
+                    <BarChart data={typeChartData.items} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                       <XAxis
                         dataKey="name"
@@ -1611,6 +1592,7 @@ export default function Dashboard() {
                         angle={-25}
                         textAnchor="end"
                         dy={15}
+                        height={65}
                       />
                       <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 600 }} dx={-10} />
                       <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
@@ -1618,68 +1600,15 @@ export default function Dashboard() {
                         dataKey="value"
                         radius={[6, 6, 0, 0]}
                         barSize={44}
-                        shape={(props: any) => {
-                          const { x, y, width, height, fill, index } = props;
-                          const topCenterX = x + width / 2;
-                          const topY = y;
-                          if (coordsRef.current[index]?.x !== topCenterX || coordsRef.current[index]?.y !== topY) {
-                            coordsRef.current[index] = { x: topCenterX, y: topY };
-                            const itemsCount = typeChartData?.items?.length || 0;
-                            if (itemsCount > 0 && coordsRef.current.filter(Boolean).length === itemsCount) {
-                              setDotCoords([...coordsRef.current]);
-                            }
-                          }
-                          return <rect x={x} y={y} width={width} height={height} fill={fill} rx={6} ry={6} />;
-                        }}
+                        isAnimationActive={true}
+                        animationDuration={1500}
+                        animationEasing="ease-out"
                       >
                         {typeChartData.items.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Bar>
-
-                      {/* Dynamic Continuous Bar Runner */}
-                      {typeChartData?.items && typeChartData.items.length >= 2 && (
-                        <>
-                          <path
-                            ref={barPathRef}
-                            d={barGuidePathD}
-                            fill="none"
-                            stroke="transparent"
-                            strokeWidth={0}
-                            pointerEvents="none"
-                            aria-hidden="true"
-                          />
-                          <g
-                            ref={barCharRef}
-                            style={{
-                              opacity: 0,
-                              pointerEvents: 'none',
-                              willChange: 'transform, opacity',
-                            }}
-                          >
-                            <WalkingAgentCharacter />
-                          </g>
-                        </>
-                      )}
                     </BarChart>
-                  ) : (
-                    <PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                      <Pie
-                        {...({ activeIndex: activeTypeIndex, activeShape: renderActiveShape } as any)}
-                        data={typeChartData.items}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={75}
-                        outerRadius={105}
-                        dataKey="value"
-                        onMouseEnter={(_, index) => setActiveTypeIndex(index)}
-                        stroke="none"
-                      >
-                        {typeChartData.items.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                    </PieChart>
                   )}
                 </ResponsiveContainer>
               )}
@@ -1866,7 +1795,7 @@ interface CalendarGridProps {
 }
 
 function CalendarGrid({ year, month, events = {}, colorMap, onDateClick }: CalendarGridProps) {
-  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const days = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
   const daysInMonth = new Date(year, month, 0).getDate();
   const firstDayIndex = new Date(year, month - 1, 1).getDay();
 
@@ -1878,15 +1807,23 @@ function CalendarGrid({ year, month, events = {}, colorMap, onDateClick }: Calen
   const todayDate = today.getDate();
 
   return (
-    <div className="w-full bg-white rounded-xl border border-gray-100 overflow-hidden">
-      <div className="grid grid-cols-7 bg-gray-50/80 border-b border-gray-100">
+    <div className="w-full select-none pb-2">
+      {/* Sleek Header Row */}
+      <div className="grid grid-cols-7 mb-4">
         {days.map((d, i) => (
-          <div key={i} className="py-2.5 text-center text-[11px] font-semibold text-gray-500 uppercase tracking-wider">{d}</div>
+          <div
+            key={i}
+            className={`text-center text-[11px] font-bold uppercase tracking-wider ${i === 0 || i === 6 ? 'text-gray-400' : 'text-[#2F439D]/70'}`}
+          >
+            {d}
+          </div>
         ))}
       </div>
-      <div className="grid grid-cols-7 text-sm">
+
+      {/* Floating Circular Grid */}
+      <div className="grid grid-cols-7 gap-y-3 sm:gap-y-4">
         {paddedDates.map((date, idx) => {
-          if (!date) return <div key={idx} className="p-2 border-r border-b border-gray-50 bg-gray-50/30 min-h-[44px]"></div>;
+          if (!date) return <div key={idx} className="h-10 sm:h-12" />;
 
           const isToday = isCurrentMonthAndYear && date === todayDate;
           const formattedMonth = String(month).padStart(2, '0');
@@ -1894,26 +1831,51 @@ function CalendarGrid({ year, month, events = {}, colorMap, onDateClick }: Calen
           const dateKey = `${year}-${formattedMonth}-${formattedDay}`;
 
           const dayEvents = events[dateKey] || events[`${year}-${month}-${date}`] || [];
+          const hasEvents = dayEvents.length > 0;
+          const isWeekend = idx % 7 === 0 || idx % 7 === 6;
 
           return (
             <div
               key={idx}
               onClick={() => onDateClick?.(dateKey)}
-              className={`relative p-2 border-r border-b border-gray-50 min-h-[44px] flex flex-col items-center justify-center transition-colors hover:bg-[#F2F7FF] cursor-pointer group`}
+              className="flex justify-center items-center cursor-pointer group"
             >
-              <div className={`w-7 h-7 flex items-center justify-center rounded-lg font-medium text-[13px] z-10 transition-transform group-hover:scale-110 ${isToday ? 'bg-[#2F439D] text-white shadow-md shadow-[#2F439D]/30' : 'text-gray-700'}`}>
-                {date}
+              <div
+                className={`relative w-9 h-9 sm:w-11 sm:h-11 flex flex-col items-center justify-center rounded-full transition-all duration-300 ease-out ${isToday
+                  ? 'bg-gradient-to-br from-[#2F439D] to-[#4A90D9] shadow-[0_4px_16px_rgba(47,67,157,0.4)] scale-110 z-10 ring-4 ring-[#2F439D]/10'
+                  : hasEvents
+                    ? 'bg-white shadow-[0_2px_12px_-3px_rgba(0,0,0,0.1)] group-hover:scale-110 border border-gray-100/50'
+                    : 'bg-transparent group-hover:bg-gray-100/80 group-hover:scale-105'
+                  }`}
+              >
+                <span
+                  className={`text-[14px] sm:text-[15px] tracking-tight transition-colors duration-300 ${isToday
+                    ? 'text-white font-bold'
+                    : hasEvents
+                      ? 'text-[#2F439D] font-bold'
+                      : isWeekend
+                        ? 'text-gray-400 font-medium'
+                        : 'text-gray-700 font-medium'
+                    }`}
+                >
+                  {date}
+                </span>
+
+                {/* Micro Event Indicators */}
+                {hasEvents && (
+                  <div className="absolute bottom-1.5 flex gap-[3px] items-center justify-center">
+                    {dayEvents.map((evt: string, eIdx: number) => {
+                      const dotColor = colorMap[evt.toLowerCase()] || 'bg-gray-400';
+                      return (
+                        <span
+                          key={eIdx}
+                          className={`w-1 h-1 rounded-full ${dotColor} ${isToday ? 'border-[0.5px] border-white/50 bg-white' : ''}`}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-              {dayEvents.length > 0 && (
-                <div className="flex items-center gap-1 absolute bottom-1.5 z-10">
-                  {dayEvents.map((evt: string, eIdx: number) => {
-                    const dotColor = colorMap[evt.toLowerCase()] || 'bg-gray-400';
-                    return (
-                      <span key={eIdx} className={`w-1.5 h-1.5 rounded-full shadow-sm ${dotColor}`}></span>
-                    );
-                  })}
-                </div>
-              )}
             </div>
           );
         })}
