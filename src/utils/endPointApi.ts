@@ -71,6 +71,7 @@ export interface EndPointApi {
     INSERT_LEAD_REMINDER: string;
     LEAD_REMINDER_LIST: string;
     DELETE_LEAD_REMINDER: string;
+    UPDATE_LEAD_STATUS: string;
   };
   LIFE_INSURANCE: {
     INSERT_LIFE_INSURANCE: string;
@@ -140,6 +141,10 @@ export interface EndPointApi {
     DASHBOARD_CHART_TYPE: string;
     DASHBOARD_CHART_POLICY: string;
   };
+  PROFILE: {
+    FETCH_PROFILE: string;
+    UPDATE_PROFILE: string;
+  };
   STAFF: {
     INSERT_STAFF: string;
     STAFF_LIST: string;
@@ -151,6 +156,10 @@ export interface EndPointApi {
 
 // Define and export the standard API endpoint object
 const endPointApi: EndPointApi = {
+  PROFILE: {
+    FETCH_PROFILE: 'profile',
+    UPDATE_PROFILE: 'update_profile',
+  },
   STAFF: {
     INSERT_STAFF: 'insert_staff',
     STAFF_LIST: 'staff_list',
@@ -230,6 +239,7 @@ const endPointApi: EndPointApi = {
     INSERT_LEAD_REMINDER: 'insert_lead_reminder',
     LEAD_REMINDER_LIST: 'lead_reminder_list',
     DELETE_LEAD_REMINDER: 'delete_lead_reminder',
+    UPDATE_LEAD_STATUS: 'update_lead_status',
   },
   LIFE_INSURANCE: {
     INSERT_LIFE_INSURANCE: 'insert_life_insurance',

@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { api } from '@/utils/axiosInstance';
 import endPointApi from '@/utils/endPointApi';
 
@@ -478,6 +478,7 @@ export const useDashboardChartCompany = ({ yearFilter, companyType }: UseDashboa
       return { items: [] };
     },
     enabled: Boolean(yearFilter && companyType),
+    placeholderData: keepPreviousData,
   });
 };
 
@@ -546,6 +547,7 @@ export const useDashboardChartType = ({ yearFilter }: UseDashboardChartTypeParam
       return { items: [] };
     },
     enabled: Boolean(yearFilter),
+    placeholderData: keepPreviousData,
   });
 };
 
@@ -617,6 +619,7 @@ export const useDashboardChartPolicy = ({ mode, year }: UseDashboardChartPolicyP
       return { items: [] };
     },
     enabled: Boolean(mode && year),
+    placeholderData: keepPreviousData,
   });
 };
 

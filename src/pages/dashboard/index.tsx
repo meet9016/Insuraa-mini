@@ -483,17 +483,17 @@ export default function Dashboard() {
     to: activePaymentPeriod === 'range' ? paymentDateRange.to : '',
   });
 
-  const { data: generalCompanyData, isLoading: loadingGeneralCompany } = useDashboardChartCompany({
+  const { data: generalCompanyData, isFetching: loadingGeneralCompany } = useDashboardChartCompany({
     yearFilter: generalYearFilter,
     companyType: 'general',
   });
 
-  const { data: lifeCompanyData, isLoading: loadingLifeCompany } = useDashboardChartCompany({
+  const { data: lifeCompanyData, isFetching: loadingLifeCompany } = useDashboardChartCompany({
     yearFilter: lifeYearFilter,
     companyType: 'life',
   });
 
-  const { data: typeChartData, isLoading: loadingTypeChart } = useDashboardChartType({
+  const { data: typeChartData, isFetching: loadingTypeChart } = useDashboardChartType({
     yearFilter: typeYearFilter,
   });
 
@@ -503,7 +503,7 @@ export default function Dashboard() {
     setDotCoords([]);
   }, [typeYearFilter, typeChartMode, typeChartData?.items]);
 
-  const { data: policyChartData, isLoading: loadingPolicyChart } = useDashboardChartPolicy({
+  const { data: policyChartData, isFetching: loadingPolicyChart } = useDashboardChartPolicy({
     mode: policyMode,
     year: policyYear,
   });

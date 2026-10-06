@@ -41,7 +41,7 @@ export default function KanbanView({
   searchPlaceholder = 'Search leads by name or ID...',
 }: KanbanViewProps) {
   const { data: apiKanbanGroups = [], isLoading: isKanbanLoading } = useLeadKanbanList();
-  const { deleteLead } = useLeadActions();
+  const { deleteLead, updateLeadStatus } = useLeadActions();
 
   // Delete modal state
   const [deleteModalState, setDeleteModalState] = useState<{
@@ -117,6 +117,11 @@ export default function KanbanView({
     } catch {
       setDeleteModalState(prev => ({ ...prev, isDeleting: false }));
     }
+  };
+
+  const handleDropLead = async (leadId: string, newStatusId: string | number) => {
+    if (!leadId || !newStatusId) return;
+    await updateLeadStatus(leadId, newStatusId);
   };
 
   // Filter Kanban leads based on search string
@@ -209,6 +214,7 @@ export default function KanbanView({
                   onDelete={handleDeleteClick}
                   onOpenNotes={handleOpenNotesTab}
                   onOpenReminders={handleOpenRemindersTab}
+                  onDropLead={handleDropLead}
                 />
               </div>
             ))}
@@ -248,6 +254,7 @@ interface KanbanColumnProps {
   onDelete: (lead: LeadItem) => void;
   onOpenNotes: (lead: LeadItem) => void;
   onOpenReminders: (lead: LeadItem) => void;
+  onDropLead?: (leadId: string, newStatusId: string | number) => void;
 }
 
 function getEmptyColumnConfig(title: string) {
@@ -304,9 +311,11 @@ function KanbanColumn({
   onDelete,
   onOpenNotes,
   onOpenReminders,
+  onDropLead,
 }: KanbanColumnProps) {
   const [columnLeads, setColumnLeads] = useState<LeadItem[]>(initialLeads);
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
+  const [isDragOver, setIsDragOver] = useState(false);
 
   const pageRef = useRef<number>(1);
   const loadingRef = useRef<boolean>(false);
@@ -353,8 +362,31 @@ function KanbanColumn({
 
   const emptyConfig = getEmptyColumnConfig(title);
 
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const leadId = e.dataTransfer.getData('text/plain');
+    if (leadId && onDropLead) {
+      onDropLead(leadId, statusId);
+    }
+  };
+
   return (
-    <div className="flex flex-col h-full bg-[#f8fafc] rounded-xl border border-gray-200/80 overflow-hidden shadow-xs">
+    <div 
+      className={`flex flex-col h-full bg-[#f8fafc] rounded-xl border ${isDragOver ? 'border-[#2B4399] shadow-md bg-blue-50/50' : 'border-gray-200/80 shadow-xs'} overflow-hidden transition-all`}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       {/* Column Header */}
       <div className="px-4 py-3 flex justify-between items-center bg-[#2B4399] text-white rounded-t-xl shrink-0">
         <div className="flex items-center gap-2.5">
@@ -388,7 +420,11 @@ function KanbanColumn({
           columnLeads.map((lead) => (
             <div
               key={lead.lead_id}
-              className="bg-white p-3 rounded-xl shadow-xs border border-[#2B4399]/40 hover:border-[#2B4399]/40 transition-all duration-200 hover:shadow-md flex flex-col gap-2.5"
+              draggable
+              onDragStart={(e) => {
+                e.dataTransfer.setData('text/plain', String(lead.lead_id));
+              }}
+              className="bg-white p-3 rounded-xl shadow-xs border border-[#2B4399]/40 hover:border-[#2B4399]/40 transition-all duration-200 hover:shadow-md flex flex-col gap-2.5 cursor-grab active:cursor-grabbing"
             >
               {/* Header: Lead ID & Date */}
               <div className="flex justify-between items-center">

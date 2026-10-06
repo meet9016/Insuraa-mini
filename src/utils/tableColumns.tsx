@@ -538,16 +538,6 @@ export interface LeadColumnProps {
 
 export const getLeadColumns = ({ onView, onNotes, onReminders, onEdit, onDelete }: LeadColumnProps = {}) => [
   {
-    headerName: "ID",
-    field: "lead_id",
-    minWidth: 110,
-    cellRenderer: (params: any) => {
-      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
-      const idVal = params.data?.lead_id || params.data?.id || params.value || '-';
-      return <span className="text-gray-500 font-bold">#LEAD-{idVal}</span>;
-    },
-  },
-  {
     headerName: "Customer Name",
     field: "full_name",
     minWidth: 180,

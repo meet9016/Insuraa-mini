@@ -220,8 +220,32 @@ export const useLeadActions = () => {
     }
   };
 
+  const updateLeadStatus = async (leadId: string | number, statusId: string | number) => {
+    try {
+      const formData = new FormData();
+      formData.append('lead_id', String(leadId));
+      formData.append('status_id', String(statusId));
+
+      const response = await api.post(endPointApi.LEAD.UPDATE_LEAD_STATUS, formData);
+      const resData = response.data;
+
+      if (resData?.status === 200 || resData?.status === 'success' || resData?.status === true) {
+        toast.success(resData?.message || 'Lead status updated successfully');
+        queryClient.invalidateQueries({ queryKey: ['leadKanbanList'] });
+        return true;
+      } else {
+        toast.error(resData?.message || 'Failed to update lead status');
+        return false;
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Error updating lead status');
+      return false;
+    }
+  };
+
   return {
     insertLead,
     deleteLead,
+    updateLeadStatus,
   };
 };
