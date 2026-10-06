@@ -20,6 +20,8 @@
         "axios": "^1.13.4",
         "formik": "^2.4.9",
         "joi": "^18.2.8",
+        "lottie-react": "^3.1.2",
+        "lottie-web": "^5.13.0",
         "lucide-react": "^0.563.0",
         "moment": "^2.30.1",
         "next": "16.1.6",

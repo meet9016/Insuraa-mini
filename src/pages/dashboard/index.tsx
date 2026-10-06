@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Head from 'next/head';
 import {
   BarChart,
@@ -11,15 +11,197 @@ import {
   Cell,
   PieChart,
   Pie,
-  Sector
+  Sector,
+  AreaChart,
+  Area
 } from 'recharts';
-import { ChevronLeft, ChevronRight, Filter, Calendar, Shield, BarChart2, PieChart as PieChartIcon, X, Phone, Mail, User, Cake, Heart, UserCheck, Car, ChevronDown, Check } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Filter, Calendar, Shield, BarChart2, PieChart as PieChartIcon, X, Phone, Mail, User, Cake, Heart, UserCheck, Car, ChevronDown, Check, TrendingUp } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { ColDef } from 'ag-grid-community';
 import AgGridTable from '@/components/ui/tableaggrid/AgGridTable';
 import DataTable from '@/components/ui/DataTable';
 import DatePicker from '@/components/ui/DatePicker';
 import TableHeader from '@/components/ui/TableHeader';
+import WalkingLottieCharacter from '@/components/dashboard/WalkingLottieCharacter';
+
+interface CurvePoint {
+  x: number;
+  y: number;
+}
+
+// Exact Fritsch-Carlson Monotone Cubic Spline (identical to Recharts d3-shape curveMonotoneX)
+function computeMonotoneCubicSplinePath(points: CurvePoint[]): string {
+  if (!points || points.length === 0) return '';
+  if (points.length === 1) return `M ${points[0].x},${points[0].y}`;
+  if (points.length === 2) {
+    return `M ${points[0].x},${points[0].y} L ${points[1].x},${points[1].y}`;
+  }
+
+  const n = points.length;
+  const dx: number[] = [];
+  const dy: number[] = [];
+  const m: number[] = [];
+
+  for (let i = 0; i < n - 1; i++) {
+    const deltaX = points[i + 1].x - points[i].x;
+    const deltaY = points[i + 1].y - points[i].y;
+    dx.push(deltaX);
+    dy.push(deltaY);
+    m.push(deltaX === 0 ? 0 : deltaY / deltaX);
+  }
+
+  const d: number[] = new Array(n);
+  d[0] = m[0];
+  d[n - 1] = m[n - 2];
+
+  for (let i = 1; i < n - 1; i++) {
+    if (m[i - 1] * m[i] <= 0) {
+      d[i] = 0;
+    } else {
+      d[i] = (m[i - 1] + m[i]) / 2;
+    }
+  }
+
+  for (let i = 0; i < n - 1; i++) {
+    if (m[i] === 0) {
+      d[i] = 0;
+      d[i + 1] = 0;
+    } else {
+      const alpha = d[i] / m[i];
+      const beta = d[i + 1] / m[i];
+      const s = alpha * alpha + beta * beta;
+      if (s > 9) {
+        const tau = 3 / Math.sqrt(s);
+        d[i] = tau * alpha * m[i];
+        d[i + 1] = tau * beta * m[i];
+      }
+    }
+  }
+
+  let pathStr = `M ${points[0].x.toFixed(2)},${points[0].y.toFixed(2)}`;
+  for (let i = 0; i < n - 1; i++) {
+    const cp1x = points[i].x + dx[i] / 3;
+    const cp1y = points[i].y + (d[i] * dx[i]) / 3;
+    const cp2x = points[i + 1].x - dx[i] / 3;
+    const cp2y = points[i + 1].y - (d[i + 1] * dx[i]) / 3;
+    pathStr += ` C ${cp1x.toFixed(2)},${cp1y.toFixed(2)} ${cp2x.toFixed(2)},${cp2y.toFixed(2)} ${points[i + 1].x.toFixed(2)},${points[i + 1].y.toFixed(2)}`;
+  }
+
+  return pathStr;
+}
+
+
+const WalkingAgentCharacter = () => (
+  <>
+    <ellipse cx="0" cy="0.5" rx="14" ry="2.2" fill="#1e1b4b" opacity="0.18" />
+    <foreignObject
+      x="-27"
+      y="-77"
+      width="54"
+      height="82"
+      style={{ overflow: 'visible', pointerEvents: 'none' }}
+    >
+      <WalkingLottieCharacter width={54} height={82} speed={1.15} />
+    </foreignObject>
+  </>
+);
+
+// High-performance, 60fps continuous curve walking controller
+function useWalkingCurve(points: CurvePoint[]) {
+  const guidePathRef = useRef<SVGPathElement | null>(null);
+  const characterRef = useRef<SVGGElement | null>(null);
+
+  const guidePathD = useMemo(() => {
+    return computeMonotoneCubicSplinePath(points);
+  }, [points]);
+
+  useEffect(() => {
+    const pathEl = guidePathRef.current;
+    const charEl = characterRef.current;
+
+    if (!pathEl || !charEl || !points || points.length < 2) {
+      if (charEl) charEl.style.opacity = '0';
+      return;
+    }
+
+    let totalLength = 0;
+    try {
+      totalLength = pathEl.getTotalLength();
+    } catch {
+      return;
+    }
+
+    if (!totalLength || isNaN(totalLength) || totalLength <= 0) {
+      charEl.style.opacity = '0';
+      return;
+    }
+
+    // Smooth traversal duration (8 to 11 seconds depending on length)
+    const walkDuration = Math.max(7500, Math.min(11000, totalLength * 14));
+    const pauseDuration = 600;
+    const cycleDuration = walkDuration + pauseDuration;
+
+    let startTime: number | null = null;
+    let animId: number;
+
+    const tick = (now: number) => {
+      if (!startTime) startTime = now;
+      const elapsed = (now - startTime) % cycleDuration;
+
+      let distance = 0;
+      let opacity = 1;
+
+      if (elapsed < walkDuration) {
+        const progress = elapsed / walkDuration;
+        distance = progress * totalLength;
+
+        // Smooth fade-in at the first 5% of distance
+        if (progress < 0.05) {
+          opacity = progress / 0.05;
+        }
+        // Smooth fade-out at the last 5% of distance
+        else if (progress > 0.95) {
+          opacity = (1 - progress) / 0.05;
+        }
+      } else {
+        distance = totalLength;
+        opacity = 0;
+      }
+
+      const clampedDist = Math.max(0, Math.min(totalLength, distance));
+
+      try {
+        // Exact position along the monotone graph curve
+        const pt = pathEl.getPointAtLength(clampedDist);
+
+        // Exact slope tangent for natural slope posture
+        const delta = 3;
+        const ptAhead = pathEl.getPointAtLength(Math.min(totalLength, clampedDist + delta));
+        const ptBehind = pathEl.getPointAtLength(Math.max(0, clampedDist - delta));
+        const angleRad = Math.atan2(ptAhead.y - ptBehind.y, ptAhead.x - ptBehind.x);
+        const angleDeg = (angleRad * 180) / Math.PI;
+
+        // Damped natural tilt: character adapts to slope without over-rotating
+        const naturalTilt = Math.max(-14, Math.min(14, angleDeg * 0.5));
+
+        charEl.setAttribute(
+          'transform',
+          `translate(${pt.x.toFixed(2)}, ${pt.y.toFixed(2)}) rotate(${naturalTilt.toFixed(1)})`
+        );
+        charEl.style.opacity = opacity.toFixed(2);
+      } catch {
+        // Safe catch for SVG path rendering race
+      }
+
+      animId = requestAnimationFrame(tick);
+    };
+
+    animId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(animId);
+  }, [guidePathD, points]);
+
+  return { guidePathD, guidePathRef, characterRef };
+}
 
 const LIFE_PAYMENT_COLUMNS = [
   { key: 'date', label: 'Date' },
@@ -237,10 +419,25 @@ export default function Dashboard() {
   const [policyYear, setPolicyYear] = useState('2026');
   const [generalChartMode, setGeneralChartMode] = useState<'Bar' | 'Pie'>('Bar');
   const [lifeChartMode, setLifeChartMode] = useState<'Bar' | 'Pie'>('Bar');
-  const [typeChartMode, setTypeChartMode] = useState<'Bar' | 'Pie'>('Bar');
+  const [typeChartMode, setTypeChartMode] = useState<'Trend' | 'Bar' | 'Pie'>('Trend');
   const [activeGeneralIndex, setActiveGeneralIndex] = useState(0);
   const [activeLifeIndex, setActiveLifeIndex] = useState(0);
   const [activeTypeIndex, setActiveTypeIndex] = useState(0);
+  const [dotCoords, setDotCoords] = useState<CurvePoint[]>([]);
+  const coordsRef = useRef<CurvePoint[]>([]);
+
+  // Continuous 60fps graph curve runner controllers (Feet locked to line, zero jumping)
+  const {
+    guidePathD: trendGuidePathD,
+    guidePathRef: trendPathRef,
+    characterRef: trendCharRef,
+  } = useWalkingCurve(typeChartMode === 'Trend' ? dotCoords : []);
+
+  const {
+    guidePathD: barGuidePathD,
+    guidePathRef: barPathRef,
+    characterRef: barCharRef,
+  } = useWalkingCurve(typeChartMode === 'Bar' ? dotCoords : []);
 
   const [eventDate, setEventDate] = useState(() => new Date());
   const [renewalDate, setRenewalDate] = useState(() => new Date());
@@ -297,6 +494,12 @@ export default function Dashboard() {
   const { data: typeChartData, isLoading: loadingTypeChart } = useDashboardChartType({
     yearFilter: typeYearFilter,
   });
+
+  // Reset and synchronize curve dots whenever year filter, chart mode, or data items change
+  useEffect(() => {
+    coordsRef.current = [];
+    setDotCoords([]);
+  }, [typeYearFilter, typeChartMode, typeChartData?.items]);
 
   const { data: policyChartData, isLoading: loadingPolicyChart } = useDashboardChartPolicy({
     mode: policyMode,
@@ -555,6 +758,19 @@ export default function Dashboard() {
       <Head>
         <title>Dashboard - Insuraa</title>
       </Head>
+
+      <style jsx global>{`
+        @keyframes agentWalkGait {
+          0% { transform: translateY(0px) rotate(-1.5deg) scaleY(1); }
+          25% { transform: translateY(-4px) rotate(1.5deg) scaleY(1.02); }
+          50% { transform: translateY(0px) rotate(-1.5deg) scaleY(1); }
+          75% { transform: translateY(-4px) rotate(1.5deg) scaleY(1.02); }
+          100% { transform: translateY(0px) rotate(-1.5deg) scaleY(1); }
+        }
+        .animate-agent-walk {
+          animation: agentWalkGait 1.3s infinite ease-in-out;
+        }
+      `}</style>
 
       <div className="w-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">
         {/* Metric Cards */}
@@ -909,8 +1125,8 @@ export default function Dashboard() {
                       key={filter.value}
                       onClick={() => setGeneralYearFilter(filter.value)}
                       className={`px-3 py-1.5 rounded-md transition-all ${generalYearFilter === filter.value
-                          ? 'bg-white shadow-sm text-[#2F439D] font-bold'
-                          : 'text-gray-500 hover:bg-white'
+                        ? 'bg-white shadow-sm text-[#2F439D] font-bold'
+                        : 'text-gray-500 hover:bg-white'
                         }`}
                     >
                       {filter.label}
@@ -1035,8 +1251,8 @@ export default function Dashboard() {
                       key={filter.value}
                       onClick={() => setLifeYearFilter(filter.value)}
                       className={`px-3 py-1.5 rounded-md transition-all ${lifeYearFilter === filter.value
-                          ? 'bg-white shadow-sm text-[#2F439D] font-bold'
-                          : 'text-gray-500 hover:bg-white'
+                        ? 'bg-white shadow-sm text-[#2F439D] font-bold'
+                        : 'text-gray-500 hover:bg-white'
                         }`}
                     >
                       {filter.label}
@@ -1171,8 +1387,8 @@ export default function Dashboard() {
                   <button
                     onClick={() => setPolicyMode('general')}
                     className={`px-4 py-1.5 rounded-md transition-all ${policyMode === 'general'
-                        ? 'bg-white shadow-sm text-[#2F439D] font-bold'
-                        : 'text-gray-500 hover:bg-white'
+                      ? 'bg-white shadow-sm text-[#2F439D] font-bold'
+                      : 'text-gray-500 hover:bg-white'
                       }`}
                   >
                     General
@@ -1180,8 +1396,8 @@ export default function Dashboard() {
                   <button
                     onClick={() => setPolicyMode('life')}
                     className={`px-4 py-1.5 rounded-md transition-all ${policyMode === 'life'
-                        ? 'bg-white shadow-sm text-[#2F439D] font-bold'
-                        : 'text-gray-500 hover:bg-white'
+                      ? 'bg-white shadow-sm text-[#2F439D] font-bold'
+                      : 'text-gray-500 hover:bg-white'
                       }`}
                   >
                     Life
@@ -1226,7 +1442,7 @@ export default function Dashboard() {
                   )}
                 </div>
               </div>
-              <div className="flex flex-wrap items-center gap-3 text-xs font-medium">
+              <div className="flex flex-col items-end gap-2 text-xs font-medium">
                 {/* Year Filter Options: All, Current Year, Previous Year */}
                 <div className="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-100">
                   {[
@@ -1238,16 +1454,23 @@ export default function Dashboard() {
                       key={filter.value}
                       onClick={() => setTypeYearFilter(filter.value)}
                       className={`px-3 py-1.5 rounded-md transition-all ${typeYearFilter === filter.value
-                          ? 'bg-white shadow-sm text-[#2F439D] font-bold'
-                          : 'text-gray-500 hover:bg-white'
+                        ? 'bg-white shadow-sm text-[#2F439D] font-bold'
+                        : 'text-gray-500 hover:bg-white'
                         }`}
                     >
                       {filter.label}
                     </button>
                   ))}
                 </div>
-                {/* Bar / Pie Chart Toggle */}
+                {/* Trend / Bar / Pie Chart Toggle */}
                 <div className="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-100">
+                  <button
+                    onClick={() => setTypeChartMode('Trend')}
+                    className={`px-3 py-1.5 rounded-md flex items-center gap-1.5 transition-all ${typeChartMode === 'Trend' ? 'bg-white shadow-sm text-[#2F439D] font-bold' : 'text-gray-500 hover:bg-white'
+                      }`}
+                  >
+                    <TrendingUp size={14} /> Market Trend
+                  </button>
                   <button
                     onClick={() => setTypeChartMode('Bar')}
                     className={`px-3 py-1.5 rounded-md flex items-center gap-1.5 transition-all ${typeChartMode === 'Bar' ? 'bg-white shadow-sm text-[#2F439D] font-bold' : 'text-gray-500 hover:bg-white'
@@ -1293,7 +1516,84 @@ export default function Dashboard() {
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
-                  {typeChartMode === 'Bar' ? (
+                  {typeChartMode === 'Trend' ? (
+                    <AreaChart data={typeChartData.items} margin={{ top: 40, right: 20, left: -10, bottom: 45 }}>
+                      <defs>
+                        <linearGradient id="typeGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#2F439D" stopOpacity={0.25} />
+                          <stop offset="95%" stopColor="#2F439D" stopOpacity={0.0} />
+                        </linearGradient>
+                        <linearGradient id="typeLineGradient" x1="0" y1="0" x2="1" y2="0">
+                          <stop offset="0%" stopColor="#2F439D" />
+                          <stop offset="50%" stopColor="#10B981" />
+                          <stop offset="100%" stopColor="#4F46E5" />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <XAxis
+                        dataKey="name"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: '#64748b', fontSize: 10, fontWeight: 600 }}
+                        tickFormatter={(val) => (val.length > 14 ? val.substring(0, 14) + '...' : val)}
+                        angle={-20}
+                        textAnchor="end"
+                        dy={12}
+                      />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12, fontWeight: 600 }} dx={-5} />
+                      <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#2F439D', strokeWidth: 1.5, strokeDasharray: '4 4' }} />
+                      <Area
+                        type="monotone"
+                        dataKey="value"
+                        stroke="url(#typeLineGradient)"
+                        strokeWidth={3}
+                        fillOpacity={1}
+                        fill="url(#typeGradient)"
+                        dot={(props: any) => {
+                          const { cx, cy, index, payload } = props;
+                          if (cx === undefined || cy === undefined) return null;
+
+                          if (coordsRef.current[index]?.x !== cx || coordsRef.current[index]?.y !== cy) {
+                            coordsRef.current[index] = { x: cx, y: cy };
+                            const itemsCount = typeChartData?.items?.length || 0;
+                            if (itemsCount > 0 && coordsRef.current.filter(Boolean).length === itemsCount) {
+                              setDotCoords([...coordsRef.current]);
+                            }
+                          }
+
+                          return (
+                            <circle key={`dot-${index}`} cx={cx} cy={cy} r={5} fill={payload?.color || '#2F439D'} stroke="#ffffff" strokeWidth={2.5} />
+                          );
+                        }}
+                        activeDot={{ r: 7, stroke: '#2F439D', strokeWidth: 3, fill: '#FFFFFF' }}
+                      />
+
+                      {/* Dynamic Continuous Monotone Curve Runner (Feet Locked to Line, Natural Slanted Tilt) */}
+                      {typeChartData?.items && typeChartData.items.length >= 2 && (
+                        <>
+                          <path
+                            ref={trendPathRef}
+                            d={trendGuidePathD}
+                            fill="none"
+                            stroke="transparent"
+                            strokeWidth={0}
+                            pointerEvents="none"
+                            aria-hidden="true"
+                          />
+                          <g
+                            ref={trendCharRef}
+                            style={{
+                              opacity: 0,
+                              pointerEvents: 'none',
+                              willChange: 'transform, opacity',
+                            }}
+                          >
+                            <WalkingAgentCharacter />
+                          </g>
+                        </>
+                      )}
+                    </AreaChart>
+                  ) : typeChartMode === 'Bar' ? (
                     <BarChart data={typeChartData.items} margin={{ top: 10, right: 10, left: -20, bottom: 50 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                       <XAxis
@@ -1308,11 +1608,53 @@ export default function Dashboard() {
                       />
                       <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 600 }} dx={-10} />
                       <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f8fafc' }} />
-                      <Bar dataKey="value" radius={[6, 6, 0, 0]} barSize={44}>
+                      <Bar
+                        dataKey="value"
+                        radius={[6, 6, 0, 0]}
+                        barSize={44}
+                        shape={(props: any) => {
+                          const { x, y, width, height, fill, index } = props;
+                          const topCenterX = x + width / 2;
+                          const topY = y;
+                          if (coordsRef.current[index]?.x !== topCenterX || coordsRef.current[index]?.y !== topY) {
+                            coordsRef.current[index] = { x: topCenterX, y: topY };
+                            const itemsCount = typeChartData?.items?.length || 0;
+                            if (itemsCount > 0 && coordsRef.current.filter(Boolean).length === itemsCount) {
+                              setDotCoords([...coordsRef.current]);
+                            }
+                          }
+                          return <rect x={x} y={y} width={width} height={height} fill={fill} rx={6} ry={6} />;
+                        }}
+                      >
                         {typeChartData.items.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Bar>
+
+                      {/* Dynamic Continuous Bar Runner */}
+                      {typeChartData?.items && typeChartData.items.length >= 2 && (
+                        <>
+                          <path
+                            ref={barPathRef}
+                            d={barGuidePathD}
+                            fill="none"
+                            stroke="transparent"
+                            strokeWidth={0}
+                            pointerEvents="none"
+                            aria-hidden="true"
+                          />
+                          <g
+                            ref={barCharRef}
+                            style={{
+                              opacity: 0,
+                              pointerEvents: 'none',
+                              willChange: 'transform, opacity',
+                            }}
+                          >
+                            <WalkingAgentCharacter />
+                          </g>
+                        </>
+                      )}
                     </BarChart>
                   ) : (
                     <PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
