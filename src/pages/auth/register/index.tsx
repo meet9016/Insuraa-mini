@@ -172,52 +172,20 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F4F7FE] p-4 md:p-8 font-sans overflow-hidden relative">
+    <div className="min-h-screen flex items-center justify-center bg-[#F4F7FE] p-4 md:p-8 font-sans overflow-x-hidden overflow-y-auto relative">
       {/* Background Decorators */}
       <div className="absolute top-[-10%] right-[-10%] w-[40vw] h-[40vw] rounded-full bg-[#2BBF8C]/10 blur-[120px] pointer-events-none"></div>
       <div className="absolute bottom-[-10%] left-[-5%] w-[35vw] h-[35vw] rounded-full bg-[#2E3192]/10 blur-[100px] pointer-events-none"></div>
 
-      <div className="flex w-full max-w-[1150px] min-h-[700px] bg-white rounded-[2.5rem] overflow-hidden shadow-[0_20px_60px_-15px_rgba(46,49,146,0.15)] relative z-10 border border-gray-100 flex-row-reverse">
+      <div className={`flex w-full bg-white rounded-[2.5rem] overflow-hidden shadow-[0_20px_60px_-15px_rgba(46,49,146,0.15)] relative z-10 border border-gray-100 transition-all duration-500 ease-in-out ${isOtpSent ? 'max-w-[800px]' : 'max-w-[500px]'}`}>
+        
+        {/* Register Form / OTP */}
+        <div className="flex flex-col w-full p-6 sm:p-10 justify-center bg-white">
+          <div className={`w-full mx-auto transition-all duration-500 ease-in-out ${isOtpSent ? 'max-w-[680px]' : 'max-w-[440px]'}`}>
 
-        {/* Right Section - Hero/Brand */}
-        <div className="hidden lg:flex flex-col w-[52%] bg-[#2E3192] p-12 relative overflow-hidden text-white justify-between">
-          <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-gradient-to-br from-[#2BBF8C]/40 to-transparent rounded-full blur-[80px] -translate-y-1/3 -translate-x-1/4"></div>
-
-          <div className="relative z-10">
-            <div className="flex items-center gap-3 mb-16">
-              <img src="/white_logo.png" alt="Insuraa Logo" className="h-10" />
-            </div>
-
-            <div className="space-y-6">
-              <h1 className="text-4xl leading-[1.15] font-extrabold tracking-tight">
-                Join <span className="text-[#2BBF8C]">Insuraa</span> Today
-              </h1>
-              <p className="text-blue-100/80 text-lg max-w-md leading-relaxed">
-                Create an account to manage your insurance agency with unprecedented ease and insight.
-              </p>
-            </div>
-          </div>
-
-          <div className="relative z-10 grid gap-6">
-            <div className="flex items-center gap-4 bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20 transition-transform hover:-translate-y-1 duration-300">
-              <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center shrink-0">
-                <Shield className="w-6 h-6 text-[#2BBF8C]" />
-              </div>
-              <div>
-                <h3 className="font-bold text-white text-sm">Trusted by Thousands</h3>
-                <p className="text-blue-100/70 text-xs mt-0.5">Top insurance agencies rely on our platform.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Left Section - Register Form / OTP */}
-        <div className="flex flex-col w-full lg:w-[48%] p-6 sm:p-10 md:p-12 justify-center bg-white overflow-y-auto max-h-[90vh]">
-          <div className="w-full max-w-[440px] mx-auto">
-
-            {/* Mobile Logo */}
-            <div className="lg:hidden mb-6">
-              <img src="/logo.png" alt="Insuraa Logo" className="h-10" />
+            {/* Logo */}
+            <div className="flex justify-center mb-6">
+              <img src="/logo.png" alt="Insuraa Logo" className="h-12" />
             </div>
 
             {!isOtpSent ? (
@@ -324,7 +292,7 @@ export default function RegisterPage() {
                   </div>
 
                   {/* Additional Form Fields Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-1">
 
                     {/* Full Name */}
                     <div className="space-y-1">
@@ -490,7 +458,7 @@ export default function RegisterPage() {
                     </div>
 
                     {/* Country */}
-                    <div className="space-y-1 sm:col-span-2">
+                    <div className="space-y-1 sm:col-span-1">
                       <label className="text-[12px] font-semibold text-gray-700 ml-1">
                         Country <span className="text-red-500 font-bold">*</span>
                       </label>
@@ -516,33 +484,33 @@ export default function RegisterPage() {
                       )}
                     </div>
 
-                  </div>
-
-                  {/* Address - Full Width */}
-                  <div className="space-y-1">
-                    <label className="text-[12px] font-semibold text-gray-700 ml-1">
-                      Address <span className="text-red-500 font-bold">*</span>
-                    </label>
-                    <div className="relative group">
-                      <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
-                        <MapPin className={`h-4 w-4 ${hasError(verifyDetailsFormik, 'address') ? 'text-red-500' : 'text-gray-400 group-focus-within:text-[#2E3192]'}`} />
+                    {/* Address - Full Width */}
+                    <div className="space-y-1 sm:col-span-2">
+                      <label className="text-[12px] font-semibold text-gray-700 ml-1">
+                        Address <span className="text-red-500 font-bold">*</span>
+                      </label>
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
+                          <MapPin className={`h-4 w-4 ${hasError(verifyDetailsFormik, 'address') ? 'text-red-500' : 'text-gray-400 group-focus-within:text-[#2E3192]'}`} />
+                        </div>
+                        <input
+                          type="text"
+                          name="address"
+                          value={verifyDetailsFormik.values.address}
+                          onChange={verifyDetailsFormik.handleChange}
+                          onBlur={verifyDetailsFormik.handleBlur}
+                          placeholder="Complete Address"
+                          className={`w-full rounded-xl border py-2.5 pl-10 pr-3 text-sm outline-none transition-all ${hasError(verifyDetailsFormik, 'address')
+                            ? '!border-red-500 text-red-900 bg-red-50/30 focus:!border-red-500 focus:ring-2 focus:ring-red-500/20'
+                            : 'border-gray-200 text-gray-900 bg-gray-50/50 hover:bg-gray-50 focus:bg-white focus:border-[#2E3192] focus:ring-2 focus:ring-[#2E3192]/10'
+                            }`}
+                        />
                       </div>
-                      <input
-                        type="text"
-                        name="address"
-                        value={verifyDetailsFormik.values.address}
-                        onChange={verifyDetailsFormik.handleChange}
-                        onBlur={verifyDetailsFormik.handleBlur}
-                        placeholder="Complete Address"
-                        className={`w-full rounded-xl border py-2.5 pl-10 pr-3 text-sm outline-none transition-all ${hasError(verifyDetailsFormik, 'address')
-                          ? '!border-red-500 text-red-900 bg-red-50/30 focus:!border-red-500 focus:ring-2 focus:ring-red-500/20'
-                          : 'border-gray-200 text-gray-900 bg-gray-50/50 hover:bg-gray-50 focus:bg-white focus:border-[#2E3192] focus:ring-2 focus:ring-[#2E3192]/10'
-                          }`}
-                      />
+                      {hasError(verifyDetailsFormik, 'address') && (
+                        <p className="text-[11px] text-red-500 ml-1 font-medium">{verifyDetailsFormik.errors.address}</p>
+                      )}
                     </div>
-                    {hasError(verifyDetailsFormik, 'address') && (
-                      <p className="text-[11px] text-red-500 ml-1 font-medium">{verifyDetailsFormik.errors.address}</p>
-                    )}
+
                   </div>
 
                   {/* Submit Button */}

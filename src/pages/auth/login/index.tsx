@@ -177,57 +177,15 @@ export default function LoginPage() {
       <div className="absolute top-[-10%] left-[-10%] w-[40vw] h-[40vw] rounded-full bg-[#2E3192]/10 blur-[120px] pointer-events-none"></div>
       <div className="absolute bottom-[-10%] right-[-5%] w-[35vw] h-[35vw] rounded-full bg-[#2BBF8C]/10 blur-[100px] pointer-events-none"></div>
 
-      <div className="flex w-full max-w-[1200px] min-h-[700px] bg-white rounded-[2.5rem] overflow-hidden shadow-[0_20px_60px_-15px_rgba(46,49,146,0.15)] relative z-10 border border-gray-100">
+      <div className="flex w-full max-w-[500px] bg-white rounded-[2.5rem] overflow-hidden shadow-[0_20px_60px_-15px_rgba(46,49,146,0.15)] relative z-10 border border-gray-100">
 
-        {/* Left Section - Hero/Brand */}
-        <div className="hidden lg:flex flex-col w-[45%] bg-[#2E3192] p-12 relative overflow-hidden text-white justify-between">
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-bl from-[#2BBF8C]/40 to-transparent rounded-full blur-[80px] -translate-y-1/3 translate-x-1/4"></div>
-
-          <div className="relative z-10">
-            <div className="flex items-center gap-3 mb-16">
-              <img src="/white_logo.png" alt="Insuraa Logo" className="h-10" />
-            </div>
-
-            <div className="space-y-6">
-              <h1 className="text-4xl leading-[1.15] font-extrabold tracking-tight">
-                Secure your future with <span className="text-[#2BBF8C]">Insuraa</span>
-              </h1>
-              <p className="text-blue-100/80 text-lg max-w-md leading-relaxed">
-                The most advanced and intuitive insurance management platform built for modern agencies.
-              </p>
-            </div>
-          </div>
-
-          <div className="relative z-10 grid gap-6">
-            <div className="flex items-center gap-4 bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/10 transition-transform hover:-translate-y-1 duration-300">
-              <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center shrink-0">
-                <Shield className="w-6 h-6 text-[#2BBF8C]" />
-              </div>
-              <div>
-                <h3 className="font-bold text-white text-sm">Bank-grade Security</h3>
-                <p className="text-blue-100/70 text-xs mt-0.5">Your data is encrypted and completely secure.</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4 bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/10 transition-transform hover:-translate-y-1 duration-300">
-              <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center shrink-0">
-                <Activity className="w-6 h-6 text-[#2BBF8C]" />
-              </div>
-              <div>
-                <h3 className="font-bold text-white text-sm">Real-time Analytics</h3>
-                <p className="text-blue-100/70 text-xs mt-0.5">Track your agency's performance instantly.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Section - OTP Login Form */}
-        <div className="flex flex-col w-full lg:w-[55%] p-8 sm:p-12 md:p-16 justify-center bg-white">
+        {/* OTP Login Form */}
+        <div className="flex flex-col w-full p-8 sm:p-12 justify-center bg-white">
           <div className="w-full max-w-[420px] mx-auto">
 
-            {/* Mobile Logo */}
-            <div className="lg:hidden mb-8">
-              <img src="/logo.png" alt="Insuraa Logo" className="h-10" />
+            {/* Logo */}
+            <div className="flex justify-center mb-8">
+              <img src="/logo.png" alt="Insuraa Logo" className="h-12" />
             </div>
 
             {/* Simple Small Width Buttons for Admin & Staff Role Selection */}
@@ -236,8 +194,8 @@ export default function LoginPage() {
                 type="button"
                 onClick={() => setLoginType('admin')}
                 className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 border min-w-[110px] ${loginType === 'admin'
-                    ? 'bg-[#2E3192] text-white border-[#2E3192] shadow-md'
-                    : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                  ? 'bg-[#2E3192] text-white border-[#2E3192] shadow-md'
+                  : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
                   }`}
               >
                 <Shield className="w-3.5 h-3.5" />
@@ -247,8 +205,8 @@ export default function LoginPage() {
                 type="button"
                 onClick={() => setLoginType('staff')}
                 className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 border min-w-[110px] ${loginType === 'staff'
-                    ? 'bg-[#2E3192] text-white border-[#2E3192] shadow-md'
-                    : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                  ? 'bg-[#2E3192] text-white border-[#2E3192] shadow-md'
+                  : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
                   }`}
               >
                 <User className="w-3.5 h-3.5" />
