@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -61,17 +61,43 @@ interface HeaderProps {
 
 export default function Header({ onOpenSubscription, onOpenSubscriptionHistory }: HeaderProps) {
   const [mounted, setMounted] = useState(false);
+  const [storedLoginType, setStoredLoginType] = useState<string | null>(null);
   const user = useAppSelector((state) => state.auth.user);
 
   useEffect(() => {
     setMounted(true);
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('login_type') || localStorage.getItem('auth_login_type');
+      setStoredLoginType(stored);
+    }
   }, []);
 
   const currentUser = mounted ? user : null;
   const displayName = currentUser?.full_name || currentUser?.name || 'Insuraa Admin';
   const displaySubText = currentUser?.email || (currentUser?.number ? `+91-${currentUser.number}` : '+91-01234567890');
-  const displayTag = currentUser?.company_name || 'Admin Account';
+
+  // Determine effective login_type:
+  // - from Redux user.login_type
+  // - or from localStorage ('login_type' / 'auth_login_type')
+  const effectiveLoginType = (
+    currentUser?.login_type ||
+    storedLoginType ||
+    (typeof window !== 'undefined' ? localStorage.getItem('login_type') || localStorage.getItem('auth_login_type') : null)
+  )?.toLowerCase().trim();
+
+  // If login_type is 'staff', do NOT show Staff in the header.
+  // If login_type is 'admin' (or default), show Staff in the header.
+  const isStaff = effectiveLoginType === 'staff';
+
+  const displayTag = currentUser?.company_name || (isStaff ? 'Staff Account' : 'Admin Account');
   const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=2F439D&color=fff&bold=true`;
+
+  const navLinks = useMemo(() => {
+    if (mounted && isStaff) {
+      return NAV_LINKS.filter((link) => link.name !== 'Staff');
+    }
+    return NAV_LINKS;
+  }, [mounted, isStaff]);
 
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -283,26 +309,7 @@ export default function Header({ onOpenSubscription, onOpenSubscriptionHistory }
                     </div>
                   </Link>
 
-                  {/* Website Item */}
-                  <a
-                    href="https://insuraa.in"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => setIsProfileOpen(false)}
-                    className="flex items-center gap-3.5 px-3.5 py-3 rounded-xl hover:bg-emerald-50/70 transition-all duration-200 group/item"
-                  >
-                    <div className="w-10 h-10 rounded-xl bg-emerald-100/60 text-[#00A389] flex items-center justify-center shrink-0 group-hover/item:bg-[#00A389] group-hover/item:text-white transition-colors shadow-sm">
-                      <Globe size={19} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-gray-800 group-hover/item:text-[#00A389] transition-colors flex items-center justify-between">
-                        Website
-                        <ExternalLink size={13} className="opacity-0 group-hover/item:opacity-100 transition-opacity text-gray-400" />
-                      </p>
-                      <p className="text-xs text-gray-400 font-medium truncate">Visit & Explore Our Website</p>
-                    </div>
-                  </a>
-
+               
                   {/* Divider */}
                   <div className="my-1 border-t border-gray-100"></div>
 
@@ -339,7 +346,7 @@ export default function Header({ onOpenSubscription, onOpenSubscriptionHistory }
           className="flex items-center justify-start w-full px-4 gap-1.5 overflow-hidden"
           onScroll={() => setActiveDropdown(null)}
         >
-          {NAV_LINKS.map((link, idx) => {
+          {navLinks.map((link, idx) => {
             const isActive = pathname === link.path || link.items?.some(sub => pathname === sub.path);
             const Icon = link.icon;
             const hasItems = !!link.items;
@@ -384,7 +391,7 @@ export default function Header({ onOpenSubscription, onOpenSubscriptionHistory }
         </nav>
 
         {/* Portaled Dropdown Menu outside scroll container */}
-        {activeDropdown !== null && NAV_LINKS[activeDropdown]?.items && (
+        {activeDropdown !== null && navLinks[activeDropdown]?.items && (
           <div
             ref={dropdownRef}
             className="fixed min-w-[220px] bg-white border border-gray-200/80 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] rounded-xl z-[60] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 before:content-[''] before:absolute before:-top-3 before:left-0 before:right-0 before:h-3"
@@ -393,7 +400,7 @@ export default function Header({ onOpenSubscription, onOpenSubscriptionHistory }
             onMouseLeave={handleMouseLeave}
           >
             <div className="p-2 space-y-1">
-              {NAV_LINKS[activeDropdown].items.map((subLink, subIdx) => {
+              {navLinks[activeDropdown].items.map((subLink, subIdx) => {
                 const SubIcon = subLink.icon;
                 const isSubActive = pathname === subLink.path;
                 return (
@@ -420,7 +427,7 @@ export default function Header({ onOpenSubscription, onOpenSubscriptionHistory }
       {mobileMenuOpen && (
         <div className="xl:hidden absolute top-[72px] left-0 w-full bg-white/95 backdrop-blur-xl shadow-2xl border-b border-gray-200 max-h-[calc(100vh-72px)] overflow-y-auto z-40">
           <nav className="flex flex-col p-4 gap-2">
-            {NAV_LINKS.map((link, idx) => {
+            {navLinks.map((link, idx) => {
               const isActive = pathname === link.path;
               const Icon = link.icon;
               const hasItems = !!link.items;

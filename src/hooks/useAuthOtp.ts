@@ -124,6 +124,16 @@ export const useVerifyLoginOtp = () => {
     }
 
     const rawUser = data?.data?.user || data?.user;
+    const loginType =
+      data?.data?.login_type ||
+      data?.login_type ||
+      (data?.data as any)?.user?.login_type;
+
+    if (typeof window !== 'undefined' && loginType) {
+      localStorage.setItem('login_type', loginType);
+      localStorage.setItem('auth_login_type', loginType);
+    }
+
     if (rawUser) {
       const userPayload: User = {
         id: rawUser.id ? String(rawUser.id) : undefined,
@@ -134,6 +144,7 @@ export const useVerifyLoginOtp = () => {
         company_name: rawUser.company_name,
         user_role_id: rawUser.user_role_id ? String(rawUser.user_role_id) : undefined,
         role: rawUser.user_role_id ? String(rawUser.user_role_id) : undefined,
+        login_type: loginType,
       };
       dispatch(setUser(userPayload));
     }

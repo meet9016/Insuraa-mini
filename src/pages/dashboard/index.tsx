@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Head from 'next/head';
+import Link from 'next/link';
 import {
   BarChart,
   Bar,
@@ -738,9 +739,9 @@ export default function Dashboard() {
     { title: "Total Policy", value: summaryData?.total_policy ?? 0 },
     { title: "Total Quotation", value: summaryData?.total_quotation ?? 0 },
     { title: "Total Renewal", value: summaryData?.total_renewal ?? 0 },
-    { title: "Total Customer", value: summaryData?.total_customer ?? 0 },
-    { title: "Total Lead", value: summaryData?.total_lead ?? 0 },
-    { title: "Total Claim", value: summaryData?.total_claim ?? 0 },
+    { title: "Total Customer", value: summaryData?.total_customer ?? 0, path: "/customers" },
+    { title: "Total Lead", value: summaryData?.total_lead ?? 0, path: "/manage-leads" },
+    { title: "Total Claim", value: summaryData?.total_claim ?? 0, path: "/claim" },
   ];
 
   const leftLegends = getDynamicLegends(
@@ -776,7 +777,12 @@ export default function Dashboard() {
         {/* Metric Cards */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-5">
           {metricsList.map((metric, idx) => (
-            <MetricCard key={idx} title={metric.title} value={loadingSummary ? "..." : metric.value} />
+            <MetricCard
+              key={idx}
+              title={metric.title}
+              value={loadingSummary ? "..." : metric.value}
+              path={metric.path}
+            />
           ))}
         </div>
 
@@ -1694,9 +1700,9 @@ export default function Dashboard() {
       {/* Select Date Range Modal for Renewal Pending */}
       {isRenewalDateRangeModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-100 max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-100 max-w-md w-full overflow-visible animate-in zoom-in-95 duration-200">
             {/* Modal Header */}
-            <div className="bg-[#2F439D] text-white p-4 sm:p-5 flex items-center justify-between">
+            <div className="bg-[#2F439D] text-white p-4 sm:p-5 flex items-center justify-between rounded-t-xl">
               <div className="flex items-center gap-3">
                 <Calendar size={22} className="text-white" />
                 <h3 className="font-bold text-lg text-white tracking-wide">Select Renewal Date Range</h3>
@@ -1731,7 +1737,7 @@ export default function Dashboard() {
             </div>
 
             {/* Modal Footer */}
-            <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-3">
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-3 rounded-b-xl">
               <button
                 onClick={() => setIsRenewalDateRangeModalOpen(false)}
                 className="px-5 py-2 text-sm font-semibold rounded-lg text-gray-600 border border-gray-200 hover:bg-white transition-all"
@@ -1757,10 +1763,10 @@ export default function Dashboard() {
         </div>
       )}
       {isDateRangeModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-100 max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex  items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative bg-white rounded-2xl shadow-2xl border border-gray-100 max-w-md w-full overflow-visible animate-in zoom-in-95 duration-200">
             {/* Modal Header */}
-            <div className="bg-[#2F439D] text-white p-4 sm:p-5 flex items-center justify-between">
+            <div className="bg-[#2F439D] text-white p-4 sm:p-5 flex items-center justify-between rounded-t-xl">
               <div className="flex items-center gap-3">
                 <Calendar size={22} className="text-white" />
                 <h3 className="font-bold text-lg text-white tracking-wide">Select Date Range</h3>
@@ -1795,7 +1801,7 @@ export default function Dashboard() {
             </div>
 
             {/* Modal Footer */}
-            <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-3">
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-3 rounded-b-xl">
               <button
                 onClick={() => setIsDateRangeModalOpen(false)}
                 className="px-5 py-2 text-sm font-semibold rounded-lg text-gray-600 border border-gray-200 hover:bg-white transition-all"
@@ -1818,9 +1824,9 @@ export default function Dashboard() {
 
 // Subcomponents
 
-function MetricCard({ title, value }: any) {
-  return (
-    <div className="relative bg-white border border-[#2f439d96] rounded-md px-5 py-4 flex flex-col justify-center min-h-[105px] overflow-hidden transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_12px_30px_-8px_rgba(45,53,145,0.3)] group shadow-[0_4px_15px_-4px_rgba(0,0,0,0.05)]">
+function MetricCard({ title, value, path }: any) {
+  const content = (
+    <div className={`relative bg-white border border-[#2f439d96] rounded-md px-5 py-4 flex flex-col justify-center min-h-[105px] overflow-hidden transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_12px_30px_-8px_rgba(45,53,145,0.3)] group shadow-[0_4px_15px_-4px_rgba(0,0,0,0.05)] ${path ? 'cursor-pointer hover:border-[#2F439D]' : ''}`}>
 
       {/* Soft Inner Gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#2D3591]/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
@@ -1832,13 +1838,23 @@ function MetricCard({ title, value }: any) {
       <div className="relative z-10 flex flex-col">
         <div className="flex items-center gap-2 mb-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-[#2BBF8C] shadow-[0_0_5px_rgba(43,191,140,0.8)]" />
-          <h4 className="text-[18px] font-medium text-gray-700">{title}</h4>
+          <h4 className="text-[18px] font-medium text-gray-700 group-hover:text-[#2F439D] transition-colors">{title}</h4>
         </div>
         <div className="text-[28px] font-medium text-gray-800 tracking-tighter pl-3 drop-shadow-sm">{value}</div>
       </div>
 
     </div>
   );
+
+  if (path) {
+    return (
+      <Link href={path} className="block focus:outline-none">
+        {content}
+      </Link>
+    );
+  }
+
+  return content;
 }
 
 interface CalendarGridProps {

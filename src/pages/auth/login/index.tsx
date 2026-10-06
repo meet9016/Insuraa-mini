@@ -97,6 +97,16 @@ export default function LoginPage() {
             if (res?.message) {
               toast.success(res.message);
             }
+            const resolvedLoginType =
+              res?.data?.login_type ||
+              res?.login_type ||
+              loginType;
+
+            if (typeof window !== 'undefined' && resolvedLoginType) {
+              localStorage.setItem('login_type', resolvedLoginType);
+              localStorage.setItem('auth_login_type', resolvedLoginType);
+            }
+
             const rawUser = res?.data?.user || res?.user;
             if (rawUser) {
               const userPayload: ReduxUser = {
@@ -109,6 +119,7 @@ export default function LoginPage() {
                 user_role_id: rawUser.user_role_id ? String(rawUser.user_role_id) : undefined,
                 role: rawUser.user_role_id ? String(rawUser.user_role_id) : undefined,
                 username: rawUser.username || '',
+                login_type: resolvedLoginType,
               };
               dispatch(setUser(userPayload));
             }

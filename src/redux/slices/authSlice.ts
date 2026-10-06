@@ -11,6 +11,7 @@ export interface User {
   role?: string;
   user_role_id?: string;
   username?: string;
+  login_type?: string;
 }
 
 export interface AuthState {
@@ -70,15 +71,20 @@ const authSlice = createSlice({
     },
     setUser: (state, action: PayloadAction<User | null>) => {
       state.user = action.payload;
-    
+
       if (action.payload?.number) {
         state.otpPhoneNumber = action.payload.number;
       }
       if (typeof window !== 'undefined') {
         if (action.payload) {
           localStorage.setItem('auth_user', JSON.stringify(action.payload));
+          if (action.payload.login_type) {
+            localStorage.setItem('login_type', action.payload.login_type);
+          }
         } else {
           localStorage.removeItem('auth_user');
+          localStorage.removeItem('login_type');
+          localStorage.removeItem('auth_login_type');
         }
       }
     },
@@ -95,18 +101,20 @@ const authSlice = createSlice({
       if (typeof window !== 'undefined') {
         localStorage.removeItem('auth_user');
         localStorage.removeItem('auth_token');
+        localStorage.removeItem('login_type');
+        localStorage.removeItem('auth_login_type');
       }
     }
   },
 });
 
-export const { 
-  setOtpPhoneNumber, 
-  setOtpSent, 
-  setAuthTokenRedux, 
+export const {
+  setOtpPhoneNumber,
+  setOtpSent,
+  setAuthTokenRedux,
   setUser,
-  resetOtpState, 
-  clearCurrentStaff 
+  resetOtpState,
+  clearCurrentStaff
 } = authSlice.actions;
 
 export default authSlice.reducer;

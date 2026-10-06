@@ -100,7 +100,7 @@ export default function LifeInsuranceViewModal({
                     <span className="text-sm font-bold text-gray-900 block mt-1">₹{data.net_premium || data.premium || '0'}</span>
                   </div>
                   <div className="bg-white p-3.5 rounded-xl border border-gray-200 shadow-sm">
-                    <span className="text-[11px] text-gray-400 font-semibold block">GST ({data.fy_gst || '18'}%)</span>
+                    <span className="text-[11px] text-gray-400 font-semibold block">GST </span>
                     <span className="text-sm font-bold text-gray-900 block mt-1">₹{data.gst_amount || '0'}</span>
                   </div>
                   <div className="bg-white p-3.5 rounded-xl border-2 border-indigo-100 bg-indigo-50/30 shadow-sm">
@@ -260,7 +260,7 @@ export default function LifeInsuranceViewModal({
                           <tr key={inst.id || idx} className="hover:bg-gray-50/50">
                             <td className="py-2.5 px-3 font-medium text-gray-800">{inst.start_date || '-'}</td>
                             <td className="py-2.5 px-3 text-gray-700">₹{inst.amount || '0'}</td>
-                            <td className="py-2.5 px-3 text-gray-700">₹{inst.gst_amount || '0'} ({inst.gst || '0'}%)</td>
+                            <td className="py-2.5 px-3 text-gray-700">₹{inst.gst_amount || '0'}</td>
                             <td className="py-2.5 px-3 font-bold text-gray-900">₹{inst.final_amount || inst.amount || '0'}</td>
                             <td className="py-2.5 px-3">
                               <span className={`px-2 py-0.5 text-[10px] font-bold rounded ${inst.payment_status === '1' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
