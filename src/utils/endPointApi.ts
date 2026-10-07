@@ -156,6 +156,7 @@ export interface EndPointApi {
     AI_CREDIT_INFO: string;
     AI_CREDIT_QUOTE: string;
     AI_CREDIT_PURCHASE: string;
+    AI_CREDIT_HISTORY: string;
   };
   SETTINGS: {
     APP_SETTINGS: string;
@@ -321,6 +322,7 @@ const endPointApi: EndPointApi = {
     AI_CREDIT_INFO: 'ai_credit_info',
     AI_CREDIT_QUOTE: 'ai_credit_quote',
     AI_CREDIT_PURCHASE: 'ai_credit_purchase',
+    AI_CREDIT_HISTORY: 'ai_credit_history',
   },
   SETTINGS: {
     APP_SETTINGS: 'app_settings',

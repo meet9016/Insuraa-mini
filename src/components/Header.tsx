@@ -465,6 +465,21 @@ export default function Header({ onOpenSubscription, onOpenSubscriptionHistory }
                     </div>
                   </Link>
 
+                  {/* AI Credit History */}
+                  <Link
+                    href="/ai-credit-history"
+                    onClick={() => setIsProfileOpen(false)}
+                    className="w-full text-left flex items-center gap-3.5 px-3.5 py-3 rounded-xl hover:bg-emerald-50/70 transition-all duration-200 group/item"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-emerald-100/60 text-emerald-600 flex items-center justify-center shrink-0 group-hover/item:bg-emerald-600 group-hover/item:text-white transition-colors shadow-sm">
+                      <Monitor size={19} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-gray-800 group-hover/item:text-emerald-600 transition-colors">AI Credit History</p>
+                      <p className="text-xs text-gray-400 font-medium truncate">View credits & purchases</p>
+                    </div>
+                  </Link>
+
                   <Link
                     href="/profile"
                     onClick={() => setIsProfileOpen(false)}
