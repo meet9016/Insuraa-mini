@@ -8,6 +8,7 @@ import * as Yup from 'yup';
 
 // React Query Hooks
 import { useSendSignUpOtp, useVerifySignUpOtp } from '@/hooks/useAuthOtp';
+import { useFetchAppSettings } from '@/hooks/useSettingsApi';
 
 // Components
 import OtpBoxInput from '@/components/OtpBoxInput';
@@ -15,19 +16,23 @@ import OtpBoxInput from '@/components/OtpBoxInput';
 export default function RegisterPage() {
   const router = useRouter();
 
+  const { data: appSettings } = useFetchAppSettings();
+
   // Image slider state
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const images = [
-    '/images/login1.webp',
-    '/images/login.png', 
-  ];
+  const images = (appSettings?.login_page_image && appSettings.login_page_image.length > 0)
+    ? appSettings.login_page_image
+    : [
+        '/images/login1.webp',
+        '/images/login.png', 
+      ];
 
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentImageIndex((prev) => (prev + 1) % images.length);
-    }, 6000); // Auto change image every 6 seconds
+    }, 10000); // Auto change image every 10 seconds
     return () => clearInterval(timer);
-  }, []);
+  }, [images.length]);
 
   // State for 2-Step Signup Flow:
   // Step 1: Mobile Number Input -> send_sign_up_otp
@@ -193,20 +198,20 @@ export default function RegisterPage() {
         }
       `}</style>
       {/* Left Side Form Container */}
-      <div className="w-full lg:w-[30%] flex items-center justify-center p-4 md:p-8 relative bg-[#F4F7FE] overflow-y-auto overflow-x-hidden h-screen hide-scroll" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+      <div className="w-full lg:w-[25%] flex items-center justify-center p-4 md:p-8 relative bg-white overflow-y-auto overflow-x-hidden h-screen hide-scroll" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
         {/* Background Decorators */}
-        <div className="absolute top-[-10%] right-[-10%] w-[40vw] h-[40vw] rounded-full bg-[#2BBF8C]/10 blur-[120px] pointer-events-none"></div>
-        <div className="absolute bottom-[-10%] left-[-5%] w-[35vw] h-[35vw] rounded-full bg-[#2E3192]/10 blur-[100px] pointer-events-none"></div>
+        <div className="absolute top-[-10%] right-[-10%] w-[40vw] h-[40vw] rounded-full bg-[#2BBF8C]/5 blur-[120px] pointer-events-none"></div>
+        <div className="absolute bottom-[-10%] left-[-5%] w-[35vw] h-[35vw] rounded-full bg-[#2E3192]/5 blur-[100px] pointer-events-none"></div>
 
-        <div className={`flex w-full bg-white rounded-[2.5rem] overflow-hidden shadow-[0_20px_60px_-15px_rgba(46,49,146,0.15)] relative z-10 border border-gray-100 transition-all duration-500 ease-in-out my-auto ${isOtpSent ? 'max-w-[800px]' : 'max-w-[500px]'}`}>
+        <div className={`flex w-full relative z-10 transition-all duration-500 ease-in-out my-auto ${isOtpSent ? 'max-w-[800px]' : 'max-w-[500px]'}`}>
         
         {/* Register Form / OTP */}
-        <div className="flex flex-col w-full p-6 sm:p-10 justify-center bg-white">
+        <div className="flex flex-col w-full p-4 sm:p-6 justify-center bg-transparent">
           <div className={`w-full mx-auto transition-all duration-500 ease-in-out ${isOtpSent ? 'max-w-[680px]' : 'max-w-[440px]'}`}>
 
             {/* Logo */}
             <div className="flex justify-center mb-6">
-              <img src="/logo.png" alt="Insuraa Logo" className="h-12" />
+              <img src={appSettings?.logo || "/logo.png"} alt="Insuraa Logo" className="h-12" />
             </div>
 
             {!isOtpSent ? (
@@ -571,16 +576,16 @@ export default function RegisterPage() {
       </div>
 
       {/* Right Side Image Banner */}
-      <div className="hidden lg:flex lg:w-[70%] relative items-center justify-center bg-white overflow-hidden">
+      <div className="hidden lg:flex lg:w-[75%] relative items-center justify-center bg-white overflow-hidden">
         {images.map((img, index) => (
           <img 
             key={index}
             src={img} 
             alt={`Insurance CRM Software ${index + 1}`} 
-            className={`absolute inset-0 w-full h-full object-cover object-center transition-all duration-1000 ease-out transform ${
+            className={`absolute inset-0 w-full h-full object-cover object-center transition-all duration-[3000ms] ease-in-out transform origin-center ${
               index === currentImageIndex 
-                ? 'opacity-100 translate-y-0 z-10' 
-                : 'opacity-0 translate-y-12 z-0'
+                ? 'opacity-100 scale-100' 
+                : 'opacity-0 scale-105'
             }`} 
           />
         ))}

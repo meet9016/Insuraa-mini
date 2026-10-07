@@ -152,6 +152,14 @@ export interface EndPointApi {
     DELETE_STAFF: string;
     UPDATE_STAFF_STATUS: string;
   };
+  AI_CREDIT: {
+    AI_CREDIT_INFO: string;
+    AI_CREDIT_QUOTE: string;
+    AI_CREDIT_PURCHASE: string;
+  };
+  SETTINGS: {
+    APP_SETTINGS: string;
+  };
 }
 
 // Define and export the standard API endpoint object
@@ -308,6 +316,14 @@ const endPointApi: EndPointApi = {
     DASHBOARD_CHART_COMPANY: 'dashboard_chart_company',
     DASHBOARD_CHART_TYPE: 'dashboard_chart_type',
     DASHBOARD_CHART_POLICY: 'dashboard_chart_policy',
+  },
+  AI_CREDIT: {
+    AI_CREDIT_INFO: 'ai_credit_info',
+    AI_CREDIT_QUOTE: 'ai_credit_quote',
+    AI_CREDIT_PURCHASE: 'ai_credit_purchase',
+  },
+  SETTINGS: {
+    APP_SETTINGS: 'app_settings',
   },
 };
 

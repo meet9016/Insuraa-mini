@@ -30,6 +30,8 @@ import {
 } from 'lucide-react';
 
 import { useAppSelector } from '@/redux/hooks';
+import { useFetchAiCredits, useGetAiCreditQuote, usePurchaseAiCredit } from '@/hooks/useAiCreditApi';
+import { toast } from 'react-toastify';
 
 const NAV_LINKS = [
   { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, animClass: 'animate-icon-dashboard' },
@@ -62,6 +64,15 @@ interface HeaderProps {
 export default function Header({ onOpenSubscription, onOpenSubscriptionHistory }: HeaderProps) {
   const [mounted, setMounted] = useState(false);
   const [storedLoginType, setStoredLoginType] = useState<string | null>(null);
+
+  const { data: aiCreditsData } = useFetchAiCredits();
+  const { mutate: getCreditQuote, isPending: isGettingQuote } = useGetAiCreditQuote();
+  const { mutate: purchaseCredit, isPending: isPurchasing } = usePurchaseAiCredit();
+  
+  const [isCreditQuoteOpen, setIsCreditQuoteOpen] = useState(false);
+  const [creditInput, setCreditInput] = useState<number | ''>('');
+  const [quoteResult, setQuoteResult] = useState<any>(null);
+
   const user = useAppSelector((state) => state.auth.user);
 
   useEffect(() => {
@@ -108,6 +119,7 @@ export default function Header({ onOpenSubscription, onOpenSubscriptionHistory }
   const profileRef = useRef<HTMLDivElement>(null);
   const navRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const creditQuoteRef = useRef<HTMLDivElement>(null);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -115,6 +127,9 @@ export default function Header({ onOpenSubscription, onOpenSubscriptionHistory }
       const target = event.target as Node;
       if (profileRef.current && !profileRef.current.contains(target)) {
         setIsProfileOpen(false);
+      }
+      if (creditQuoteRef.current && !creditQuoteRef.current.contains(target)) {
+        setIsCreditQuoteOpen(false);
       }
       if (
         navRef.current && !navRef.current.contains(target) &&
@@ -173,6 +188,54 @@ export default function Header({ onOpenSubscription, onOpenSubscriptionHistory }
     }
   };
 
+  const handleGetQuote = () => {
+    if (!creditInput) return;
+    setQuoteResult(null); // Clear previous result
+    getCreditQuote({ credits: Number(creditInput) }, {
+      onSuccess: (res) => {
+        // Handle custom application errors returned with 200 HTTP status (e.g. status: 400 in response body)
+        if (res && (res.status === 400 || res.status === 500 || res.status === 'error')) {
+           toast.error(res?.message || 'Failed to fetch quote');
+           return;
+        }
+
+        // If the API wraps data in `data.data`, extract it. Some APIs might just return it in `data`.
+        if (res && res.data && Object.keys(res.data).length > 0) {
+          setQuoteResult(res.data);
+        } else if (res && res.credits) {
+          setQuoteResult(res);
+        } else {
+           // If it returns an error or just a message
+           toast.error(res?.message || 'Invalid quote response');
+        }
+      },
+      onError: (err: any) => {
+         toast.error(err?.response?.data?.message || err?.message || 'Failed to fetch quote');
+      }
+    });
+  };
+
+  const handlePay = () => {
+    if (!quoteResult?.credits) return;
+    purchaseCredit({ credits: quoteResult.credits }, {
+      onSuccess: (res) => {
+        if (res && (res.status === 400 || res.status === 500 || res.status === 'error')) {
+           toast.error(res?.message || 'Failed to initiate payment');
+           return;
+        }
+
+        if (res && res.data && res.data.redirect_url) {
+          window.location.href = res.data.redirect_url;
+        } else {
+          toast.error(res?.message || 'No redirect URL found in response');
+        }
+      },
+      onError: (err: any) => {
+        toast.error(err?.response?.data?.message || err?.message || 'Failed to initiate payment');
+      }
+    });
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full flex flex-col bg-white/95 backdrop-blur-md border-b border-gray-200/80 shadow-[0_4px_30px_rgba(0,0,0,0.04)]">
 
@@ -208,10 +271,117 @@ export default function Header({ onOpenSubscription, onOpenSubscriptionHistory }
 
         {/* Right side actions */}
         <div className="flex items-center gap-5">
-          <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-gray-50 to-gray-100 rounded-full border border-gray-200/60 shadow-sm relative group hover:shadow-md transition-all cursor-pointer">
-            <Monitor className="h-4 w-4 text-[#2F439D]" />
-            <span className="text-xs font-bold text-gray-700">641 left</span>
-            <span className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white text-[10px] font-bold h-5 w-5 flex items-center justify-center rounded-full shadow-md animate-pulse group-hover:animate-none">59</span>
+          <div className="relative" ref={creditQuoteRef}>
+            <div 
+              onClick={() => setIsCreditQuoteOpen(!isCreditQuoteOpen)}
+              className="hidden md:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-gray-50 to-gray-100 rounded-full border border-gray-200/60 shadow-sm relative group hover:shadow-md transition-all cursor-pointer"
+            >
+              <Monitor className="h-4 w-4 text-[#2F439D]" />
+              <span className="text-xs font-bold text-gray-700">
+                {aiCreditsData?.balance ?? '...'} left
+              </span>
+              <span className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white text-[10px] font-bold h-5 w-5 flex items-center justify-center rounded-full shadow-md animate-pulse group-hover:animate-none">  {aiCreditsData?.total_used ?? '...'}</span>
+            </div>
+
+            {/* Quote Popover */}
+            {isCreditQuoteOpen && (
+              <div className="absolute right-0 mt-3 w-80 bg-white/95 backdrop-blur-2xl rounded-3xl shadow-[0_20px_60px_-15px_rgba(45,53,145,0.3)] border border-white/60 z-50 overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300">
+                {/* Header */}
+                <div className="bg-gradient-to-r from-[#2F439D] to-[#2BBF8C] p-4 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+                  <div className="relative z-10 flex items-center gap-2 text-white">
+                    <Sparkles size={18} className="animate-pulse" />
+                    <h4 className="font-bold text-lg tracking-tight">Buy AI Credits</h4>
+                  </div>
+                  <p className="relative z-10 text-white/80 text-xs mt-1 font-medium">Power up your workflow with AI</p>
+                </div>
+
+                <div className="p-5 space-y-4">
+                  {/* Input Section */}
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                      <Calculator size={16} className="text-[#2F439D]/50 group-focus-within:text-[#2F439D] transition-colors" />
+                    </div>
+                    <input 
+                      type="number" 
+                      value={creditInput} 
+                      onChange={(e) => {
+                        setCreditInput(e.target.value ? Number(e.target.value) : '');
+                        setQuoteResult(null); // Reset quote when input changes
+                      }} 
+                      className="w-full pl-10 pr-4 py-3 bg-gray-50/50 border border-gray-200/80 rounded-xl text-sm font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#2F439D]/20 focus:border-[#2F439D] focus:bg-white transition-all shadow-inner"
+                      placeholder="Enter credits (e.g. 500)"
+                    />
+                  </div>
+
+                  {/* Get Quote Button */}
+                  <button 
+                    onClick={handleGetQuote}
+                    disabled={isGettingQuote || !creditInput}
+                    className="w-full py-2.5 bg-[#2F439D]/5 text-[#2F439D] font-bold rounded-xl text-sm border border-[#2F439D]/10 hover:bg-[#2F439D]/10 hover:border-[#2F439D]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
+                  >
+                    {isGettingQuote ? (
+                      <><span className="w-4 h-4 border-2 border-[#2F439D]/30 border-t-[#2F439D] rounded-full animate-spin"></span> Fetching...</>
+                    ) : (
+                      'Calculate Quote'
+                    )}
+                  </button>
+
+                  {/* Quote Result Summary */}
+                  {quoteResult && quoteResult.final_amount !== undefined && (
+                    <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                      <div className="p-4 bg-gradient-to-br from-blue-50/50 to-indigo-50/50 rounded-2xl border border-blue-100/50 relative overflow-hidden">
+                        {/* Decorative background element */}
+                        <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-[#2F439D]/5 rounded-full blur-xl pointer-events-none"></div>
+                        
+                        <div className="space-y-2 relative z-10">
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-gray-500 font-medium">Credits Requested</span>
+                            <span className="font-bold text-gray-800 bg-white px-2 py-0.5 rounded-md shadow-sm">{quoteResult.credits}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-gray-500 font-medium">Price per credit</span>
+                            <span className="font-bold text-gray-700">₹{quoteResult.price_per_credit}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-gray-500 font-medium">Subtotal</span>
+                            <span className="font-bold text-gray-700">₹{quoteResult.total_price}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-gray-500 font-medium">GST ({quoteResult.gst_percentage}%)</span>
+                            <span className="font-bold text-gray-700">₹{quoteResult.gst_amount}</span>
+                          </div>
+                          
+                          <div className="h-px bg-gradient-to-r from-transparent via-blue-200/50 to-transparent my-3"></div>
+                          
+                          <div className="flex justify-between items-end">
+                            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Final Amount</span>
+                            <span className="text-xl font-black text-[#2F439D] leading-none">₹{quoteResult.final_amount}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Pay Button */}
+                      <button 
+                        onClick={handlePay}
+                        disabled={isPurchasing}
+                        className="relative w-full py-3.5 mt-3 group overflow-hidden rounded-xl text-white font-bold text-sm shadow-[0_8px_20px_-6px_rgba(46,49,146,0.4)] hover:shadow-[0_12px_25px_-6px_rgba(46,49,146,0.5)] transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed disabled:active:scale-100"
+                      >
+                        <div className="absolute inset-0 bg-gradient-to-r from-[#2F439D] via-[#3B54C4] to-[#2BBF8C] transition-transform duration-500 group-hover:scale-105"></div>
+                        <div className="absolute inset-0 opacity-0 group-hover:opacity-20 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white to-transparent transition-opacity duration-300"></div>
+                        <span className="relative flex items-center justify-center gap-2">
+                          {isPurchasing ? (
+                            <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"></span> Processing...</>
+                          ) : (
+                            <>Proceed to Pay <ExternalLink size={14} className="opacity-70" /></>
+                          )}
+                        </span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Upgrade Plan Button */}
@@ -309,7 +479,7 @@ export default function Header({ onOpenSubscription, onOpenSubscriptionHistory }
                     </div>
                   </Link>
 
-               
+
                   {/* Divider */}
                   <div className="my-1 border-t border-gray-100"></div>
 

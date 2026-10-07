@@ -16,6 +16,8 @@ import { useRouter } from "next/router";
 import { fetchLeadStatuses } from "@/redux/slices/leadStatusSlice";
 import Loader from "@/components/Loader";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import Head from "next/head";
+import { useFetchAppSettings } from "@/hooks/useSettingsApi";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -72,11 +74,17 @@ function AppContent({ Component, pageProps }: AppProps) {
 
 
 
+  const { data: appSettings } = useFetchAppSettings();
+
   return (
-    <div className={`${poppins.variable} ${poppins.className}`}>
-      {showInitialLoader && <Loader />}
-      <div className="flex flex-col min-h-screen bg-white">
-        <div className={`flex-1 min-w-0 ${mounted ? 'transition-all duration-300 ease-in-out' : ''}`}>
+    <>
+      <Head>
+        <link rel="icon" href={appSettings?.favicon || "/favicon.ico"} />
+      </Head>
+      <div className={`${poppins.variable} ${poppins.className}`}>
+        {showInitialLoader && <Loader />}
+        <div className="flex flex-col min-h-screen bg-white">
+          <div className={`flex-1 min-w-0 ${mounted ? 'transition-all duration-300 ease-in-out' : ''}`}>
           <main className="animate-in fade-in duration-300">
             {!hideLayout ? (
               <Layout>
@@ -101,6 +109,7 @@ function AppContent({ Component, pageProps }: AppProps) {
       />
       <Toaster position="top-right" reverseOrder={false} />
     </div>
+    </>
   );
 }
 
