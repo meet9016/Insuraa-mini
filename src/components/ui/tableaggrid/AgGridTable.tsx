@@ -90,6 +90,9 @@ export default function AgGridTable<T = any>({
       suppressHeaderMenuButton: true,
       suppressMenu: true,
       menuTabs: [],
+      suppressMovable: true,
+      resizable: false,
+      tooltipValueGetter: (params: any) => params.value,
     };
   }, []);
 
@@ -121,6 +124,7 @@ export default function AgGridTable<T = any>({
             onPaginationChanged={onPaginationChanged}
             noRowsOverlayComponent={noRowsOverlayComponent}
             overlayNoRowsTemplate={overlayNoRowsTemplate}
+            enableBrowserTooltips={true}
           />
         </div>
       </div>

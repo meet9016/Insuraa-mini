@@ -204,55 +204,7 @@ export default function SubscriptionHistoryPage() {
           </div>
         </div>
 
-        {/* Active Subscription Summary Cards */}
-        {activeSubscription && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {/* Active Plan Name */}
-            <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm relative overflow-hidden group hover:border-[#2E3192]/40 transition-all">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-[#2E3192] flex items-center justify-center mb-4 font-semibold shadow-inner">
-                <Crown size={24} />
-              </div>
-              <span className="text-xs font-semibold text-slate-700 tracking-wide">Current Active Plan</span>
-              <h3 className="text-xl font-bold text-slate-900 mt-1 flex items-center gap-2">
-                {displayPlanName}
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
-              </h3>
-            </div>
 
-            {/* AI Limit */}
-            <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm relative overflow-hidden group hover:border-emerald-500/40 transition-all">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4 font-semibold shadow-inner">
-                <Zap size={24} />
-              </div>
-              <span className="text-xs font-semibold text-slate-700 tracking-wide">AI Credit Limit</span>
-              <h3 className="text-xl font-bold text-slate-900 mt-1">
-                {activeSubscription.ai_limit ?? 'N/A'} <span className="text-xs font-semibold text-slate-700">Credits</span>
-              </h3>
-            </div>
-
-            {/* Days Left */}
-            <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm relative overflow-hidden group hover:border-amber-500/40 transition-all">
-              <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mb-4 font-semibold shadow-inner">
-                <Clock size={24} />
-              </div>
-              <span className="text-xs font-semibold text-slate-700 tracking-wide">Days Remaining</span>
-              <h3 className="text-xl font-bold text-slate-900 mt-1">
-                {displayDaysLeft} <span className="text-xs font-semibold text-slate-700">Days Left</span>
-              </h3>
-            </div>
-
-            {/* Latest Invoice */}
-            <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm relative overflow-hidden group hover:border-blue-500/40 transition-all">
-              <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mb-4 font-semibold shadow-inner">
-                <Receipt size={24} />
-              </div>
-              <span className="text-xs font-semibold text-slate-700 tracking-wide">Invoice Number</span>
-              <h3 className="text-xl font-bold text-slate-900 mt-1 truncate">
-                {activeSubscription.invoice_no || 'N/A'}
-              </h3>
-            </div>
-          </div>
-        )}
 
         {/* Search, Filter & Main Table Container */}
         <div className="bg-white rounded-3xl border border-slate-200/90 shadow-lg overflow-hidden">
@@ -418,14 +370,7 @@ export default function SubscriptionHistoryPage() {
                           </span>
                         </div>
 
-                        {/* AI Limit */}
-                        <div className="bg-emerald-50/60 p-3 rounded-2xl border border-emerald-100">
-                          <span className="text-emerald-900/80 font-medium block text-[11px] mb-1">AI Credits</span>
-                          <span className="font-semibold text-emerald-950 flex items-center gap-1">
-                            <Zap size={13} className="text-emerald-600" />
-                            {item.ai_limit ?? 'N/A'}
-                          </span>
-                        </div>
+
 
                         {/* Coupon / Discount */}
                         <div className="bg-purple-50/60 p-3 rounded-2xl border border-purple-100">

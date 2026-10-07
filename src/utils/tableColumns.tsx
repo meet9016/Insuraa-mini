@@ -30,9 +30,9 @@ export const getClaimColumns = ({ onView, onEdit, onDelete }: ClaimColumnProps =
       const name = String(rawName).replace(/\s+/g, ' ').trim();
       const mobile = data.mobile || data.customer_mobile || data.customer_number || '';
       return (
-        <div className="flex flex-col justify-center h-full py-1 leading-snug">
-          <span className="font-bold text-gray-900 text-sm leading-snug truncate">{name}</span>
-          {mobile && <span className="text-[11px] text-gray-500">Mo: {mobile}</span>}
+        <div className="flex flex-col justify-center h-full py-1 leading-snug min-w-0 w-full" title={name}>
+          <span className="font-bold text-gray-900 text-sm leading-snug truncate block w-full">{name}</span>
+          {mobile && <span className="text-[11px] text-gray-500 truncate block w-full">Mo: {mobile}</span>}
         </div>
       );
     },
@@ -164,7 +164,11 @@ export const getSourceOfLeadColumns = ({ onEdit, onDelete }: SourceOfLeadColumnP
     cellRenderer: (params: any) => {
       if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
       const name = params.data?.name || params.value || '-';
-      return <span className="font-semibold text-gray-800">{name}</span>;
+      return (
+        <div className="flex items-center h-full min-w-0 w-full" title={name}>
+          <span className="font-semibold text-gray-800 truncate block w-full">{name}</span>
+        </div>
+      );
     },
   },
   {
@@ -199,7 +203,11 @@ export const getRiderColumns = ({ onEdit, onDelete }: RiderColumnProps) => [
     cellRenderer: (params: any) => {
       if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
       const name = params.data?.name || params.value || '-';
-      return <span className="font-semibold text-gray-800">{name}</span>;
+      return (
+        <div className="flex items-center h-full min-w-0 w-full" title={name}>
+          <span className="font-semibold text-gray-800 truncate block w-full">{name}</span>
+        </div>
+      );
     },
   },
   {
@@ -234,7 +242,11 @@ export const getDocumentColumns = ({ onEdit, onDelete }: DocumentColumnProps) =>
     cellRenderer: (params: any) => {
       if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
       const name = params.data?.name || params.value || '-';
-      return <span className="font-semibold text-gray-800">{name}</span>;
+      return (
+        <div className="flex items-center h-full min-w-0 w-full" title={name}>
+          <span className="font-semibold text-gray-800 truncate block w-full">{name}</span>
+        </div>
+      );
     },
   },
   {
@@ -272,9 +284,9 @@ export const getCompanyColumns = ({ onEdit, onDelete, onViewPlans, companyNameHe
       if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
       const name = params.data?.name || params.data?.company_name || params.value || '-';
       return (
-        <div className="font-semibold text-gray-900 flex items-center gap-2">
-          <Building2 size={16} className="text-[#2B4399]" />
-          <span>{name}</span>
+        <div className="font-semibold text-gray-900 flex items-center gap-2 h-full min-w-0 w-full" title={name}>
+          <Building2 size={16} className="text-[#2B4399] shrink-0" />
+          <span className="truncate block w-full">{name}</span>
         </div>
       );
     },
@@ -337,7 +349,9 @@ export const getCompanyPlanColumns = ({ onEdit, onDelete }: CompanyPlanColumnPro
       if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
       const name = params.data?.name || params.data?.plan_name || params.value || '-';
       return (
-        <span className="font-semibold text-gray-800">{name}</span>
+        <div className="flex items-center h-full min-w-0 w-full" title={name}>
+          <span className="font-semibold text-gray-800 truncate block w-full">{name}</span>
+        </div>
       );
     }
   },
@@ -373,7 +387,11 @@ export const getAgencyCodeColumns = ({ onEdit, onDelete }: AgencyCodeColumnProps
     cellRenderer: (params: any) => {
       if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
       const name = params.data?.name || params.value || '-';
-      return <span className="font-semibold text-gray-800">{name}</span>;
+      return (
+        <div className="flex items-center h-full min-w-0 w-full" title={name}>
+          <span className="font-semibold text-gray-800 truncate block w-full">{name}</span>
+        </div>
+      );
     },
   },
   {
@@ -403,7 +421,11 @@ export const getAgencyCodeColumns = ({ onEdit, onDelete }: AgencyCodeColumnProps
     cellRenderer: (params: any) => {
       if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
       const email = params.data?.email || params.value || '-';
-      return <span className="text-gray-700">{email}</span>;
+      return (
+        <div className="flex items-center h-full min-w-0 w-full" title={email}>
+          <span className="text-gray-700 truncate block w-full">{email}</span>
+        </div>
+      );
     },
   },
   {
@@ -413,7 +435,11 @@ export const getAgencyCodeColumns = ({ onEdit, onDelete }: AgencyCodeColumnProps
     cellRenderer: (params: any) => {
       if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
       const remark = params.data?.remark || params.value || '-';
-      return <span className="text-gray-500 text-xs italic">{remark}</span>;
+      return (
+        <div className="flex items-center h-full min-w-0 w-full" title={remark}>
+          <span className="text-gray-500 text-xs italic truncate block w-full">{remark}</span>
+        </div>
+      );
     },
   },
   {
@@ -450,9 +476,9 @@ export const getCustomerColumns = ({ onView, onEdit, onDelete }: CustomerColumnP
       if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
       const name = params.data?.name || params.data?.full_name || `${params.data?.first_name || ''} ${params.data?.last_name || ''}`.trim() || params.value || '-';
       return (
-        <div className="font-semibold text-gray-900 flex items-center gap-2">
-          <User size={16} className="text-[#2B4399]" />
-          <span>{name}</span>
+        <div className="font-semibold text-gray-900 flex items-center gap-2 h-full min-w-0 w-full" title={name}>
+          <User size={16} className="text-[#2B4399] shrink-0" />
+          <span className="truncate block w-full">{name}</span>
         </div>
       );
     },
@@ -489,8 +515,11 @@ export const getCustomerColumns = ({ onView, onEdit, onDelete }: CustomerColumnP
     minWidth: 180,
     cellRenderer: (params: any) => {
       if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      const emailStr = params.value || '-';
       return (
-        <span className="text-gray-700 font-medium">{params.value || '-'}</span>
+        <div className="flex items-center h-full min-w-0 w-full" title={emailStr}>
+          <span className="text-gray-700 font-medium truncate block w-full">{emailStr}</span>
+        </div>
       );
     },
   },
@@ -544,7 +573,11 @@ export const getLeadColumns = ({ onView, onNotes, onReminders, onEdit, onDelete 
     cellRenderer: (params: any) => {
       if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
       const name = params.data?.full_name || params.data?.name || params.value || '-';
-      return <span className="font-bold text-[#2B4399]">{name}</span>;
+      return (
+        <div className="flex items-center h-full min-w-0 w-full" title={name}>
+          <span className="font-bold text-[#2B4399] truncate block w-full">{name}</span>
+        </div>
+      );
     },
   },
   {
@@ -574,7 +607,11 @@ export const getLeadColumns = ({ onView, onNotes, onReminders, onEdit, onDelete 
     cellRenderer: (params: any) => {
       if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
       const prod = params.data?.product_name || params.data?.type || params.value || '-';
-      return <span className="font-semibold text-gray-800">{prod}</span>;
+      return (
+        <div className="flex items-center h-full min-w-0 w-full" title={prod}>
+          <span className="font-semibold text-gray-800 truncate block w-full">{prod}</span>
+        </div>
+      );
     },
   },
   {
@@ -584,7 +621,11 @@ export const getLeadColumns = ({ onView, onNotes, onReminders, onEdit, onDelete 
     cellRenderer: (params: any) => {
       if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
       const bg = params.data?.business_group_name || params.data?.agent || params.data?.reference || params.value || 'Direct';
-      return <span className="font-bold text-gray-600">{bg}</span>;
+      return (
+        <div className="flex items-center h-full min-w-0 w-full" title={bg}>
+          <span className="font-bold text-gray-600 truncate block w-full">{bg}</span>
+        </div>
+      );
     },
   },
   {
@@ -664,8 +705,8 @@ export const getNoteColumns = ({ onEdit, onDelete }: NoteColumnProps) => [
     field: "remark",
     flex: 1,
     cellRenderer: (params: any) => (
-      <div className="flex items-center h-full text-sm font-medium text-gray-700">
-        {params.value}
+      <div className="flex items-center h-full min-w-0 w-full" title={params.value}>
+        <span className="text-sm font-medium text-gray-700 truncate block w-full">{params.value}</span>
       </div>
     ),
   },
@@ -723,8 +764,8 @@ export const getReminderColumns = ({ onEdit, onDelete }: ReminderColumnProps) =>
     field: "message",
     flex: 1,
     cellRenderer: (params: any) => (
-      <div className="flex items-center h-full text-sm font-medium text-gray-700">
-        {params.value}
+      <div className="flex items-center h-full min-w-0 w-full" title={params.value}>
+        <span className="text-sm font-medium text-gray-700 truncate block w-full">{params.value}</span>
       </div>
     ),
   },
@@ -765,13 +806,10 @@ export const getLifeInsuranceColumns = ({ onView, onEdit, onDelete }: LifeInsura
       const addedBy = data.added_by || data.addedBy || 'Self';
 
       return (
-        <div className="flex flex-col justify-center h-full py-1 leading-snug">
-          <span className="font-bold text-gray-900 text-sm leading-snug truncate">{custName}</span>
-          <span className="text-[11px] text-gray-500">Mo: {mobile}</span>
-          <span className="text-[10px] bg-blue-50 text-[#2B4399] px-1.5 py-0.5 rounded w-fit font-bold my-0.5">Code: {code}</span>
-          {/* <div className="flex items-center gap-1 text-[11px] text-gray-500">
-            <User size={11} className="text-[#2B4399]" /> Added by {addedBy}
-          </div> */}
+        <div className="flex flex-col justify-center h-full py-1 leading-snug min-w-0 w-full" title={custName}>
+          <span className="font-bold text-gray-900 text-sm leading-snug truncate block w-full">{custName}</span>
+          <span className="text-[11px] text-gray-500 truncate block w-full">Mo: {mobile}</span>
+          <span className="text-[10px] bg-blue-50 text-[#2B4399] px-1.5 py-0.5 rounded w-fit font-bold my-0.5 truncate max-w-full block">Code: {code}</span>
         </div>
       );
     },
@@ -810,7 +848,11 @@ export const getLifeInsuranceColumns = ({ onView, onEdit, onDelete }: LifeInsura
     cellRenderer: (params: any) => {
       if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
       const company = params.data.company_name || params.data.companies_name || params.data.company || '-';
-      return <div className="flex items-center h-full font-semibold text-gray-700">{company}</div>;
+      return (
+        <div className="flex items-center h-full min-w-0 w-full" title={company}>
+          <span className="font-semibold text-gray-700 truncate block w-full">{company}</span>
+        </div>
+      );
     },
   },
   {
@@ -819,7 +861,12 @@ export const getLifeInsuranceColumns = ({ onView, onEdit, onDelete }: LifeInsura
     minWidth: 160,
     cellRenderer: (params: any) => {
       if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
-      return <div className="flex items-center h-full text-gray-700">{params.value || '-'}</div>;
+      const planName = params.value || '-';
+      return (
+        <div className="flex items-center h-full min-w-0 w-full" title={planName}>
+          <span className="text-gray-700 truncate block w-full">{planName}</span>
+        </div>
+      );
     },
   },
   {
@@ -914,10 +961,10 @@ export const getHealthInsuranceColumns = ({ onView, onEdit, onDelete }: HealthIn
       const code = data.customer_group_code || data.customer_code || data.code || (data.customer_id ? `C${data.customer_id}` : 'N/A');
 
       return (
-        <div className="flex flex-col justify-center h-full py-1 leading-snug">
-          <span className="font-bold text-gray-900 text-sm leading-snug truncate">{custName}</span>
-          <span className="text-[11px] text-gray-500">Mo: {mobile}</span>
-          <span className="text-[10px] bg-blue-50 text-[#2B4399] px-1.5 py-0.5 rounded w-fit font-bold my-0.5">Code: {code}</span>
+        <div className="flex flex-col justify-center h-full py-1 leading-snug min-w-0 w-full" title={custName}>
+          <span className="font-bold text-gray-900 text-sm leading-snug truncate block w-full">{custName}</span>
+          <span className="text-[11px] text-gray-500 truncate block w-full">Mo: {mobile}</span>
+          <span className="text-[10px] bg-blue-50 text-[#2B4399] px-1.5 py-0.5 rounded w-fit font-bold my-0.5 truncate max-w-full block">Code: {code}</span>
         </div>
       );
     },
@@ -956,7 +1003,11 @@ export const getHealthInsuranceColumns = ({ onView, onEdit, onDelete }: HealthIn
     cellRenderer: (params: any) => {
       if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
       const company = params.data.companies_name || params.data.company_name || params.data.company || '-';
-      return <div className="flex items-center h-full font-semibold text-gray-700">{company}</div>;
+      return (
+        <div className="flex items-center h-full min-w-0 w-full" title={company}>
+          <span className="font-semibold text-gray-700 truncate block w-full">{company}</span>
+        </div>
+      );
     },
   },
   {
@@ -966,7 +1017,11 @@ export const getHealthInsuranceColumns = ({ onView, onEdit, onDelete }: HealthIn
     cellRenderer: (params: any) => {
       if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
       const planName = params.data.plan_name_text || params.data.plan_name || params.value || '-';
-      return <div className="flex items-center h-full text-gray-700">{planName}</div>;
+      return (
+        <div className="flex items-center h-full min-w-0 w-full" title={planName}>
+          <span className="text-gray-700 truncate block w-full">{planName}</span>
+        </div>
+      );
     },
   },
   {
@@ -1062,10 +1117,10 @@ export const getMotorInsuranceColumns = ({ onView, onEdit, onDelete }: MotorInsu
       const code = data.customer_group_code || data.customer_code || data.code || (data.customer_id ? `C${data.customer_id}` : 'N/A');
 
       return (
-        <div className="flex flex-col justify-center h-full py-1 leading-snug">
-          <span className="font-bold text-gray-900 text-sm leading-snug truncate">{custName}</span>
-          <span className="text-[11px] text-gray-500">Mo: {mobile}</span>
-          <span className="text-[10px] bg-blue-50 text-[#2B4399] px-1.5 py-0.5 rounded w-fit font-bold my-0.5">Code: {code}</span>
+        <div className="flex flex-col justify-center h-full py-1 leading-snug min-w-0 w-full" title={custName}>
+          <span className="font-bold text-gray-900 text-sm leading-snug truncate block w-full">{custName}</span>
+          <span className="text-[11px] text-gray-500 truncate block w-full">Mo: {mobile}</span>
+          <span className="text-[10px] bg-blue-50 text-[#2B4399] px-1.5 py-0.5 rounded w-fit font-bold my-0.5 truncate max-w-full block">Code: {code}</span>
         </div>
       );
     },
@@ -1077,7 +1132,11 @@ export const getMotorInsuranceColumns = ({ onView, onEdit, onDelete }: MotorInsu
     cellRenderer: (params: any) => {
       if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
       const company = params.data.companies_name || params.data.company_name || params.data.company || '-';
-      return <div className="flex items-center h-full font-semibold text-gray-700">{company}</div>;
+      return (
+        <div className="flex items-center h-full min-w-0 w-full" title={company}>
+          <span className="font-semibold text-gray-700 truncate block w-full">{company}</span>
+        </div>
+      );
     },
   },
   {
@@ -1087,7 +1146,11 @@ export const getMotorInsuranceColumns = ({ onView, onEdit, onDelete }: MotorInsu
     cellRenderer: (params: any) => {
       if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
       const planName = params.data.plan_name_text || params.data.plan_name || params.value || '-';
-      return <div className="flex items-center h-full text-gray-700">{planName}</div>;
+      return (
+        <div className="flex items-center h-full min-w-0 w-full" title={planName}>
+          <span className="text-gray-700 truncate block w-full">{planName}</span>
+        </div>
+      );
     },
   },
   {
@@ -1289,12 +1352,12 @@ export const getHealthQuotationColumns = ({ onView, onEdit, onDelete }: HealthQu
       const name = data.insured_name || data.customer_name || '-';
       const mobile = data.mobile || data.customer_mobile || '';
       return (
-        <div className="flex flex-col justify-center h-full py-1 leading-snug">
-          <span className="font-bold text-gray-900 text-sm leading-snug truncate">{name}</span>
+        <div className="flex flex-col justify-center h-full py-1 leading-snug min-w-0 w-full" title={name}>
+          <span className="font-bold text-gray-900 text-sm leading-snug truncate block w-full">{name}</span>
           {mobile && (
-            <div className="flex items-center gap-1.5 text-[11px] text-gray-500 mt-0.5">
+            <div className="flex items-center gap-1.5 text-[11px] text-gray-500 mt-0.5 truncate block w-full">
               <Phone size={12} className="text-[#2B4399] shrink-0" />
-              <span>Mo: {mobile}</span>
+              <span className="truncate">Mo: {mobile}</span>
             </div>
           )}
         </div>
@@ -1311,10 +1374,10 @@ export const getHealthQuotationColumns = ({ onView, onEdit, onDelete }: HealthQu
       const planName = data.plan_opted_name || data.plan_opted_text || data.plan_opted || '-';
       const familySize = data.family_size_name || data.family_size || '';
       return (
-        <div className="flex flex-col justify-center h-full py-1 leading-snug">
-          <span className="text-gray-900 font-semibold text-sm">{planName}</span>
+        <div className="flex flex-col justify-center h-full py-1 leading-snug min-w-0 w-full" title={planName}>
+          <span className="text-gray-900 font-semibold text-sm truncate block w-full">{planName}</span>
           {familySize && (
-            <span className="text-[11px] text-gray-500">({familySize})</span>
+            <span className="text-[11px] text-gray-500 truncate block w-full">({familySize})</span>
           )}
         </div>
       );
@@ -1418,12 +1481,12 @@ export const getMotorQuotationColumns = ({ onView, onEdit, onDelete }: MotorQuot
       const name = data.insured_name || data.customer_name || data.customerName || '-';
       const mobile = data.mobile || data.customer_mobile || '';
       return (
-        <div className="flex flex-col justify-center h-full py-1 leading-snug">
-          <span className="font-bold text-gray-900 text-sm leading-snug truncate">{name}</span>
+        <div className="flex flex-col justify-center h-full py-1 leading-snug min-w-0 w-full" title={name}>
+          <span className="font-bold text-gray-900 text-sm leading-snug truncate block w-full">{name}</span>
           {mobile && (
-            <div className="flex items-center gap-1.5 text-[11px] text-gray-500 mt-0.5">
+            <div className="flex items-center gap-1.5 text-[11px] text-gray-500 mt-0.5 truncate block w-full">
               <Phone size={12} className="text-[#2B4399] shrink-0" />
-              <span>Mo: {mobile}</span>
+              <span className="truncate">Mo: {mobile}</span>
             </div>
           )}
         </div>
@@ -1440,10 +1503,10 @@ export const getMotorQuotationColumns = ({ onView, onEdit, onDelete }: MotorQuot
       const vehicleName = data.make || data.vehicle || data.vehicle_type || '-';
       const regNo = data.registration_no || data.vehicleNumber || '';
       return (
-        <div className="flex flex-col justify-center h-full py-1 leading-snug">
-          <span className="text-gray-900 font-semibold text-sm">{vehicleName}</span>
+        <div className="flex flex-col justify-center h-full py-1 leading-snug min-w-0 w-full" title={vehicleName}>
+          <span className="text-gray-900 font-semibold text-sm truncate block w-full">{vehicleName}</span>
           {regNo && (
-            <span className="text-[11px] text-gray-500">{regNo}</span>
+            <span className="text-[11px] text-gray-500 truncate block w-full">{regNo}</span>
           )}
         </div>
       );
@@ -1512,6 +1575,15 @@ export const getOtherInsuranceColumns = ({ onView, onEdit, onDelete }: OtherInsu
     filter: true,
     flex: 1,
     minWidth: 150,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      const custName = params.value || '-';
+      return (
+        <div className="flex items-center h-full min-w-0 w-full" title={custName}>
+          <span className="font-semibold text-gray-700 truncate block w-full">{custName}</span>
+        </div>
+      );
+    },
   },
   {
     headerName: 'Company Name',
@@ -1520,6 +1592,15 @@ export const getOtherInsuranceColumns = ({ onView, onEdit, onDelete }: OtherInsu
     filter: true,
     flex: 1,
     minWidth: 150,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      const company = params.value || '-';
+      return (
+        <div className="flex items-center h-full min-w-0 w-full" title={company}>
+          <span className="font-semibold text-gray-700 truncate block w-full">{company}</span>
+        </div>
+      );
+    },
   },
   {
     headerName: 'Policy No.',
@@ -1544,6 +1625,15 @@ export const getOtherInsuranceColumns = ({ onView, onEdit, onDelete }: OtherInsu
     filter: true,
     flex: 1,
     minWidth: 150,
+    cellRenderer: (params: any) => {
+      if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      const planName = params.value || '-';
+      return (
+        <div className="flex items-center h-full min-w-0 w-full" title={planName}>
+          <span className="text-gray-700 truncate block w-full">{planName}</span>
+        </div>
+      );
+    },
   },
   {
     headerName: 'Status',
@@ -1598,9 +1688,11 @@ export const getStaffColumns = ({ onView, onStatusToggle, onEdit, onDelete }: St
       if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
       const val = params.data?.full_name || 'N/A';
       return (
-        <span className="font-bold text-gray-900 text-xs truncate">
-          {val}
-        </span>
+        <div className="flex items-center h-full min-w-0 w-full" title={val}>
+          <span className="font-bold text-gray-900 text-xs truncate block w-full">
+            {val}
+          </span>
+        </div>
       );
     },
   },
@@ -1629,9 +1721,11 @@ export const getStaffColumns = ({ onView, onStatusToggle, onEdit, onDelete }: St
       if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
       const mail = params.data?.email;
       return mail ? (
-        <a href={`mailto:${mail}`} className="text-gray-700 font-medium text-xs flex items-center gap-1.5 hover:text-[#2F439D] truncate">
-          {mail}
-        </a>
+        <div className="flex items-center h-full min-w-0 w-full" title={mail}>
+          <a href={`mailto:${mail}`} className="text-gray-700 font-medium text-xs flex items-center gap-1.5 hover:text-[#2F439D] truncate block w-full">
+            {mail}
+          </a>
+        </div>
       ) : <span className="text-gray-400 text-xs">N/A</span>;
     },
   },
@@ -1642,10 +1736,13 @@ export const getStaffColumns = ({ onView, onStatusToggle, onEdit, onDelete }: St
     minWidth: 130,
     cellRenderer: (params: any) => {
       if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
+      const addr = params.data?.address || 'N/A';
       return (
-        <span className="text-gray-600 text-xs font-medium truncate">
-          {params.data?.address || 'N/A'}
-        </span>
+        <div className="flex items-center h-full min-w-0 w-full" title={addr}>
+          <span className="text-gray-600 text-xs font-medium truncate block w-full">
+            {addr}
+          </span>
+        </div>
       );
     },
   },
@@ -1658,9 +1755,11 @@ export const getStaffColumns = ({ onView, onStatusToggle, onEdit, onDelete }: St
       if (!params.data || params.data.id?.toString().startsWith('placeholder-')) return null;
       const accessName = params.data?.data_access_name || (String(params.data?.data_access) === '2' ? 'Only Added By Staff' : 'All Added By');
       return (
-        <span className="text-gray-700 font-medium text-xs truncate">
-          {accessName}
-        </span>
+        <div className="flex items-center h-full min-w-0 w-full" title={accessName}>
+          <span className="text-gray-700 font-medium text-xs truncate block w-full">
+            {accessName}
+          </span>
+        </div>
       );
     },
   },

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Shield, ArrowRight, User, Mail, Phone, Building2, MapPin, Globe, Compass, Edit2, RefreshCw } from 'lucide-react';
@@ -14,6 +14,20 @@ import OtpBoxInput from '@/components/OtpBoxInput';
 
 export default function RegisterPage() {
   const router = useRouter();
+
+  // Image slider state
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const images = [
+    '/images/login1.webp',
+    '/images/login.png', 
+  ];
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentImageIndex((prev) => (prev + 1) % images.length);
+    }, 6000); // Auto change image every 6 seconds
+    return () => clearInterval(timer);
+  }, []);
 
   // State for 2-Step Signup Flow:
   // Step 1: Mobile Number Input -> send_sign_up_otp
@@ -172,12 +186,19 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F4F7FE] p-4 md:p-8 font-sans overflow-x-hidden overflow-y-auto relative">
-      {/* Background Decorators */}
-      <div className="absolute top-[-10%] right-[-10%] w-[40vw] h-[40vw] rounded-full bg-[#2BBF8C]/10 blur-[120px] pointer-events-none"></div>
-      <div className="absolute bottom-[-10%] left-[-5%] w-[35vw] h-[35vw] rounded-full bg-[#2E3192]/10 blur-[100px] pointer-events-none"></div>
+    <div className="min-h-screen flex font-sans overflow-hidden bg-white">
+      <style>{`
+        .hide-scroll::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
+      {/* Left Side Form Container */}
+      <div className="w-full lg:w-[30%] flex items-center justify-center p-4 md:p-8 relative bg-[#F4F7FE] overflow-y-auto overflow-x-hidden h-screen hide-scroll" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+        {/* Background Decorators */}
+        <div className="absolute top-[-10%] right-[-10%] w-[40vw] h-[40vw] rounded-full bg-[#2BBF8C]/10 blur-[120px] pointer-events-none"></div>
+        <div className="absolute bottom-[-10%] left-[-5%] w-[35vw] h-[35vw] rounded-full bg-[#2E3192]/10 blur-[100px] pointer-events-none"></div>
 
-      <div className={`flex w-full bg-white rounded-[2.5rem] overflow-hidden shadow-[0_20px_60px_-15px_rgba(46,49,146,0.15)] relative z-10 border border-gray-100 transition-all duration-500 ease-in-out ${isOtpSent ? 'max-w-[800px]' : 'max-w-[500px]'}`}>
+        <div className={`flex w-full bg-white rounded-[2.5rem] overflow-hidden shadow-[0_20px_60px_-15px_rgba(46,49,146,0.15)] relative z-10 border border-gray-100 transition-all duration-500 ease-in-out my-auto ${isOtpSent ? 'max-w-[800px]' : 'max-w-[500px]'}`}>
         
         {/* Register Form / OTP */}
         <div className="flex flex-col w-full p-6 sm:p-10 justify-center bg-white">
@@ -292,7 +313,7 @@ export default function RegisterPage() {
                   </div>
 
                   {/* Additional Form Fields Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-1">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
 
                     {/* Full Name */}
                     <div className="space-y-1">
@@ -545,6 +566,37 @@ export default function RegisterPage() {
             </div>
 
           </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Right Side Image Banner */}
+      <div className="hidden lg:flex lg:w-[70%] relative items-center justify-center bg-white overflow-hidden">
+        {images.map((img, index) => (
+          <img 
+            key={index}
+            src={img} 
+            alt={`Insurance CRM Software ${index + 1}`} 
+            className={`absolute inset-0 w-full h-full object-cover object-center transition-all duration-1000 ease-out transform ${
+              index === currentImageIndex 
+                ? 'opacity-100 translate-y-0 z-10' 
+                : 'opacity-0 translate-y-12 z-0'
+            }`} 
+          />
+        ))}
+        {/* Slider Indicator Dots */}
+        <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-2 z-20">
+          {images.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrentImageIndex(index)}
+              className={`h-2.5 rounded-full transition-all shadow-sm duration-500 ease-in-out ${
+                index === currentImageIndex 
+                  ? 'bg-[#2E3192] w-8' 
+                  : 'bg-gray-300 w-2.5 hover:bg-gray-400'
+              }`}
+            />
+          ))}
         </div>
       </div>
     </div>
