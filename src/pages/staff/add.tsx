@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import { ArrowLeft, UserCheck, Loader2 } from 'lucide-react';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
+import ActionButtons from '@/components/ui/ActionButtons';
 import { useInsertStaff, useViewStaff } from '@/hooks/useStaffApi';
 import { validateStaff } from '@/utils/validation';
 
@@ -56,8 +57,8 @@ export default function AddStaffPage() {
     return isValid;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!validateForm()) return;
 
     const payload = editStaffId
@@ -80,7 +81,7 @@ export default function AddStaffPage() {
     'w-full h-[42px] px-3.5 py-2 border border-gray-300 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#2B4399]/20 focus:border-[#2B4399] transition-all bg-white shadow-2xs cursor-pointer';
 
   return (
-    <div className="bg-[#f8fafc] min-h-screen p-4 sm:p-6 lg:p-0">
+    <div className="bg-[#f8fafc]  p-4 sm:p-6 lg:p-0">
       <Head>
         <title>{editStaffId ? 'Edit Staff' : 'Add Staff'} - Insuraa</title>
       </Head>
@@ -180,8 +181,8 @@ export default function AddStaffPage() {
                       value={formData.data_access}
                       onChange={(e: any) => handleChange('data_access', e.target.value)}
                     >
-                      <option value="1">1 All Added By</option>
-                      <option value="2">2 Only Added By Staff</option>
+                      <option value="1">All Added By</option>
+                      <option value="2">Only Added By Staff</option>
                     </Select>
                     {errors.data_access && (
                       <p className="text-xs text-red-500 font-semibold mt-1">{errors.data_access}</p>
@@ -191,22 +192,14 @@ export default function AddStaffPage() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-100">
-                <button
-                  type="button"
-                  onClick={() => router.push('/staff')}
-                  className="px-5 py-2.5 text-sm font-semibold text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-xl transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={insertStaffMutation.isPending}
-                  className="px-6 py-2.5 bg-[#2B4399] hover:bg-[#203378] text-white text-sm font-semibold rounded-xl shadow-md transition-all flex items-center gap-2 disabled:opacity-50"
-                >
-                  {insertStaffMutation.isPending && <Loader2 size={16} className="animate-spin" />}
-                  <span>{editStaffId ? 'Update Staff' : 'Save Staff'}</span>
-                </button>
+              <div className="pt-6">
+                <ActionButtons
+                  onCancel={() => router.push('/staff')}
+                  onSubmit={() => handleSubmit()}
+                  isSubmitting={insertStaffMutation.isPending}
+                  submitText={editStaffId ? 'Update Staff' : 'Save Staff'}
+                  submittingText={editStaffId ? 'Updating...' : 'Saving...'}
+                />
               </div>
             </form>
           )}

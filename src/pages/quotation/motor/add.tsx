@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import { Plus, Minus, Trash2, User, Car, Building2, FileText, ArrowLeft } from 'lucide-react';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
+import ActionButtons from '@/components/ui/ActionButtons';
 import {
   useMotorQuotationMasterData,
   useMotorQuotationProducts,
@@ -809,22 +810,13 @@ export default function AddMotorQuotation() {
           </div>
 
           {/* Bottom Action Bar */}
-          <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-200/80">
-            <button
-              type="button"
-              onClick={() => router.back()}
-              className="px-6 py-2.5 border border-gray-300 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors shadow-2xs"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={isSubmitting || isDetailLoading}
-              className="bg-[#2B4399] text-white px-8 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#203378] transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {isSubmitting ? 'Saving...' : 'Save Quotation'}
-            </button>
+          <div className="pt-6">
+            <ActionButtons
+              onCancel={() => router.back()}
+              onSubmit={() => handleSubmit()}
+              isSubmitting={isSubmitting || isDetailLoading}
+              submitText="Save Quotation"
+            />
           </div>
         </form>
       </div>
