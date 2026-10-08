@@ -93,7 +93,7 @@ export default function OtpBoxInput({
           onChange={(e) => handleChange(e, index)}
           onKeyDown={(e) => handleKeyDown(e, index)}
           onPaste={handlePaste}
-          className={`w-14 h-14 sm:w-10 sm:h-10 text-center text-2xl font-extrabold rounded-2xl border-2 outline-none transition-all duration-200 shadow-sm bg-gray-50/60 hover:bg-gray-50 focus:bg-white
+          className={`w-14 h-14 sm:w-10 sm:h-10 text-center text-2xl font-semibold rounded-2xl border-2 outline-none transition-all duration-200 shadow-sm bg-gray-50/60 hover:bg-gray-50 focus:bg-white
             ${error
               ? '!border-red-500 text-red-600 bg-red-50/30 focus:!border-red-500 focus:ring-4 focus:ring-red-500/20'
               : otpDigits[index]

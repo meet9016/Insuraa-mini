@@ -92,7 +92,7 @@ function AiCreditHistoryTab() {
   };
 
   return (
-    <div className="bg-white rounded-3xl border border-slate-200/90 shadow-lg overflow-hidden relative">
+    <div className="bg-white rounded-3xl border border-slate-200/90 shadow-lg overflow-visible relative">
       <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-2xl bg-indigo-100/60 text-[#2E3192] flex items-center justify-center shrink-0 shadow-sm">
