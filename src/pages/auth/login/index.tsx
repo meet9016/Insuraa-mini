@@ -191,7 +191,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex font-sans overflow-hidden bg-white">
       {/* Left Side Image Banner */}
-      <div className="hidden lg:flex lg:w-[75%] relative items-center justify-center bg-white overflow-hidden">
+      <div className="hidden lg:flex lg:w-[65%] xl:w-[70%] relative items-center justify-center bg-white overflow-hidden">
         {images.map((img, index) => (
           <img
             key={index}
@@ -219,185 +219,195 @@ export default function LoginPage() {
       </div>
 
       {/* Right Side Form Container */}
-      <div className="w-full lg:w-[25%] flex items-center justify-center p-4 md:p-8 relative bg-white">
-        <div className="flex w-full max-w-[500px] relative z-10">
+      <div className="w-full lg:w-[35%] xl:w-[30%] flex items-center justify-center p-4 md:p-8 relative bg-white">
+        <div className="w-full max-w-[480px] bg-white p-8 relative z-10 border border-gray-200 rounded-[32px]">
 
-          {/* OTP Login Form */}
-          <div className="flex flex-col w-full p-4 sm:p-8 justify-center bg-transparent">
-            <div className="w-full max-w-[420px] mx-auto">
+          {/* Logo */}
+          <div className="flex justify-center mb-8 min-h-[40px]">
+            {appSettings?.logo && (
+              <img src={appSettings.logo} alt="Insuraa Logo" className="h-10 object-contain" />
+            )}
+          </div>
 
-              {/* Logo */}
-              <div className="flex justify-center mb-8">
-                <img src={appSettings?.logo || "/logo.png"} alt="Insuraa Logo" className="h-12" />
-              </div>
-
-              {!isOtpSent ? (
-                /* STEP 1: SEND OTP FORM */
-                <div>
-                  <div className="mb-8">
-                    <h2 className="text-2xl font-bold text-[#111827] mb-1.5 tracking-tight text-center">
-                      Login as <span className="text-[#2E3192] capitalize">{loginType}</span>
-                    </h2>
-                    <p className="text-gray-500 text-xs text-center">
-                      Enter your mobile number to receive a verification code.
-                    </p>
-                  </div>
-
-                  {/* Role Selection */}
-                  <div className="mb-8">
-                    <label className="block text-[13px] font-semibold text-gray-700 ml-1 mb-2.5 text-center">
-                      Select User Type
-                    </label>
-                    <div className="flex items-center justify-center gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setLoginType('admin')}
-                        className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 border min-w-[120px] ${loginType === 'admin'
-                          ? 'bg-[#2E3192] text-white border-[#2E3192] shadow-md'
-                          : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-                          }`}
-                      >
-                        <Shield className="w-4 h-4" />
-                        <span>Admin</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setLoginType('staff')}
-                        className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 border min-w-[120px] ${loginType === 'staff'
-                          ? 'bg-[#2E3192] text-white border-[#2E3192] shadow-md'
-                          : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-                          }`}
-                      >
-                        <User className="w-4 h-4" />
-                        <span>Staff</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  <form onSubmit={sendOtpFormik.handleSubmit} className="space-y-5">
-                    <div className="space-y-1.5">
-                      <label className="text-[13px] font-semibold text-gray-700 ml-1">
-                        Mobile Number <span className="text-red-500 font-bold">*</span>
-                      </label>
-                      <div className="relative group">
-                        <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
-                          <Phone className={`h-[18px] w-[18px] transition-colors ${hasError(sendOtpFormik, 'number') ? 'text-red-500' : 'text-gray-400 group-focus-within:text-[#2E3192]'}`} />
-                        </div>
-                        <input
-                          type="text"
-                          name="number"
-                          maxLength={10}
-                          value={sendOtpFormik.values.number}
-                          onChange={sendOtpFormik.handleChange}
-                          onBlur={sendOtpFormik.handleBlur}
-                          placeholder="Enter 10-digit mobile number"
-                          className={`w-full rounded-2xl border py-3.5 pl-12 pr-4 text-sm outline-none transition-all ${hasError(sendOtpFormik, 'number')
-                            ? '!border-red-500 text-red-900 bg-red-50/30 focus:!border-red-500 focus:ring-4 focus:ring-red-500/20'
-                            : 'border-gray-200 text-gray-900 bg-gray-50/50 hover:bg-gray-50 focus:bg-white focus:border-[#2D3591] focus:ring-4 focus:ring-[#2D3591]/10'
-                            }`}
-                        />
-                      </div>
-                      {hasError(sendOtpFormik, 'number') && (
-                        <p className="text-[12px] text-red-500 ml-1 mt-1 font-medium">{sendOtpFormik.errors.number}</p>
-                      )}
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={sendOtpMutation.isPending}
-                      className="w-full relative flex items-center justify-center gap-2 rounded-2xl bg-[#2E3192] py-4 text-[14px] font-bold text-white transition-all hover:bg-[#232569] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed mt-6 group overflow-hidden"
-                    >
-                      {sendOtpMutation.isPending ? (
-                        <div className="flex items-center gap-2">
-                          <div className="w-4 h-4 border-2 border-white/80 border-t-transparent rounded-full animate-spin"></div>
-                          <span>Sending OTP...</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <span>Send OTP</span>
-                          <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-                        </div>
-                      )}
-                    </button>
-                  </form>
-                </div>
-              ) : (
-                /* STEP 2: VERIFY OTP FORM */
-                <div>
-                  <div className="mb-6">
-                    <h2 className="text-2xl font-bold text-[#111827] mb-10 tracking-tight text-center">Verify OTP</h2>
-                    <div className="flex items-center gap-2 mt-1 bg-blue-50/80 p-2.5 rounded-xl border border-blue-100">
-                      <span className="text-sm text-gray-600"><strong className="text-gray-900 font-bold">{otpPhoneNumber || sendOtpFormik.values.number}</strong></span>
-                      <button
-                        type="button"
-                        onClick={handleEditPhoneNumber}
-                        className="ml-auto text-xs text-[#2E3192] hover:underline flex items-center gap-1 font-semibold"
-                      >
-                        <Edit2 className="w-3 h-3" /> Edit Number
-                      </button>
-                    </div>
-                  </div>
-
-                  <form onSubmit={verifyOtpFormik.handleSubmit} className="space-y-5">
-                    <div className="space-y-2">
-                      <label className="text-[13px] font-semibold text-gray-700 ml-1">
-                        Enter 4-Digit OTP Code <span className="text-red-500 font-bold">*</span>
-                      </label>
-                      <OtpBoxInput
-                        length={4}
-                        value={verifyOtpFormik.values.otp}
-                        onChange={(val) => verifyOtpFormik.setFieldValue('otp', val)}
-                        error={hasError(verifyOtpFormik, 'otp')}
-                      />
-                      {hasError(verifyOtpFormik, 'otp') && (
-                        <p className="text-[12px] text-red-500 ml-1 font-medium">{verifyOtpFormik.errors.otp}</p>
-                      )}
-                    </div>
-
-                    <div className="flex items-center justify-between text-xs px-1">
-                      <span className="text-gray-500">Didn't receive code?</span>
-                      <button
-                        type="button"
-                        onClick={handleResendOtp}
-                        disabled={sendOtpMutation.isPending}
-                        className="font-bold text-[#2E3192] hover:text-[#2BBF8C] transition-colors flex items-center gap-1 disabled:opacity-50"
-                      >
-                        <RefreshCw className={`w-3 h-3 ${sendOtpMutation.isPending ? 'animate-spin' : ''}`} />
-                        Resend OTP
-                      </button>
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={verifyOtpMutation.isPending}
-                      className="w-full relative flex items-center justify-center gap-2 rounded-2xl bg-[#2E3192] py-4 text-[14px] font-bold text-white transition-all hover:bg-[#232569] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed mt-4 group overflow-hidden"
-                    >
-                      {verifyOtpMutation.isPending ? (
-                        <div className="flex items-center gap-2">
-                          <div className="w-4 h-4 border-2 border-white/80 border-t-transparent rounded-full animate-spin"></div>
-                          <span>Verifying OTP...</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <span>Verify & Login</span>
-                          <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-                        </div>
-                      )}
-                    </button>
-                  </form>
-                </div>
-              )}
-
-              <div className="mt-8 text-center">
-                <p className="text-[13px] text-gray-600">
-                  Don't have an account?{' '}
-                  <Link href="/auth/register" className="font-bold text-[#2E3192] hover:text-[#2BBF8C] transition-colors">
-                    Create an account
-                  </Link>
+          {!isOtpSent ? (
+            /* STEP 1: SEND OTP FORM */
+            <div>
+              <div className="mb-8 text-center">
+                <h2 className="text-[28px] font-bold text-[#111827] mb-2 tracking-tight">
+                  Login as <span className="text-[#2E3192] capitalize">{loginType}</span>
+                </h2>
+                <p className="text-gray-500 text-[14px]">
+                  Enter your mobile number to receive a verification code.
                 </p>
               </div>
+
+              {/* Role Selection */}
+              <div className="mb-8 text-left">
+                <label className="block text-[14px] font-bold text-[#111827] mb-3">
+                  Select User Type
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setLoginType('admin')}
+                    className={`px-4 py-3 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 border ${loginType === 'admin'
+                      ? 'bg-[#2E3192] text-white border-[#2E3192] shadow-md'
+                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                      }`}
+                  >
+                    <Shield className="w-[18px] h-[18px]" />
+                    <span>Admin</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLoginType('staff')}
+                    className={`px-4 py-3 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 border ${loginType === 'staff'
+                      ? 'bg-[#2E3192] text-white border-[#2E3192] shadow-md'
+                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                      }`}
+                  >
+                    <User className="w-[18px] h-[18px]" />
+                    <span>Staff</span>
+                  </button>
+                </div>
+              </div>
+
+              <form onSubmit={sendOtpFormik.handleSubmit} className="space-y-6">
+                <div className="space-y-2 text-left">
+                  <label className="text-[14px] font-bold text-[#111827]">
+                    Mobile Number <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                      <Phone className={`h-[18px] w-[18px] transition-colors ${hasError(sendOtpFormik, 'number') ? 'text-red-500' : 'text-gray-400 group-focus-within:text-[#2E3192]'}`} />
+                    </div>
+                    <input
+                      type="text"
+                      name="number"
+                      maxLength={10}
+                      value={sendOtpFormik.values.number}
+                      onChange={sendOtpFormik.handleChange}
+                      onBlur={sendOtpFormik.handleBlur}
+                      placeholder="Enter 10-digit mobile number"
+                      className={`w-full rounded-xl border py-3.5 pl-12 pr-4 text-[14px] outline-none transition-all ${hasError(sendOtpFormik, 'number')
+                        ? '!border-red-500 text-red-900 bg-red-50/30 focus:!border-red-500 focus:ring-2 focus:ring-red-500/20'
+                        : 'border-gray-200 text-gray-900 bg-gray-50/50 hover:bg-gray-50 focus:bg-white focus:border-[#2E3192] focus:ring-2 focus:ring-[#2E3192]/10'
+                        }`}
+                    />
+                  </div>
+                  {hasError(sendOtpFormik, 'number') && (
+                    <p className="text-[12px] text-red-500 mt-1 font-medium">{sendOtpFormik.errors.number}</p>
+                  )}
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={sendOtpMutation.isPending}
+                  className="w-full relative flex items-center justify-center gap-2 rounded-xl bg-[#2E3192] py-3.5 text-[15px] font-bold text-white transition-all hover:bg-[#232569] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed group overflow-hidden"
+                >
+                  {sendOtpMutation.isPending ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white/80 border-t-transparent rounded-full animate-spin"></div>
+                      <span>Sending OTP...</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span>Send OTP</span>
+                      <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                    </div>
+                  )}
+                </button>
+              </form>
+            </div>
+          ) : (
+            /* STEP 2: VERIFY OTP FORM */
+            <div>
+              <div className="mb-8 text-center">
+                <h2 className="text-[28px] font-bold text-[#111827] mb-2 tracking-tight">Verify OTP</h2>
+                <div className="flex items-center gap-2 mt-4 bg-blue-50/80 p-3 rounded-xl border border-blue-100">
+                  <span className="text-sm text-gray-600"><strong className="text-gray-900 font-bold">{otpPhoneNumber || sendOtpFormik.values.number}</strong></span>
+                  <button
+                    type="button"
+                    onClick={handleEditPhoneNumber}
+                    className="ml-auto text-xs text-[#2E3192] hover:underline flex items-center gap-1 font-semibold"
+                  >
+                    <Edit2 className="w-3 h-3" /> Edit Number
+                  </button>
+                </div>
+              </div>
+
+              <form onSubmit={verifyOtpFormik.handleSubmit} className="space-y-6">
+                <div className="space-y-2 text-left">
+                  <label className="text-[14px] font-bold text-[#111827]">
+                    Enter 4-Digit OTP Code <span className="text-red-500">*</span>
+                  </label>
+                  <OtpBoxInput
+                    length={4}
+                    value={verifyOtpFormik.values.otp}
+                    onChange={(val) => verifyOtpFormik.setFieldValue('otp', val)}
+                    error={hasError(verifyOtpFormik, 'otp')}
+                  />
+                  {hasError(verifyOtpFormik, 'otp') && (
+                    <p className="text-[12px] text-red-500 mt-1 font-medium">{verifyOtpFormik.errors.otp}</p>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between text-[13px]">
+                  <span className="text-gray-500">Didn't receive code?</span>
+                  <button
+                    type="button"
+                    onClick={handleResendOtp}
+                    disabled={sendOtpMutation.isPending}
+                    className="font-bold text-[#2E3192] hover:text-[#2BBF8C] transition-colors flex items-center gap-1 disabled:opacity-50"
+                  >
+                    <RefreshCw className={`w-3 h-3 ${sendOtpMutation.isPending ? 'animate-spin' : ''}`} />
+                    Resend OTP
+                  </button>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={verifyOtpMutation.isPending}
+                  className="w-full relative flex items-center justify-center gap-2 rounded-xl bg-[#2E3192] py-3.5 text-[15px] font-bold text-white transition-all hover:bg-[#232569] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed group overflow-hidden"
+                >
+                  {verifyOtpMutation.isPending ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white/80 border-t-transparent rounded-full animate-spin"></div>
+                      <span>Verifying OTP...</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span>Verify & Login</span>
+                      <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                    </div>
+                  )}
+                </button>
+              </form>
+            </div>
+          )}
+
+          <div className="mt-8 text-center">
+            <p className="text-[14px] text-gray-500 font-medium">
+              Don't have an account?{' '}
+              <Link href="/auth/register" className="font-bold text-[#2E3192] hover:text-[#2BBF8C] transition-colors">
+                Create an account
+              </Link>
+            </p>
+          </div>
+
+          {/* Trust Box */}
+          <div className="mt-8 bg-[#f5f8fc] rounded-2xl p-4 flex gap-4 items-center border border-blue-50/50">
+            <div className="bg-white p-2.5 rounded-xl shadow-sm text-[#2E3192]">
+              <Shield className="w-5 h-5" />
+            </div>
+            <div className="text-left flex-1">
+              <h4 className="text-[#2E3192] font-bold text-[13px] mb-0.5">Your data is safe with us</h4>
+              <p className="text-gray-500 text-[11px] leading-snug pr-2">
+                We use industry-standard security practices to protect your information.
+              </p>
             </div>
           </div>
+
         </div>
       </div>
     </div>
