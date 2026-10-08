@@ -28,12 +28,10 @@ export default function LoginPage() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const images = (appSettings?.login_page_image && appSettings.login_page_image.length > 0)
     ? appSettings.login_page_image
-    : [
-      '/images/login1.webp',
-      '/images/login.png', // Placeholder for 2nd image
-    ];
+    : [];
 
   useEffect(() => {
+    if (images.length === 0) return;
     const timer = setInterval(() => {
       setCurrentImageIndex((prev) => (prev + 1) % images.length);
     }, 10000); // Auto change image every 10 seconds
@@ -200,8 +198,8 @@ export default function LoginPage() {
             src={img}
             alt={`Insurance CRM Software ${index + 1}`}
             className={`absolute inset-0 w-full h-full object-cover object-center transition-all duration-[3000ms] ease-in-out transform origin-center ${index === currentImageIndex
-                ? 'opacity-100 scale-100'
-                : 'opacity-0 scale-105'
+              ? 'opacity-100 scale-100'
+              : 'opacity-0 scale-105'
               }`}
           />
         ))}
@@ -222,10 +220,6 @@ export default function LoginPage() {
 
       {/* Right Side Form Container */}
       <div className="w-full lg:w-[25%] flex items-center justify-center p-4 md:p-8 relative bg-white">
-        {/* Background Decorators */}
-        <div className="absolute top-[-10%] left-[-10%] w-[40vw] h-[40vw] rounded-full bg-[#2E3192]/5 blur-[120px] pointer-events-none"></div>
-        <div className="absolute bottom-[-10%] right-[-5%] w-[35vw] h-[35vw] rounded-full bg-[#2BBF8C]/5 blur-[100px] pointer-events-none"></div>
-
         <div className="flex w-full max-w-[500px] relative z-10">
 
           {/* OTP Login Form */}
@@ -235,32 +229,6 @@ export default function LoginPage() {
               {/* Logo */}
               <div className="flex justify-center mb-8">
                 <img src={appSettings?.logo || "/logo.png"} alt="Insuraa Logo" className="h-12" />
-              </div>
-
-              {/* Simple Small Width Buttons for Admin & Staff Role Selection */}
-              <div className="flex items-center justify-center gap-3 mb-8">
-                <button
-                  type="button"
-                  onClick={() => setLoginType('admin')}
-                  className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 border min-w-[110px] ${loginType === 'admin'
-                    ? 'bg-[#2E3192] text-white border-[#2E3192] shadow-md'
-                    : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-                    }`}
-                >
-                  <Shield className="w-3.5 h-3.5" />
-                  <span>Admin</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setLoginType('staff')}
-                  className={`px-6 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 border min-w-[110px] ${loginType === 'staff'
-                    ? 'bg-[#2E3192] text-white border-[#2E3192] shadow-md'
-                    : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-                    }`}
-                >
-                  <User className="w-3.5 h-3.5" />
-                  <span>Staff</span>
-                </button>
               </div>
 
               {!isOtpSent ? (
@@ -273,6 +241,37 @@ export default function LoginPage() {
                     <p className="text-gray-500 text-xs text-center">
                       Enter your mobile number to receive a verification code.
                     </p>
+                  </div>
+
+                  {/* Role Selection */}
+                  <div className="mb-8">
+                    <label className="block text-[13px] font-semibold text-gray-700 ml-1 mb-2.5 text-center">
+                      Select User Type
+                    </label>
+                    <div className="flex items-center justify-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setLoginType('admin')}
+                        className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 border min-w-[120px] ${loginType === 'admin'
+                          ? 'bg-[#2E3192] text-white border-[#2E3192] shadow-md'
+                          : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                          }`}
+                      >
+                        <Shield className="w-4 h-4" />
+                        <span>Admin</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setLoginType('staff')}
+                        className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 border min-w-[120px] ${loginType === 'staff'
+                          ? 'bg-[#2E3192] text-white border-[#2E3192] shadow-md'
+                          : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                          }`}
+                      >
+                        <User className="w-4 h-4" />
+                        <span>Staff</span>
+                      </button>
+                    </div>
                   </div>
 
                   <form onSubmit={sendOtpFormik.handleSubmit} className="space-y-5">
@@ -397,7 +396,6 @@ export default function LoginPage() {
                   </Link>
                 </p>
               </div>
-
             </div>
           </div>
         </div>

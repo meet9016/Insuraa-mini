@@ -22,12 +22,10 @@ export default function RegisterPage() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const images = (appSettings?.login_page_image && appSettings.login_page_image.length > 0)
     ? appSettings.login_page_image
-    : [
-        '/images/login1.webp',
-        '/images/login.png', 
-      ];
+    : [];
 
   useEffect(() => {
+    if (images.length === 0) return;
     const timer = setInterval(() => {
       setCurrentImageIndex((prev) => (prev + 1) % images.length);
     }, 10000); // Auto change image every 10 seconds
