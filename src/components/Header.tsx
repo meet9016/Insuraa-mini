@@ -272,8 +272,8 @@ export default function Header({ onOpenSubscription, onOpenSubscriptionHistory }
         {/* Right side actions */}
         <div className="flex items-center gap-5">
           <div className="relative" ref={creditQuoteRef}>
-            <div 
-              onClick={() => setIsCreditQuoteOpen(!isCreditQuoteOpen)}
+            <Link 
+              href="/subscription?tab=ai"
               className="hidden md:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-gray-50 to-gray-100 rounded-full border border-gray-200/60 shadow-sm relative group hover:shadow-md transition-all cursor-pointer"
             >
               <Monitor className="h-4 w-4 text-[#2F439D]" />
@@ -281,7 +281,7 @@ export default function Header({ onOpenSubscription, onOpenSubscriptionHistory }
                 {aiCreditsData?.balance ?? '...'} left
               </span>
               <span className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white text-[10px] font-bold h-5 w-5 flex items-center justify-center rounded-full shadow-md animate-pulse group-hover:animate-none">  {aiCreditsData?.total_used ?? '...'}</span>
-            </div>
+            </Link>
 
             {/* Quote Popover */}
             {isCreditQuoteOpen && (
@@ -465,20 +465,7 @@ export default function Header({ onOpenSubscription, onOpenSubscriptionHistory }
                     </div>
                   </Link>
 
-                  {/* AI Credit History */}
-                  <Link
-                    href="/ai-credit-history"
-                    onClick={() => setIsProfileOpen(false)}
-                    className="w-full text-left flex items-center gap-3.5 px-3.5 py-3 rounded-xl hover:bg-emerald-50/70 transition-all duration-200 group/item"
-                  >
-                    <div className="w-10 h-10 rounded-xl bg-emerald-100/60 text-emerald-600 flex items-center justify-center shrink-0 group-hover/item:bg-emerald-600 group-hover/item:text-white transition-colors shadow-sm">
-                      <Monitor size={19} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-gray-800 group-hover/item:text-emerald-600 transition-colors">AI Credit History</p>
-                      <p className="text-xs text-gray-400 font-medium truncate">View credits & purchases</p>
-                    </div>
-                  </Link>
+                  {/* AI Credit History removed */}
 
                   <Link
                     href="/profile"
