@@ -622,7 +622,7 @@ export default function AddMotorInsurance() {
   };
 
   const sectionHeaderClass = "bg-[#EEF1FA] text-[#2B4399] px-5 py-3 text-[15px] font-bold rounded-xl flex items-center justify-between gap-2 mb-5 border-l-4 border-[#2B4399]";
-  const labelClass = "text-[13px] font-bold text-gray-700 mb-1.5 block";
+  const labelClass = "text-sm font-semibold text-gray-700 mb-2 block";
   const selectClass = "w-full h-[42px] px-3.5 py-2 border border-gray-300 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#2B4399]/20 focus:border-[#2B4399] transition-all bg-white shadow-2xs";
 
   return (
@@ -649,7 +649,7 @@ export default function AddMotorInsurance() {
 
           {/* Top 2-Column Section: Customer Information & Policy PDF Details */}
           <div className="space-y-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
               {/* Customer Information */}
               <div>
                 <div className={sectionHeaderClass}>
@@ -659,8 +659,8 @@ export default function AddMotorInsurance() {
                   </div>
                 </div>
                 <div>
-                  <div className="flex justify-between items-center h-[20px] mb-1.5">
-                    <label className="text-[13px] font-bold text-gray-700 block">Customer Name <span className="text-red-500">*</span></label>
+                  <div className="flex justify-between items-center h-[20px] mb-2">
+                    <label className="text-sm font-semibold text-gray-700 block">Customer Name <span className="text-red-500">*</span></label>
                     <button type="button" onClick={() => router.push('/customers/add')} className="text-xs text-[#2B4399] font-bold hover:underline">+ Add Customer</button>
                   </div>
                   <Select
@@ -694,8 +694,8 @@ export default function AddMotorInsurance() {
                   </div>
                 </div>
                 <div>
-                  <div className="flex justify-between items-center h-[20px] mb-1.5">
-                    <label className="text-[13px] font-bold text-gray-700 block">Upload Policy PDF</label>
+                  <div className="flex justify-between items-center h-[20px] mb-2">
+                    <label className="text-sm font-semibold text-gray-700 block">Upload Policy PDF</label>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="flex-1">
@@ -732,7 +732,7 @@ export default function AddMotorInsurance() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
 
               <div>
                 <label className={labelClass}>Insurance Company Name <span className="text-red-500">*</span></label>

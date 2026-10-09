@@ -158,7 +158,7 @@ export default function AddClaim() {
   };
 
   const sectionHeaderClass = "bg-[#EEF1FA] text-[#2B4399] px-5 py-3 text-[15px] font-bold rounded-xl flex items-center justify-between gap-2 mb-5 border-l-4 border-[#2B4399]";
-  const labelClass = "text-[13px] font-bold text-gray-700 mb-1.5 block";
+  const labelClass = "text-sm font-semibold text-gray-700 mb-2 block";
 
   return (
     <div className="bg-[#f8fafc] min-h-screen p-4 sm:p-6 lg:p-0">
@@ -190,10 +190,10 @@ export default function AddClaim() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
                 <div>
-                  <div className="flex justify-between items-center h-[20px] mb-1.5">
-                    <label className="text-[13px] font-bold text-gray-700 block">
+                  <div className="flex justify-between items-center h-[20px] mb-2">
+                    <label className="text-sm font-semibold text-gray-700 block">
                       Customer Name <span className="text-red-500">*</span>
                     </label>
                     <button
@@ -284,7 +284,7 @@ export default function AddClaim() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
                 <div>
                   <label className={labelClass}>
                     Admitted Date <span className="text-red-500">*</span>
@@ -362,7 +362,7 @@ export default function AddClaim() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
                 <div>
                   <label className={labelClass}>
                     File At Office Date <span className="text-red-500">*</span>
@@ -459,7 +459,7 @@ export default function AddClaim() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
                 <Input
                   label="Name Of Doctor"
                   name="name_of_doctor"

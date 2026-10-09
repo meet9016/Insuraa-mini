@@ -345,7 +345,7 @@ export default function AddHealthQuotation() {
 
   const sectionHeaderClass =
     "bg-[#EEF1FA] text-[#2B4399] px-5 py-3 text-[15px] font-bold rounded-xl flex items-center justify-between gap-2 mb-5 border-l-4 border-[#2B4399]";
-  const labelClass = "text-[13px] font-bold text-gray-700 mb-1.5 block";
+  const labelClass = "text-sm font-semibold text-gray-700 mb-2 block";
   const selectClass =
     "w-full h-[42px] px-3.5 py-2 border border-gray-300 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#2B4399]/20 focus:border-[#2B4399] transition-all bg-white shadow-2xs";
   const smallInputClass =
@@ -396,7 +396,7 @@ export default function AddHealthQuotation() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
                 <label className={labelClass}>Proposal Type</label>
                 <Select
@@ -648,7 +648,7 @@ export default function AddHealthQuotation() {
                       />
                     </div>
                     <div className="md:col-span-1 flex flex-col items-center justify-start">
-                      <label className="text-[13px] font-bold text-gray-700 mb-1.5 block">
+                      <label className="text-sm font-semibold text-gray-700 mb-2 block">
                         Recommended
                       </label>
                       <div className="h-[42px] flex items-center justify-center">
@@ -669,7 +669,7 @@ export default function AddHealthQuotation() {
                       </div>
                     </div>
                     <div className="md:col-span-1 flex flex-col items-center justify-start">
-                      <span className="text-[13px] font-bold block opacity-0 pointer-events-none mb-1.5 hidden md:block">
+                      <span className="text-sm font-semibold block opacity-0 pointer-events-none mb-2 hidden md:block">
                         Delete
                       </span>
                       {index > 0 && (
@@ -845,7 +845,7 @@ export default function AddHealthQuotation() {
                     />
                   </div>
                   <div className="md:col-span-1 flex flex-col items-center justify-start">
-                    <span className="text-[13px] font-bold block opacity-0 pointer-events-none mb-1.5 hidden md:block">
+                    <span className="text-sm font-semibold block opacity-0 pointer-events-none mb-2 hidden md:block">
                       Delete
                     </span>
                     {index > 0 && (

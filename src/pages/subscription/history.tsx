@@ -29,12 +29,13 @@ import { toast } from 'react-toastify';
 import SubscriptionModal from '@/components/subscription/SubscriptionModal';
 import { useRouter } from 'next/router';
 import { useFetchAiCreditHistory, useFetchAiCredits, useGetAiCreditQuote, usePurchaseAiCredit } from '@/hooks/useAiCreditApi';
-import { Monitor, Calculator, ExternalLink, Plus, Minus } from 'lucide-react';
+import { Monitor, Calculator, ExternalLink, Plus, Minus, Coins, Gift, LayoutList } from 'lucide-react';
 
 function AiCreditHistoryTab() {
   const [page, setPage] = useState<number>(1);
   const [limit, setLimit] = useState<number>(10);
-  const { data: historyRes, isLoading } = useFetchAiCreditHistory(page, limit);
+  const [search, setSearch] = useState<string>('');
+  const { data: historyRes, isLoading } = useFetchAiCreditHistory(page, limit, search);
   const historyList = historyRes?.data || [];
   const totalRecords = historyRes?.pagination_arr?.total_records ?? historyList.length ?? 0;
   const totalPages = Math.ceil(totalRecords / limit) || 1;
@@ -92,176 +93,197 @@ function AiCreditHistoryTab() {
   };
 
   return (
-    <div className="bg-white rounded-3xl border border-slate-200/90 shadow-lg overflow-visible relative">
-      <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-indigo-100/60 text-[#2E3192] flex items-center justify-center shrink-0 shadow-sm">
-            <Monitor size={24} />
+    <div className="bg-white rounded-[24px] border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.02)] overflow-visible flex flex-col">
+      {/* Header */}
+      <div className="px-6 py-5 border-b border-slate-100 bg-white rounded-t-[24px] flex flex-col lg:flex-row items-center justify-between gap-5">
+        <div className="flex items-center gap-4 w-full lg:w-auto">
+          <div className="w-[46px] h-[46px] rounded-[14px] bg-gradient-to-tr from-slate-100 to-slate-50 text-slate-700 flex items-center justify-center border border-slate-200/60 shadow-sm shrink-0">
+            <LayoutList size={22} strokeWidth={2.5} />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-slate-800">AI Credit History</h2>
-            <p className="text-xs text-slate-500 font-medium">{aiCreditsData?.balance ?? '...'} Credits Left</p>
+            <h2 className="text-[19px] font-extrabold text-slate-800 tracking-tight">AI Credit History</h2>
           </div>
         </div>
 
-        <div className="relative">
-          <button
-            onClick={() => setIsCreditQuoteOpen(!isCreditQuoteOpen)}
-            className="flex items-center gap-2 px-5 py-2.5 bg-[#2E3192] hover:bg-[#232569] text-white rounded-xl font-bold text-sm shadow-md hover:shadow-lg transition-all"
-          >
-            <Sparkles size={16} />
-            <span>Buy AI Credits</span>
-          </button>
+        <div className="flex flex-wrap lg:flex-nowrap items-center gap-4 w-full lg:w-auto lg:justify-end">
+          <div className="relative w-full sm:w-[320px]">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search by transaction, source..."
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              className="w-full bg-slate-50/80 hover:bg-slate-100 text-[14px] font-medium text-slate-800 pl-11 pr-4 py-2.5 rounded-xl border border-transparent focus:border-indigo-500/30 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none placeholder-slate-400"
+            />
+          </div>
+          <div className="text-[13px] font-semibold text-slate-600 whitespace-nowrap px-4 py-2.5 bg-slate-50 rounded-xl border border-slate-100">
+            Total Transactions: <span className="font-bold text-slate-900 ml-1">{totalRecords}</span>
+          </div>
 
-          {isCreditQuoteOpen && (
-            <div className="absolute right-0 mt-3 w-80 bg-white/95 backdrop-blur-2xl rounded-3xl shadow-[0_20px_60px_-15px_rgba(45,53,145,0.3)] border border-gray-200 z-50 overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300">
-              <div className="bg-gradient-to-r from-[#2F439D] to-[#2BBF8C] p-4 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
-                <div className="relative z-10 flex items-center gap-2 text-white">
-                  <Sparkles size={18} className="animate-[pulse_2s_infinite]" />
-                  <h4 className="font-bold text-lg tracking-tight">Buy AI Credits</h4>
-                </div>
-                <p className="relative z-10 text-white/80 text-xs mt-1 font-medium">Power up your workflow with AI</p>
-              </div>
+          {/* Buy AI Credits */}
+          <div className="relative ml-auto lg:ml-0">
+            <button
+              onClick={() => setIsCreditQuoteOpen(!isCreditQuoteOpen)}
+              className="flex items-center gap-2 px-5 py-2.5 bg-[#2E3192] hover:bg-[#232569] text-white rounded-xl font-bold text-sm shadow-[0_4px_12px_-2px_rgba(46,49,146,0.3)] hover:shadow-[0_6px_16px_-2px_rgba(46,49,146,0.4)] transition-all active:scale-[0.98]"
+            >
+              <Sparkles size={16} />
+              <span>Buy AI Credits</span>
+            </button>
 
-              <div className="p-5 space-y-4">
-                <div className="relative group/input">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                    <Calculator size={16} className="text-[#2F439D]/50 group-focus-within/input:text-[#2F439D] transition-colors" />
+            {isCreditQuoteOpen && (
+              <div className="absolute right-0 mt-3 w-80 bg-white/95 backdrop-blur-2xl rounded-3xl shadow-[0_20px_60px_-15px_rgba(45,53,145,0.3)] border border-gray-200 z-50 overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300">
+                <div className="bg-gradient-to-r from-[#2F439D] to-[#2BBF8C] p-4 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+                  <div className="relative z-10 flex items-center gap-2 text-white">
+                    <Sparkles size={18} className="animate-[pulse_2s_infinite]" />
+                    <h4 className="font-bold text-lg tracking-tight">Buy AI Credits</h4>
                   </div>
-                  <input
-                    type="number"
-                    value={creditInput}
-                    onChange={(e) => {
-                      setCreditInput(e.target.value ? Number(e.target.value) : '');
-                      setQuoteResult(null);
-                    }}
-                    className="w-full pl-10 pr-4 py-3 bg-gray-50/50 border border-gray-200/80 rounded-xl text-sm font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#2F439D]/20 focus:border-[#2F439D] focus:bg-white transition-all shadow-inner"
-                    placeholder="Enter credits (e.g. 500)"
-                  />
+                  <p className="relative z-10 text-white/80 text-xs mt-1 font-medium">Power up your workflow with AI</p>
                 </div>
 
-                <button
-                  onClick={handleGetQuote}
-                  disabled={isGettingQuote || !creditInput}
-                  className="w-full py-2.5 bg-[#2F439D]/5 text-[#2F439D] font-bold rounded-xl text-sm border border-[#2F439D]/10 hover:bg-[#2F439D]/10 hover:border-[#2F439D]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
-                >
-                  {isGettingQuote ? 'Fetching...' : 'Calculate Quote'}
-                </button>
+                <div className="p-5 space-y-4">
+                  <div className="relative group/input">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                      <Calculator size={16} className="text-[#2F439D]/50 group-focus-within/input:text-[#2F439D] transition-colors" />
+                    </div>
+                    <input
+                      type="number"
+                      value={creditInput}
+                      onChange={(e) => {
+                        setCreditInput(e.target.value ? Number(e.target.value) : '');
+                        setQuoteResult(null);
+                      }}
+                      className="w-full pl-10 pr-4 py-3 bg-gray-50/50 border border-gray-200/80 rounded-xl text-sm font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#2F439D]/20 focus:border-[#2F439D] focus:bg-white transition-all shadow-inner"
+                      placeholder="Enter credits (e.g. 500)"
+                    />
+                  </div>
 
-                {quoteResult && quoteResult.final_amount !== undefined && (
-                  <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-                    <div className="p-4 bg-gradient-to-br from-blue-50/50 to-indigo-50/50 rounded-2xl border border-blue-100/50 relative overflow-hidden">
-                      <div className="space-y-2 relative z-10">
-                        <div className="flex justify-between items-center text-xs">
-                          <span className="text-gray-500 font-medium">Credits Requested</span>
-                          <span className="font-bold text-gray-800 bg-white px-2 py-0.5 rounded-md shadow-sm">{quoteResult.credits}</span>
-                        </div>
-                        <div className="flex justify-between items-center text-xs">
-                          <span className="text-gray-500 font-medium">Price per credit</span>
-                          <span className="font-bold text-gray-700">₹{quoteResult.price_per_credit}</span>
-                        </div>
-                        <div className="flex justify-between items-center text-xs">
-                          <span className="text-gray-500 font-medium">Subtotal</span>
-                          <span className="font-bold text-gray-700">₹{quoteResult.total_price}</span>
-                        </div>
-                        <div className="flex justify-between items-center text-xs">
-                          <span className="text-gray-500 font-medium">GST ({quoteResult.gst_percentage}%)</span>
-                          <span className="font-bold text-gray-700">₹{quoteResult.gst_amount}</span>
-                        </div>
-                        <div className="h-px bg-gradient-to-r from-transparent via-blue-200/50 to-transparent my-3"></div>
-                        <div className="flex justify-between items-end">
-                          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Final Amount</span>
-                          <span className="text-xl font-black text-[#2F439D] leading-none">₹{quoteResult.final_amount}</span>
+                  <button
+                    onClick={handleGetQuote}
+                    disabled={isGettingQuote || !creditInput}
+                    className="w-full py-2.5 bg-[#2F439D]/5 text-[#2F439D] font-bold rounded-xl text-sm border border-[#2F439D]/10 hover:bg-[#2F439D]/10 hover:border-[#2F439D]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
+                  >
+                    {isGettingQuote ? 'Fetching...' : 'Calculate Quote'}
+                  </button>
+
+                  {quoteResult && quoteResult.final_amount !== undefined && (
+                    <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                      <div className="p-4 bg-gradient-to-br from-blue-50/50 to-indigo-50/50 rounded-2xl border border-blue-100/50 relative overflow-hidden">
+                        <div className="space-y-2 relative z-10">
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-gray-500 font-medium">Credits Requested</span>
+                            <span className="font-bold text-gray-800 bg-white px-2 py-0.5 rounded-md shadow-sm">{quoteResult.credits}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-gray-500 font-medium">Price per credit</span>
+                            <span className="font-bold text-gray-700">₹{quoteResult.price_per_credit}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-gray-500 font-medium">Subtotal</span>
+                            <span className="font-bold text-gray-700">₹{quoteResult.total_price}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-gray-500 font-medium">GST ({quoteResult.gst_percentage}%)</span>
+                            <span className="font-bold text-gray-700">₹{quoteResult.gst_amount}</span>
+                          </div>
+                          <div className="h-px bg-gradient-to-r from-transparent via-blue-200/50 to-transparent my-3"></div>
+                          <div className="flex justify-between items-end">
+                            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Final Amount</span>
+                            <span className="text-xl font-black text-[#2F439D] leading-none">₹{quoteResult.final_amount}</span>
+                          </div>
                         </div>
                       </div>
+                      <button
+                        onClick={handlePay}
+                        disabled={isPurchasing}
+                        className="relative w-full py-3.5 mt-3 group overflow-hidden rounded-xl text-white font-bold text-sm shadow-[0_8px_20px_-6px_rgba(46,49,146,0.4)] hover:shadow-[0_12px_25px_-6px_rgba(46,49,146,0.5)] transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed disabled:active:scale-100"
+                      >
+                        <div className="absolute inset-0 bg-gradient-to-r from-[#2F439D] via-[#3B54C4] to-[#2BBF8C] transition-transform duration-500 group-hover:scale-105"></div>
+                        <span className="relative flex items-center justify-center gap-2">
+                          {isPurchasing ? 'Processing...' : <>Proceed to Pay <ExternalLink size={14} className="opacity-70" /></>}
+                        </span>
+                      </button>
                     </div>
-                    <button
-                      onClick={handlePay}
-                      disabled={isPurchasing}
-                      className="relative w-full py-3.5 mt-3 group overflow-hidden rounded-xl text-white font-bold text-sm shadow-[0_8px_20px_-6px_rgba(46,49,146,0.4)] hover:shadow-[0_12px_25px_-6px_rgba(46,49,146,0.5)] transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed disabled:active:scale-100"
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-r from-[#2F439D] via-[#3B54C4] to-[#2BBF8C] transition-transform duration-500 group-hover:scale-105"></div>
-                      <span className="relative flex items-center justify-center gap-2">
-                        {isPurchasing ? 'Processing...' : <>Proceed to Pay <ExternalLink size={14} className="opacity-70" /></>}
-                      </span>
-                    </button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="p-6">
+      <div className="p-6 bg-[#f8fafc]/50">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-24 gap-4 text-slate-500">
-            <RefreshCw className="w-10 h-10 animate-spin text-[#2E3192]" />
-            <span className="text-sm font-semibold text-slate-700">Fetching history...</span>
+            <RefreshCw className="w-8 h-8 animate-spin text-indigo-500" />
+            <span className="text-sm font-semibold">Fetching history...</span>
           </div>
         ) : historyList.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-20 h-20 rounded-3xl bg-indigo-50 text-[#2E3192] flex items-center justify-center mb-4 shadow-inner">
-              <Monitor size={40} />
+            <div className="w-16 h-16 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mb-4">
+              <LayoutList size={32} />
             </div>
-            <h3 className="text-lg font-bold text-slate-800">No AI Credit History Found</h3>
-            <p className="text-xs text-slate-600 mt-1 max-w-md font-normal">
+            <h3 className="text-base font-bold text-slate-800">No Transactions Found</h3>
+            <p className="text-[13px] text-slate-500 mt-1 max-w-sm">
               You haven't used or purchased any AI credits yet.
             </p>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-4">
             {historyList.map((item: any, idx: number) => {
               const isAddition = item.type === 1;
+              const isBonus = item.title?.toLowerCase().includes('bonus') || item.source?.toLowerCase().includes('bonus') || item.source?.toLowerCase().includes('free');
+              const isFree = item.amount === 0 || item.amount === '0' || !item.amount;
+
               return (
                 <div
                   key={item.id || idx}
-                  className={`bg-white rounded-3xl p-6 border transition-all duration-300 flex flex-col gap-6 relative overflow-hidden group hover:shadow-md border-slate-200 hover:border-slate-300`}
+                  className="group flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 p-5 sm:px-6 sm:py-5 rounded-2xl border border-slate-200/70 bg-white hover:border-slate-300 hover:shadow-[0_4px_24px_-4px_rgba(0,0,0,0.06)] transition-all duration-300"
                 >
-                  <div className={`absolute left-0 top-0 bottom-0 w-2 ${isAddition ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pl-3 border-b border-slate-100 pb-4">
-                    <div className="flex items-center gap-4">
-                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-sm bg-slate-100 text-slate-600 border border-slate-200`}>
-                        {isAddition ? <Sparkles size={26} className="text-emerald-500" /> : <Monitor size={26} className="text-rose-500" />}
+                  {/* Col 1: Icon, Title, Note */}
+                  <div className="flex items-start gap-4 min-w-[280px] w-full lg:w-auto flex-1">
+                    <div className={`w-[46px] h-[46px] rounded-full flex items-center justify-center shrink-0 shadow-sm border ${isAddition ? (isBonus ? 'bg-purple-50 text-purple-600 border-purple-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100') : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
+                      {isBonus ? <Gift size={22} strokeWidth={2.5} /> : (isAddition ? <Coins size={22} strokeWidth={2.5} /> : <Monitor size={22} strokeWidth={2.5} />)}
+                    </div>
+                    <div className="flex flex-col gap-0.5 pt-0.5">
+                      <h3 className="font-bold text-slate-800 text-[15px] leading-tight tracking-tight">{item.title || 'N/A'}</h3>
+                      <div className="text-[13px] text-slate-500 font-medium">
+                        {item.source ? item.source.charAt(0).toUpperCase() + item.source.slice(1) : ''}
                       </div>
-                      <div>
-                        <div className="flex items-center gap-3 flex-wrap">
-                          <h2 className="font-bold text-slate-900 text-lg">{item.title || 'N/A'}</h2>
-                          <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full tracking-wide ${isAddition ? 'bg-emerald-100 text-emerald-900 border border-emerald-300' : 'bg-rose-100 text-rose-900 border border-rose-300'}`}>
-                            {isAddition ? <Plus size={13} className="text-emerald-600" /> : <Minus size={13} className="text-rose-600" />}
-                            {isAddition ? 'Credit Added' : 'Credit Used'}
-                          </span>
+                      {item.note && (
+                        <div className="text-[12.5px] text-slate-400 font-medium leading-snug mt-1 whitespace-pre-wrap">
+                          {item.note}
                         </div>
-                        <p className="text-xs text-slate-600 font-normal mt-1 uppercase">Source: {item.source || 'N/A'}</p>
-                      </div>
+                      )}
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pl-3 text-xs">
-                    <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                      <span className="text-slate-700 font-medium block text-[11px] mb-1">Date & Time</span>
-                      <span className="font-semibold text-slate-900">{item.created_at || 'N/A'}</span>
+
+                  {/* Wrapper for right side cols */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 lg:flex items-center gap-4 lg:gap-8 w-full lg:w-auto">
+                    {/* Col 2: Date */}
+                    <div className="flex items-center gap-2 text-slate-500 text-[13px] font-medium lg:w-[150px]">
+                      <Calendar size={15} className="text-slate-400" />
+                      <span>{item.created_at || 'N/A'}</span>
                     </div>
-                    <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                      <span className="text-slate-700 font-medium block text-[11px] mb-1">Credits</span>
-                      <span className={`font-semibold text-base ${isAddition ? 'text-emerald-600' : 'text-rose-600'}`}>
-                        {isAddition ? '+' : '-'}{item.credits || 0}
+
+                    {/* Col 3: Credits Badge */}
+                    <div className="lg:w-[130px] flex justify-start lg:justify-center">
+                      <span className={`inline-flex items-center px-3.5 py-1.5 rounded-full text-[12.5px] font-bold shadow-sm ${isAddition ? (isBonus ? 'bg-purple-100 text-purple-700' : 'bg-emerald-100 text-emerald-700') : 'bg-rose-100 text-rose-700'}`}>
+                        {isAddition ? '+' : '-'}{Number(item.credits || 0).toLocaleString()} Credits
                       </span>
                     </div>
-                    <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                      <span className="text-slate-700 font-medium block text-[11px] mb-1">Balance After</span>
-                      <span className="font-semibold text-[#2B4399]">{item.balance_after || 0}</span>
+
+                    {/* Col 4: Balance After */}
+                    <div className="text-[13px] text-slate-500 font-medium lg:w-[150px]">
+                      Balance After: <span className="font-bold text-slate-700 ml-1">{Number(item.balance_after || 0).toLocaleString()}</span>
                     </div>
-                    <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                      <span className="text-slate-700 font-medium block text-[11px] mb-1">Amount</span>
-                      <span className="font-semibold text-slate-900">₹{item.amount || 0}</span>
+
+                    {/* Col 5: Amount */}
+                    <div className="flex flex-col items-start sm:items-end lg:w-[80px]">
+                      <div className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Amount</div>
+                      <div className="font-extrabold text-slate-800 text-[16px] leading-none">{isFree ? 'Free' : `₹${Number(item.amount).toLocaleString()}`}</div>
                     </div>
                   </div>
-                  {item.note && (
-                    <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-100 text-xs ml-3 text-slate-700">
-                      <span className="font-medium text-slate-600">Note: </span>{item.note}
-                    </div>
-                  )}
                 </div>
               );
             })}
@@ -270,23 +292,23 @@ function AiCreditHistoryTab() {
       </div>
 
       {totalPages > 1 && (
-        <div className="p-5 border-t border-slate-100 bg-slate-50/60 flex items-center justify-between gap-4">
-          <span className="text-xs font-semibold text-slate-700">
-            Page <span className="text-slate-900 font-bold">{page}</span> of{' '}
-            <span className="text-slate-900 font-bold">{totalPages}</span>
+        <div className="px-6 py-4 border-t border-slate-100 bg-white flex items-center justify-end gap-4 rounded-b-[24px]">
+          <span className="text-[13px] font-semibold text-slate-600">
+            Page <span className="text-slate-900 font-bold mx-0.5">{page}</span> of{' '}
+            <span className="text-slate-900 font-bold ml-0.5">{totalPages}</span>
           </span>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setPage((p) => Math.max(p - 1, 1))}
               disabled={page === 1 || isLoading}
-              className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+              className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
             >
               <ChevronLeft size={18} />
             </button>
             <button
               onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
               disabled={page === totalPages || isLoading}
-              className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+              className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
             >
               <ChevronRight size={18} />
             </button>
@@ -492,8 +514,8 @@ export default function SubscriptionHistoryPage() {
           <button
             onClick={() => setActiveTab('subscription')}
             className={`pb-3 border-b-2 font-bold text-sm whitespace-nowrap transition-colors ${activeTab === 'subscription'
-                ? 'border-[#2E3192] text-[#2E3192]'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
+              ? 'border-[#2E3192] text-[#2E3192]'
+              : 'border-transparent text-slate-500 hover:text-slate-700'
               }`}
           >
             Subscription History
@@ -501,8 +523,8 @@ export default function SubscriptionHistoryPage() {
           <button
             onClick={() => setActiveTab('ai')}
             className={`pb-3 border-b-2 font-bold text-sm whitespace-nowrap transition-colors ${activeTab === 'ai'
-                ? 'border-[#2E3192] text-[#2E3192]'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
+              ? 'border-[#2E3192] text-[#2E3192]'
+              : 'border-transparent text-slate-500 hover:text-slate-700'
               }`}
           >
             AI Credit History

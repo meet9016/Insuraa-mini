@@ -94,14 +94,17 @@ export interface AiCreditHistoryResponse {
   };
 }
 
-export const useFetchAiCreditHistory = (page: number = 1, limit: number = 10) => {
+export const useFetchAiCreditHistory = (page: number = 1, limit: number = 10, search: string = '') => {
   return useQuery<AiCreditHistoryResponse | null>({
-    queryKey: ['aiCreditHistory', page, limit],
+    queryKey: ['aiCreditHistory', page, limit, search],
     queryFn: async () => {
       try {
         const formData = new FormData();
         formData.append('page', page.toString());
         formData.append('limit', limit.toString());
+        if (search) {
+          formData.append('search', search);
+        }
         
         const response = await api.post(endPointApi.AI_CREDIT.AI_CREDIT_HISTORY, formData);
         const resData = response.data;

@@ -364,7 +364,7 @@ export default function AddMotorQuotation() {
   };
 
   const sectionHeaderClass = "bg-[#EEF1FA] text-[#2B4399] px-5 py-3 text-[15px] font-bold rounded-xl flex items-center justify-between gap-2 mb-5 border-l-4 border-[#2B4399]";
-  const labelClass = 'text-[13px] font-bold text-gray-700 mb-1.5 block';
+  const labelClass = 'text-sm font-semibold text-gray-700 mb-2 block';
 
   return (
     <div className="bg-[#f8fafc] min-h-screen p-4 sm:p-6 lg:p-0">
@@ -393,434 +393,434 @@ export default function AddMotorQuotation() {
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200/80">
 
           <form onSubmit={handleSubmit} className="space-y-6 bg-white">
-          {/* Section 1: Motor Information / Proposal Information */}
-          <div>
-            <div className={sectionHeaderClass}>
-              <div className="flex items-center gap-2">
-                <User size={18} />
-                <span>Motor Information</span>
+            {/* Section 1: Motor Information / Proposal Information */}
+            <div>
+              <div className={sectionHeaderClass}>
+                <div className="flex items-center gap-2">
+                  <User size={18} />
+                  <span>Motor Information</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Input
+                  label="Insured Person Name"
+                  name="insured_name"
+                  placeholder="Insured Name"
+                  value={formData.insured_name}
+                  onChange={(e) => handleInputChange('insured_name', e.target.value)}
+                  onBlur={() => handleBlur('insured_name')}
+                  error={errors.insured_name}
+                  required
+                />
+
+                <Input
+                  label="Mobile No"
+                  name="mobile"
+                  placeholder="MobileNo"
+                  value={formData.mobile}
+                  onChange={(e) => handleInputChange('mobile', e.target.value)}
+                  onBlur={() => handleBlur('mobile')}
+                  error={errors.mobile}
+                  maxLength={10}
+                />
+
+                <Input
+                  label="Email"
+                  name="email"
+                  type="email"
+                  placeholder="Email"
+                  value={formData.email}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  onBlur={() => handleBlur('email')}
+                  error={errors.email}
+                />
+
+                <Input
+                  label="House No"
+                  name="house_no"
+                  placeholder="House No"
+                  value={formData.house_no}
+                  onChange={(e) => handleInputChange('house_no', e.target.value)}
+                  onBlur={() => handleBlur('house_no')}
+                  error={errors.house_no}
+                />
+
+                <div>
+                  <Input
+                    label={isPincodeLoading ? 'Pincode (Loading...)' : 'Pincode'}
+                    name="pincode"
+                    placeholder="Pincode"
+                    value={formData.pincode}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '');
+                      if (val.length <= 6) {
+                        handleInputChange('pincode', val);
+                      }
+                    }}
+                    onBlur={() => handleBlur('pincode')}
+                    error={errors.pincode}
+                    maxLength={6}
+                  />
+                </div>
+
+                <Input
+                  label="Street"
+                  name="street"
+                  placeholder="Street"
+                  value={formData.street}
+                  onChange={(e) => handleInputChange('street', e.target.value)}
+                />
+
+                <Input
+                  label="Area"
+                  name="area"
+                  placeholder="Area"
+                  value={formData.area}
+                  onChange={(e) => handleInputChange('area', e.target.value)}
+                />
+
+                <Input
+                  label="City"
+                  name="city"
+                  placeholder="City"
+                  value={formData.city}
+                  onChange={(e) => handleInputChange('city', e.target.value)}
+                />
+
+                <Input
+                  label="State"
+                  name="state"
+                  placeholder="State"
+                  value={formData.state}
+                  onChange={(e) => handleInputChange('state', e.target.value)}
+                />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
-              <Input
-                label="Insured Person Name"
-                name="insured_name"
-                placeholder="Insured Name"
-                value={formData.insured_name}
-                onChange={(e) => handleInputChange('insured_name', e.target.value)}
-                onBlur={() => handleBlur('insured_name')}
-                error={errors.insured_name}
-                required
-              />
+            {/* Section 2: Vehicle Details */}
+            <div>
+              <div className={sectionHeaderClass}>
+                <div className="flex items-center gap-2">
+                  <Car size={18} />
+                  <span>Vehicle Details</span>
+                </div>
+              </div>
 
-              <Input
-                label="Mobile No"
-                name="mobile"
-                placeholder="MobileNo"
-                value={formData.mobile}
-                onChange={(e) => handleInputChange('mobile', e.target.value)}
-                onBlur={() => handleBlur('mobile')}
-                error={errors.mobile}
-                maxLength={10}
-              />
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                  <label className={labelClass}>
+                    Vehicle Type <span className="text-red-500">*</span>
+                  </label>
+                  <Select
+                    value={formData.vehicle_type_id || formData.vehicle_type}
+                    onChange={(e: any) => handleVehicleTypeChange(e.target.value)}
+                    className={errors.vehicle_type_id ? '!border-red-500 ring-2 ring-red-500/20' : ''}
+                  >
+                    <option value="">{isMasterLoading ? 'Loading...' : 'Select Vehicle Type'}</option>
+                    {vehicleTypeList.map((vt: any) => (
+                      <option key={vt.id} value={vt.id}>
+                        {vt.value}
+                      </option>
+                    ))}
+                  </Select>
+                  {errors.vehicle_type_id && (
+                    <p className="text-xs text-red-500 font-semibold mt-1 px-0.5">
+                      {errors.vehicle_type_id}
+                    </p>
+                  )}
+                </div>
 
-              <Input
-                label="Email"
-                name="email"
-                type="email"
-                placeholder="Email"
-                value={formData.email}
-                onChange={(e) => handleInputChange('email', e.target.value)}
-                onBlur={() => handleBlur('email')}
-                error={errors.email}
-              />
+                <div>
+                  <label className={labelClass}>Make</label>
+                  <Select
+                    value={formData.make_id || formData.make}
+                    onChange={(e: any) => handleMakeChange(e.target.value)}
+                  >
+                    <option value="">{isMasterLoading ? 'Loading...' : 'Select Make'}</option>
+                    {makeList.map((mk: any) => (
+                      <option key={mk.id} value={mk.id}>
+                        {mk.value}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
 
-              <Input
-                label="House No"
-                name="house_no"
-                placeholder="House No"
-                value={formData.house_no}
-                onChange={(e) => handleInputChange('house_no', e.target.value)}
-                onBlur={() => handleBlur('house_no')}
-                error={errors.house_no}
-              />
+                <Input
+                  label="Model"
+                  name="model"
+                  placeholder="Model"
+                  value={formData.model}
+                  onChange={(e) => handleInputChange('model', e.target.value)}
+                />
+
+                <Input
+                  label="Registration No"
+                  name="registration_no"
+                  placeholder="e.g. GJ05AB1234"
+                  value={formData.registration_no}
+                  onChange={(e) => handleInputChange('registration_no', e.target.value)}
+                />
+
+                <Input
+                  label="Year Of Manufacture"
+                  name="mfg_year"
+                  placeholder="Year Of Manufacture"
+                  value={formData.mfg_year}
+                  onChange={(e) => handleInputChange('mfg_year', e.target.value)}
+                  onBlur={() => handleBlur('mfg_year')}
+                  error={errors.mfg_year}
+                  maxLength={4}
+                />
+
+                <Input
+                  label="CC / GVW"
+                  name="cc_gvw"
+                  placeholder="CC/Gross Vehicle Weight"
+                  value={formData.cc_gvw}
+                  onChange={(e) => handleInputChange('cc_gvw', e.target.value)}
+                />
+
+                <div>
+                  <label className={labelClass}>Zone</label>
+                  <Select
+                    value={formData.zone}
+                    onChange={(e: any) => handleInputChange('zone', e.target.value)}
+                  >
+                    <option value="">Select Zone</option>
+                    <option value="A">A</option>
+                    <option value="B">B</option>
+                    <option value="C">C</option>
+                  </Select>
+                </div>
+
+                <Input
+                  label="Seating Capacity"
+                  name="seat_capacity"
+                  placeholder="Seating Capacity"
+                  value={formData.seat_capacity}
+                  onChange={(e) => handleInputChange('seat_capacity', e.target.value)}
+                  onBlur={() => handleBlur('seat_capacity')}
+                  error={errors.seat_capacity}
+                />
+
+                <Input
+                  label="Total IDV"
+                  name="total_idv"
+                  placeholder="Total IDV"
+                  value={formData.total_idv}
+                  onChange={(e) => handleInputChange('total_idv', e.target.value)}
+                  onBlur={() => handleBlur('total_idv')}
+                  error={errors.total_idv}
+                />
+
+                <Input
+                  label="NCB %"
+                  name="ncb_percent"
+                  placeholder="NCB %"
+                  value={formData.ncb_percent}
+                  onChange={(e) => handleInputChange('ncb_percent', e.target.value)}
+                  onBlur={() => handleBlur('ncb_percent')}
+                  error={errors.ncb_percent}
+                />
+              </div>
+            </div>
+
+            {/* Section 3: Quotation Details / Comparison Details */}
+            <div>
+              <div className={sectionHeaderClass}>
+                <div className="flex items-center justify-between w-full">
+                  <div className="flex items-center gap-2">
+                    <Building2 size={18} />
+                    <span>Quotation Details</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={addQuote}
+                    className="w-[36px] h-[36px] bg-[#2B4399] hover:bg-[#203378] text-white rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
+                    title="Add Quote"
+                  >
+                    <Plus size={18} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {quotes.map((quote, idx) => (
+                  <div
+                    key={quote.id || idx}
+                    className="bg-[#F8FAFC] p-4 md:p-5 rounded-xl border border-gray-200/80 space-y-4 shadow-2xs hover:border-gray-300 transition-all"
+                  >
+                    {/* Row 1 of fields: Company, Product, Addon, IDV */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
+                      <div>
+                        <label className={labelClass}>
+                          Company <span className="text-red-500">*</span>
+                        </label>
+                        <Select
+                          value={quote.company_id || ''}
+                          onChange={(e: any) => handleCompanyChange(idx, e.target.value)}
+                          className={quoteErrors[quote.id || idx]?.company_id ? '!border-red-500 ring-2 ring-red-500/20' : ''}
+                        >
+                          <option value="">{isMasterLoading ? 'Loading...' : 'Select Company'}</option>
+                          {companyList.map((comp: any) => (
+                            <option key={comp.company_id} value={comp.company_id}>
+                              {comp.name}
+                            </option>
+                          ))}
+                        </Select>
+                        {quoteErrors[quote.id || idx]?.company_id && (
+                          <p className="text-xs text-red-500 font-semibold mt-1 px-0.5">
+                            {quoteErrors[quote.id || idx].company_id}
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className={labelClass}>
+                          Product <span className="text-red-500">*</span>
+                        </label>
+                        <ProductSelect
+                          companyId={quote.company_id}
+                          value={quote.product_id || quote.product_name}
+                          onChange={(val, prodObj) => handleProductChange(idx, val, prodObj)}
+                          error={quoteErrors[quote.id || idx]?.product_id}
+                        />
+                      </div>
+
+                      <div>
+                        <Input
+                          label="Addon"
+                          name={`add_on_${idx}`}
+                          placeholder="Addon details"
+                          value={quote.add_on}
+                          onChange={(e) => handleQuoteChange(idx, 'add_on', e.target.value)}
+                        />
+                      </div>
+
+                      <div>
+                        <Input
+                          label="IDV"
+                          name={`idv_${idx}`}
+                          placeholder="IDV"
+                          value={quote.idv}
+                          onChange={(e) => handleQuoteChange(idx, 'idv', e.target.value)}
+                          error={quoteErrors[quote.id || idx]?.idv}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Row 2 of fields: Premium, Discount, Remark, Recommended + Delete */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
+                      <div>
+                        <Input
+                          label={
+                            <span>
+                              Premium <span className="text-red-500">*</span>
+                            </span>
+                          }
+                          name={`premium_${idx}`}
+                          placeholder="0"
+                          value={quote.premium}
+                          onChange={(e) => handleQuoteChange(idx, 'premium', e.target.value)}
+                          error={quoteErrors[quote.id || idx]?.premium}
+                        />
+                      </div>
+
+                      <div>
+                        <Input
+                          label="Discount"
+                          name={`discount_${idx}`}
+                          placeholder="Discount"
+                          value={quote.discount}
+                          onChange={(e) => handleQuoteChange(idx, 'discount', e.target.value)}
+                          error={quoteErrors[quote.id || idx]?.discount}
+                        />
+                      </div>
+
+                      <div>
+                        <Input
+                          label="Remark"
+                          name={`remark_${idx}`}
+                          placeholder="Remark"
+                          value={quote.remark}
+                          onChange={(e) => handleQuoteChange(idx, 'remark', e.target.value)}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between gap-3 pt-0">
+                        <div className="flex flex-col items-center justify-start">
+                          <label className="text-sm font-semibold text-gray-700 mb-2 block">
+                            Recommended
+                          </label>
+                          <div className="h-[42px] flex items-center justify-center">
+                            <input
+                              type="radio"
+                              name="recommended_quote"
+                              checked={quote.is_recommended}
+                              onChange={(e) =>
+                                handleQuoteChange(idx, 'is_recommended', e.target.checked)
+                              }
+                              className="w-4 h-4 text-[#2B4399] focus:ring-[#2B4399] cursor-pointer"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col items-center justify-start">
+                          <span className="text-sm font-semibold block opacity-0 pointer-events-none mb-2 hidden md:block">
+                            Delete
+                          </span>
+                          {idx > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => removeQuote(idx)}
+                              className="w-[36px] h-[36px] bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
+                              title="Delete Quote"
+                            >
+                              <Minus size={18} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Section 4: Other Details */}
+            <div>
+              <div className={sectionHeaderClass}>
+                <div className="flex items-center gap-2">
+                  <FileText size={18} />
+                  <span>Other Details</span>
+                </div>
+              </div>
 
               <div>
                 <Input
-                  label={isPincodeLoading ? 'Pincode (Loading...)' : 'Pincode'}
-                  name="pincode"
-                  placeholder="Pincode"
-                  value={formData.pincode}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/\D/g, '');
-                    if (val.length <= 6) {
-                      handleInputChange('pincode', val);
-                    }
-                  }}
-                  onBlur={() => handleBlur('pincode')}
-                  error={errors.pincode}
-                  maxLength={6}
+                  label="Remarks"
+                  name="remarks"
+                  as="textarea"
+                  placeholder="Enter any additional remarks..."
+                  value={formData.remarks}
+                  onChange={(e) => handleInputChange('remarks', e.target.value)}
                 />
               </div>
-
-              <Input
-                label="Street"
-                name="street"
-                placeholder="Street"
-                value={formData.street}
-                onChange={(e) => handleInputChange('street', e.target.value)}
-              />
-
-              <Input
-                label="Area"
-                name="area"
-                placeholder="Area"
-                value={formData.area}
-                onChange={(e) => handleInputChange('area', e.target.value)}
-              />
-
-              <Input
-                label="City"
-                name="city"
-                placeholder="City"
-                value={formData.city}
-                onChange={(e) => handleInputChange('city', e.target.value)}
-              />
-
-              <Input
-                label="State"
-                name="state"
-                placeholder="State"
-                value={formData.state}
-                onChange={(e) => handleInputChange('state', e.target.value)}
-              />
-            </div>
-          </div>
-
-          {/* Section 2: Vehicle Details */}
-          <div>
-            <div className={sectionHeaderClass}>
-              <div className="flex items-center gap-2">
-                <Car size={18} />
-                <span>Vehicle Details</span>
-              </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
-              <div>
-                <label className={labelClass}>
-                  Vehicle Type <span className="text-red-500">*</span>
-                </label>
-                <Select
-                  value={formData.vehicle_type_id || formData.vehicle_type}
-                  onChange={(e: any) => handleVehicleTypeChange(e.target.value)}
-                  className={errors.vehicle_type_id ? '!border-red-500 ring-2 ring-red-500/20' : ''}
-                >
-                  <option value="">{isMasterLoading ? 'Loading...' : 'Select Vehicle Type'}</option>
-                  {vehicleTypeList.map((vt: any) => (
-                    <option key={vt.id} value={vt.id}>
-                      {vt.value}
-                    </option>
-                  ))}
-                </Select>
-                {errors.vehicle_type_id && (
-                  <p className="text-xs text-red-500 font-semibold mt-1 px-0.5">
-                    {errors.vehicle_type_id}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className={labelClass}>Make</label>
-                <Select
-                  value={formData.make_id || formData.make}
-                  onChange={(e: any) => handleMakeChange(e.target.value)}
-                >
-                  <option value="">{isMasterLoading ? 'Loading...' : 'Select Make'}</option>
-                  {makeList.map((mk: any) => (
-                    <option key={mk.id} value={mk.id}>
-                      {mk.value}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-
-              <Input
-                label="Model"
-                name="model"
-                placeholder="Model"
-                value={formData.model}
-                onChange={(e) => handleInputChange('model', e.target.value)}
-              />
-
-              <Input
-                label="Registration No"
-                name="registration_no"
-                placeholder="e.g. GJ05AB1234"
-                value={formData.registration_no}
-                onChange={(e) => handleInputChange('registration_no', e.target.value)}
-              />
-
-              <Input
-                label="Year Of Manufacture"
-                name="mfg_year"
-                placeholder="Year Of Manufacture"
-                value={formData.mfg_year}
-                onChange={(e) => handleInputChange('mfg_year', e.target.value)}
-                onBlur={() => handleBlur('mfg_year')}
-                error={errors.mfg_year}
-                maxLength={4}
-              />
-
-              <Input
-                label="CC / GVW"
-                name="cc_gvw"
-                placeholder="CC/Gross Vehicle Weight"
-                value={formData.cc_gvw}
-                onChange={(e) => handleInputChange('cc_gvw', e.target.value)}
-              />
-
-              <div>
-                <label className={labelClass}>Zone</label>
-                <Select
-                  value={formData.zone}
-                  onChange={(e: any) => handleInputChange('zone', e.target.value)}
-                >
-                  <option value="">Select Zone</option>
-                  <option value="A">A</option>
-                  <option value="B">B</option>
-                  <option value="C">C</option>
-                </Select>
-              </div>
-
-              <Input
-                label="Seating Capacity"
-                name="seat_capacity"
-                placeholder="Seating Capacity"
-                value={formData.seat_capacity}
-                onChange={(e) => handleInputChange('seat_capacity', e.target.value)}
-                onBlur={() => handleBlur('seat_capacity')}
-                error={errors.seat_capacity}
-              />
-
-              <Input
-                label="Total IDV"
-                name="total_idv"
-                placeholder="Total IDV"
-                value={formData.total_idv}
-                onChange={(e) => handleInputChange('total_idv', e.target.value)}
-                onBlur={() => handleBlur('total_idv')}
-                error={errors.total_idv}
-              />
-
-              <Input
-                label="NCB %"
-                name="ncb_percent"
-                placeholder="NCB %"
-                value={formData.ncb_percent}
-                onChange={(e) => handleInputChange('ncb_percent', e.target.value)}
-                onBlur={() => handleBlur('ncb_percent')}
-                error={errors.ncb_percent}
+            {/* Bottom Action Bar */}
+            <div className="pt-6">
+              <ActionButtons
+                onCancel={() => router.back()}
+                onSubmit={() => handleSubmit()}
+                isSubmitting={isSubmitting || isDetailLoading}
+                submitText="Save Quotation"
               />
             </div>
-          </div>
-
-          {/* Section 3: Quotation Details / Comparison Details */}
-          <div>
-            <div className={sectionHeaderClass}>
-              <div className="flex items-center justify-between w-full">
-                <div className="flex items-center gap-2">
-                  <Building2 size={18} />
-                  <span>Quotation Details</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={addQuote}
-                  className="w-[36px] h-[36px] bg-[#2B4399] hover:bg-[#203378] text-white rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
-                  title="Add Quote"
-                >
-                  <Plus size={18} />
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              {quotes.map((quote, idx) => (
-                <div
-                  key={quote.id || idx}
-                  className="bg-[#F8FAFC] p-4 md:p-5 rounded-xl border border-gray-200/80 space-y-4 shadow-2xs hover:border-gray-300 transition-all"
-                >
-                  {/* Row 1 of fields: Company, Product, Addon, IDV */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
-                    <div>
-                      <label className={labelClass}>
-                        Company <span className="text-red-500">*</span>
-                      </label>
-                      <Select
-                        value={quote.company_id || ''}
-                        onChange={(e: any) => handleCompanyChange(idx, e.target.value)}
-                        className={quoteErrors[quote.id || idx]?.company_id ? '!border-red-500 ring-2 ring-red-500/20' : ''}
-                      >
-                        <option value="">{isMasterLoading ? 'Loading...' : 'Select Company'}</option>
-                        {companyList.map((comp: any) => (
-                          <option key={comp.company_id} value={comp.company_id}>
-                            {comp.name}
-                          </option>
-                        ))}
-                      </Select>
-                      {quoteErrors[quote.id || idx]?.company_id && (
-                        <p className="text-xs text-red-500 font-semibold mt-1 px-0.5">
-                          {quoteErrors[quote.id || idx].company_id}
-                        </p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className={labelClass}>
-                        Product <span className="text-red-500">*</span>
-                      </label>
-                      <ProductSelect
-                        companyId={quote.company_id}
-                        value={quote.product_id || quote.product_name}
-                        onChange={(val, prodObj) => handleProductChange(idx, val, prodObj)}
-                        error={quoteErrors[quote.id || idx]?.product_id}
-                      />
-                    </div>
-
-                    <div>
-                      <Input
-                        label="Addon"
-                        name={`add_on_${idx}`}
-                        placeholder="Addon details"
-                        value={quote.add_on}
-                        onChange={(e) => handleQuoteChange(idx, 'add_on', e.target.value)}
-                      />
-                    </div>
-
-                    <div>
-                      <Input
-                        label="IDV"
-                        name={`idv_${idx}`}
-                        placeholder="IDV"
-                        value={quote.idv}
-                        onChange={(e) => handleQuoteChange(idx, 'idv', e.target.value)}
-                        error={quoteErrors[quote.id || idx]?.idv}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Row 2 of fields: Premium, Discount, Remark, Recommended + Delete */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
-                    <div>
-                      <Input
-                        label={
-                          <span>
-                            Premium <span className="text-red-500">*</span>
-                          </span>
-                        }
-                        name={`premium_${idx}`}
-                        placeholder="0"
-                        value={quote.premium}
-                        onChange={(e) => handleQuoteChange(idx, 'premium', e.target.value)}
-                        error={quoteErrors[quote.id || idx]?.premium}
-                      />
-                    </div>
-
-                    <div>
-                      <Input
-                        label="Discount"
-                        name={`discount_${idx}`}
-                        placeholder="Discount"
-                        value={quote.discount}
-                        onChange={(e) => handleQuoteChange(idx, 'discount', e.target.value)}
-                        error={quoteErrors[quote.id || idx]?.discount}
-                      />
-                    </div>
-
-                    <div>
-                      <Input
-                        label="Remark"
-                        name={`remark_${idx}`}
-                        placeholder="Remark"
-                        value={quote.remark}
-                        onChange={(e) => handleQuoteChange(idx, 'remark', e.target.value)}
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between gap-3 pt-0">
-                      <div className="flex flex-col items-center justify-start">
-                        <label className="text-[11px] font-bold text-gray-700 mb-1.5 block">
-                          Recommended
-                        </label>
-                        <div className="h-[42px] flex items-center justify-center">
-                          <input
-                            type="radio"
-                            name="recommended_quote"
-                            checked={quote.is_recommended}
-                            onChange={(e) =>
-                              handleQuoteChange(idx, 'is_recommended', e.target.checked)
-                            }
-                            className="w-4 h-4 text-[#2B4399] focus:ring-[#2B4399] cursor-pointer"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col items-center justify-start">
-                        <span className="text-[11px] font-bold block opacity-0 pointer-events-none mb-1.5 hidden md:block">
-                          Delete
-                        </span>
-                        {idx > 0 && (
-                          <button
-                            type="button"
-                            onClick={() => removeQuote(idx)}
-                            className="w-[36px] h-[36px] bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
-                            title="Delete Quote"
-                          >
-                            <Minus size={18} />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Section 4: Other Details */}
-          <div>
-            <div className={sectionHeaderClass}>
-              <div className="flex items-center gap-2">
-                <FileText size={18} />
-                <span>Other Details</span>
-              </div>
-            </div>
-
-            <div>
-              <Input
-                label="Remarks"
-                name="remarks"
-                as="textarea"
-                placeholder="Enter any additional remarks..."
-                value={formData.remarks}
-                onChange={(e) => handleInputChange('remarks', e.target.value)}
-              />
-            </div>
-          </div>
-
-          {/* Bottom Action Bar */}
-          <div className="pt-6">
-            <ActionButtons
-              onCancel={() => router.back()}
-              onSubmit={() => handleSubmit()}
-              isSubmitting={isSubmitting || isDetailLoading}
-              submitText="Save Quotation"
-            />
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
 }
