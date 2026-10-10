@@ -499,6 +499,100 @@ export default function AddMotorInsurance() {
   const [policyPdf, setPolicyPdf] = useState<File | null>(null);
   const [existingPolicyPdfUrl, setExistingPolicyPdfUrl] = useState<string>('');
 
+  const [aiData, setAiData] = useState<any>(null);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [aiFilledFields, setAiFilledFields] = useState<string[]>([]);
+
+  const getFieldHighlight = (fieldName: string) => {
+    return aiFilledFields.includes(fieldName) ? "!bg-emerald-50/50 !border-emerald-400 !ring-2 !ring-emerald-400/30 transition-all duration-500" : "";
+  };
+
+  const handleAiReadPolicy = async () => {
+    if (!policyPdf) {
+      toast.error('Please upload a policy PDF first');
+      return;
+    }
+    setIsAiLoading(true);
+    setAiData(null);
+    try {
+      const formDataUpload = new FormData();
+      formDataUpload.append('insurance_type', '3');
+      formDataUpload.append('policy_pdf', policyPdf);
+
+      const res = await api.post(endPointApi.MOTOR_INSURANCE.AI_READ_POLICY, formDataUpload, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      
+      if (res.data?.status === 200 && res.data?.data?.ai_data) {
+        toast.success(res.data?.message || 'Data Extracted Successfully');
+        const extractedData = res.data.data.ai_data;
+        setAiData(extractedData);
+        
+        // Auto-fill form
+        // Auto-fill form
+        const newAiFilledFields: string[] = [];
+        
+        const fieldMapping: Record<string, any> = {
+          companies_id: extractedData.companies_id,
+          customer_id: extractedData.customer_id,
+          companies_agency_code: extractedData.companies_agency_code_id,
+          plan_type: extractedData.plan_type_id,
+          insurance_type: extractedData.insurance_type_id,
+          vehicle_type: extractedData.vehicle_type_id,
+          class_of_vehicle: extractedData.class_of_vehicle_id,
+          plan_name: extractedData.plan_id || extractedData.plan_name,
+          policy_number: extractedData.policy_number,
+          policy_start_date: extractedData.policy_start_date,
+          policy_end_date: extractedData.policy_end_date || extractedData.policy_term_end_date,
+          registration_number_rto: extractedData.registration_number,
+          engine_number: extractedData.engine_number,
+          chasis_no: extractedData.chasis_no,
+          make_model_variant: extractedData.make_model_variant,
+          mfy_year_of_manufacture: extractedData.mfy_year_of_manufacture,
+          vehicle_value: extractedData.vehicle_value_idv,
+          own_damage_premimum: extractedData.own_damage_premium,
+          tp_premium: extractedData.tp_premium,
+          ncb: extractedData.ncb_percent_id || extractedData.ncb_percent,
+          net_premium: extractedData.net_premium,
+          total_premium: extractedData.total_premium,
+          gst_amount: extractedData.gst_amount,
+        };
+
+        setFormData((prev: any) => {
+          const updatedData: any = { ...prev };
+          Object.entries(fieldMapping).forEach(([key, val]) => {
+            if (val !== null && val !== undefined && val !== '') {
+              updatedData[key] = String(val);
+              newAiFilledFields.push(key);
+            }
+          });
+          return updatedData;
+        });
+
+        setAiFilledFields(newAiFilledFields);
+      } else {
+        toast.error(res.data?.message || 'Failed to extract data');
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Error processing PDF');
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string>('');
+  useEffect(() => {
+    if (policyPdf) {
+      const url = URL.createObjectURL(policyPdf);
+      setPdfPreviewUrl(url);
+      return () => URL.revokeObjectURL(url);
+    } else if (existingPolicyPdfUrl) {
+      setPdfPreviewUrl(existingPolicyPdfUrl);
+    } else {
+      setPdfPreviewUrl('');
+    }
+  }, [policyPdf, existingPolicyPdfUrl]);
+
   // Additional Documents State
   const [documents, setDocuments] = useState<Array<{ id: number; other_document_name: string; other_document_image: File | null; existing_image_url?: string | null }>>([
     { id: 1, other_document_name: '', other_document_image: null }
@@ -641,15 +735,16 @@ export default function AddMotorInsurance() {
           <h1 className="text-xl font-semibold tracking-tight text-gray-900">{isEdit ? 'Edit Motor Insurance' : 'Add Motor Insurance'}</h1>
         </div>
 
-        {/* Form Container Card */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200/80">
+        <div className={`grid grid-cols-1 ${aiData && pdfPreviewUrl ? 'xl:grid-cols-2' : ''} gap-6 items-start`}>
+          {/* Form Container Card */}
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200/80">
 
-          {/* Form Content */}
-          <form className="space-y-6 bg-white" onSubmit={handleSubmit}>
+            {/* Form Content */}
+            <form className="space-y-6 bg-white" onSubmit={handleSubmit}>
 
-          {/* Top 2-Column Section: Customer Information & Policy PDF Details */}
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+            {/* Top 2-Column Section: Customer Information & Policy PDF Details */}
+            <div className="space-y-4">
+              <div className={`grid grid-cols-1 ${aiData && pdfPreviewUrl ? 'lg:grid-cols-2 xl:grid-cols-1' : 'lg:grid-cols-2'} gap-4 items-start`}>
               {/* Customer Information */}
               <div>
                 <div className={sectionHeaderClass}>
@@ -664,7 +759,7 @@ export default function AddMotorInsurance() {
                     <button type="button" onClick={() => router.push('/customers/add')} className="text-xs text-[#2B4399] font-bold hover:underline">+ Add Customer</button>
                   </div>
                   <Select
-                    className={`${selectClass} ${errors.customer_id ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
+                    className={`${selectClass} ${errors.customer_id ? '!border-red-500 ring-2 ring-red-500/20' : ''} ${getFieldHighlight('customer_id')}`}
                     value={formData.customer_id}
                     onChange={(e: any) => handleChange('customer_id', e.target.value)}
                     error={errors.customer_id}
@@ -708,9 +803,14 @@ export default function AddMotorInsurance() {
                         placeholder="Click or drag Policy PDF file to upload"
                       />
                     </div>
-                    <button type="button" className="h-[46px] bg-[#2B4399] text-white px-5 rounded-xl text-sm font-bold hover:bg-[#203378] transition-colors shadow-2xs flex items-center justify-center gap-2 shrink-0">
-                      <Sparkles size={16} />
-                      <span>AI</span>
+                    <button
+                      type="button"
+                      onClick={handleAiReadPolicy}
+                      disabled={isAiLoading || !policyPdf}
+                      className="h-[46px] bg-[#2B4399] text-white px-5 rounded-xl text-sm font-bold hover:bg-[#203378] transition-colors shadow-2xs flex items-center justify-center gap-2 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isAiLoading ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span> : <Sparkles size={16} />}
+                      <span>{isAiLoading ? 'Reading...' : 'AI'}</span>
                     </button>
                   </div>
                 </div>
@@ -732,9 +832,9 @@ export default function AddMotorInsurance() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
+            <div className={`grid grid-cols-1 sm:grid-cols-2 ${aiData && pdfPreviewUrl ? 'lg:grid-cols-4 xl:grid-cols-3' : 'lg:grid-cols-4'} gap-4 items-start`}>
 
-              <div>
+              <div className={getFieldHighlight('companies_id')}>
                 <label className={labelClass}>Insurance Company Name <span className="text-red-500">*</span></label>
                 <CompanySelectWithAdd
                   companyList={companyList}
@@ -757,7 +857,7 @@ export default function AddMotorInsurance() {
                 {errors.companies_id && <p className="text-xs text-red-500 font-semibold mt-1">{errors.companies_id}</p>}
               </div>
 
-              <div>
+              <div className={getFieldHighlight('plan_name')}>
                 <label className={labelClass}>Plan Name <span className="text-red-500">*</span></label>
                 <PlanSelectWithAdd
                   planList={planList}
@@ -773,7 +873,7 @@ export default function AddMotorInsurance() {
               <div>
                 <label className={labelClass}>Agency Code</label>
                 <Select
-                  className={selectClass}
+                  className={`${selectClass} ${getFieldHighlight('companies_agency_code')}`}
                   value={formData.companies_agency_code}
                   onChange={(e: any) => handleChange('companies_agency_code', e.target.value)}
                 >
@@ -793,7 +893,7 @@ export default function AddMotorInsurance() {
               <div>
                 <label className={labelClass}>Plan Type <span className="text-red-500">*</span></label>
                 <Select
-                  className={`${selectClass} ${errors.plan_type ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
+                  className={`${selectClass} ${errors.plan_type ? '!border-red-500 ring-2 ring-red-500/20' : ''} ${getFieldHighlight('plan_type')}`}
                   value={formData.plan_type}
                   onChange={(e: any) => handleChange('plan_type', e.target.value)}
                   error={errors.plan_type}
@@ -811,7 +911,7 @@ export default function AddMotorInsurance() {
               <div>
                 <label className={labelClass}>Vehicle Type <span className="text-red-500">*</span></label>
                 <Select
-                  className={`${selectClass} ${errors.vehicle_type ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
+                  className={`${selectClass} ${errors.vehicle_type ? '!border-red-500 ring-2 ring-red-500/20' : ''} ${getFieldHighlight('vehicle_type')}`}
                   value={formData.vehicle_type}
                   onChange={(e: any) => handleChange('vehicle_type', e.target.value)}
                   error={errors.vehicle_type}
@@ -829,7 +929,7 @@ export default function AddMotorInsurance() {
               <div>
                 <label className={labelClass}>Class Of Vehicle <span className="text-red-500">*</span></label>
                 <Select
-                  className={`${selectClass} ${errors.class_of_vehicle ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
+                  className={`${selectClass} ${errors.class_of_vehicle ? '!border-red-500 ring-2 ring-red-500/20' : ''} ${getFieldHighlight('class_of_vehicle')}`}
                   value={formData.class_of_vehicle}
                   onChange={(e: any) => handleChange('class_of_vehicle', e.target.value)}
                   error={errors.class_of_vehicle}
@@ -847,7 +947,7 @@ export default function AddMotorInsurance() {
               <div>
                 <label className={labelClass}>Insurance Type <span className="text-red-500">*</span></label>
                 <Select
-                  className={`${selectClass} ${errors.insurance_type ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
+                  className={`${selectClass} ${errors.insurance_type ? '!border-red-500 ring-2 ring-red-500/20' : ''} ${getFieldHighlight('insurance_type')}`}
                   value={formData.insurance_type}
                   onChange={(e: any) => handleChange('insurance_type', e.target.value)}
                   error={errors.insurance_type}
@@ -871,6 +971,7 @@ export default function AddMotorInsurance() {
                   onBlur={() => handleBlur('registration_number_rto')}
                   placeholder="Enter Registration Number/RTO"
                   error={errors.registration_number_rto}
+                  className={getFieldHighlight('registration_number_rto')}
                 />
               </div>
 
@@ -881,6 +982,7 @@ export default function AddMotorInsurance() {
                   value={formData.engine_number}
                   onChange={(e: any) => handleChange('engine_number', e.target.value)}
                   placeholder="Enter Engine Number"
+                  className={getFieldHighlight('engine_number')}
                 />
               </div>
 
@@ -891,6 +993,7 @@ export default function AddMotorInsurance() {
                   value={formData.chasis_no}
                   onChange={(e: any) => handleChange('chasis_no', e.target.value)}
                   placeholder="Enter Chasis No"
+                  className={getFieldHighlight('chasis_no')}
                 />
               </div>
 
@@ -903,12 +1006,14 @@ export default function AddMotorInsurance() {
                   onBlur={() => handleBlur('policy_number')}
                   placeholder="Enter Policy Number"
                   error={errors.policy_number}
+                  className={getFieldHighlight('policy_number')}
                 />
               </div>
 
               <div>
                 <label className={labelClass}>Policy Login Date <span className="text-red-500">*</span></label>
                 <DatePicker
+                  className={getFieldHighlight('policy_login_date')}
                   value={formData.policy_login_date}
                   onChange={(date) => handleChange('policy_login_date', date)}
                   placeholder="Select Login Date"
@@ -919,6 +1024,7 @@ export default function AddMotorInsurance() {
               <div>
                 <label className={labelClass}>Policy Start Date <span className="text-red-500">*</span></label>
                 <DatePicker
+                  className={getFieldHighlight('policy_start_date')}
                   value={formData.policy_start_date}
                   onChange={(date) => handleChange('policy_start_date', date)}
                   placeholder="Select Start Date"
@@ -929,6 +1035,7 @@ export default function AddMotorInsurance() {
               <div>
                 <label className={labelClass}>Policy End Date <span className="text-red-500">*</span></label>
                 <DatePicker
+                  className={getFieldHighlight('policy_end_date')}
                   value={formData.policy_end_date}
                   onChange={(date) => handleChange('policy_end_date', date)}
                   placeholder="Select End Date"
@@ -943,6 +1050,7 @@ export default function AddMotorInsurance() {
                   value={formData.mfy_year_of_manufacture}
                   onChange={(e: any) => handleChange('mfy_year_of_manufacture', e.target.value)}
                   placeholder="Enter MFY ( Year of manufacture )"
+                  className={getFieldHighlight('mfy_year_of_manufacture')}
                 />
               </div>
 
@@ -953,13 +1061,14 @@ export default function AddMotorInsurance() {
                   value={formData.make_model_variant}
                   onChange={(e: any) => handleChange('make_model_variant', e.target.value)}
                   placeholder="Enter Make/model/variant"
+                  className={getFieldHighlight('make_model_variant')}
                 />
               </div>
 
               <div>
                 <label className={labelClass}>NCB %</label>
                 <Select
-                  className={selectClass}
+                  className={`${selectClass} ${getFieldHighlight('ncb')}`}
                   value={formData.ncb}
                   onChange={(e: any) => handleChange('ncb', e.target.value)}
                 >
@@ -993,6 +1102,7 @@ export default function AddMotorInsurance() {
                   onBlur={() => handleBlur('vehicle_value')}
                   placeholder="Enter Vehicle Value (IDV)"
                   error={errors.vehicle_value}
+                  className={getFieldHighlight('vehicle_value')}
                 />
               </div>
 
@@ -1005,6 +1115,7 @@ export default function AddMotorInsurance() {
                   onBlur={() => handleBlur('own_damage_premimum')}
                   placeholder="Enter Own Damage Premium"
                   error={errors.own_damage_premimum}
+                  className={getFieldHighlight('own_damage_premimum')}
                 />
               </div>
 
@@ -1017,6 +1128,7 @@ export default function AddMotorInsurance() {
                   onBlur={() => handleBlur('tp_premium')}
                   placeholder="Enter TP Premium"
                   error={errors.tp_premium}
+                  className={getFieldHighlight('tp_premium')}
                 />
               </div>
 
@@ -1029,6 +1141,7 @@ export default function AddMotorInsurance() {
                   onBlur={() => handleBlur('net_premium')}
                   placeholder="Enter Net Premium"
                   error={errors.net_premium}
+                  className={getFieldHighlight('net_premium')}
                 />
               </div>
 
@@ -1041,6 +1154,7 @@ export default function AddMotorInsurance() {
                   onBlur={() => handleBlur('gst_amount')}
                   placeholder="Enter GST Amount"
                   error={errors.gst_amount}
+                  className={getFieldHighlight('gst_amount')}
                 />
               </div>
 
@@ -1053,6 +1167,7 @@ export default function AddMotorInsurance() {
                   onBlur={() => handleBlur('total_premium')}
                   placeholder="Enter Total Premium"
                   error={errors.total_premium}
+                  className={getFieldHighlight('total_premium')}
                 />
               </div>
             </div>
@@ -1098,7 +1213,7 @@ export default function AddMotorInsurance() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            <div className={`grid grid-cols-1 ${aiData && pdfPreviewUrl ? 'lg:grid-cols-3 xl:grid-cols-2' : 'lg:grid-cols-3'} gap-5`}>
               {(() => {
                 const selectedDocumentIds = documents.map(d => String(d.other_document_name)).filter(id => id !== '' && id !== 'undefined');
 
@@ -1173,8 +1288,27 @@ export default function AddMotorInsurance() {
           </div>
 
         </form>
+        </div>
+        
+        {/* PDF Preview Container */}
+        {aiData && pdfPreviewUrl && (
+          <div className="hidden xl:flex flex-col bg-[#2e3192]/5 rounded-2xl shadow-[0_2px_20px_-4px_rgba(0,0,0,0.05)] border border-[#2e3192]/10 overflow-hidden sticky top-6 h-[calc(100vh-48px)]">
+             <div className="bg-white px-5 py-4 border-b border-gray-200/80 flex items-center justify-between gap-3 shrink-0 shadow-sm z-10">
+               <div className="flex items-center gap-2.5 text-gray-800 font-extrabold tracking-tight">
+                 <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                   <FileText size={16} strokeWidth={2.5} />
+                 </div>
+                 <span>Policy Document</span>
+               </div>
+               <span className="text-[11px] font-extrabold bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded-full uppercase tracking-wider border border-emerald-100/50 shadow-sm flex items-center gap-1.5">
+                 <Sparkles size={12} className="text-emerald-500" /> AI Parsed
+               </span>
+             </div>
+             <iframe src={`${pdfPreviewUrl}#navpanes=0&view=FitH`} className="w-full flex-1 border-0 mix-blend-multiply" title="Policy PDF" />
+          </div>
+        )}
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
 }

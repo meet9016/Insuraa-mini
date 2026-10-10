@@ -16,7 +16,7 @@ import {
   AreaChart,
   Area
 } from 'recharts';
-import { ChevronLeft, ChevronRight, Filter, Calendar, Shield, BarChart2, PieChart as PieChartIcon, X, Phone, Mail, User, Cake, Heart, UserCheck, Car, ChevronDown, Check, TrendingUp } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Filter, Calendar, Shield, BarChart2, PieChart as PieChartIcon, X, Phone, Mail, User, Cake, Heart, UserCheck, Car, ChevronDown, Check, TrendingUp, FileText, RefreshCw, Users, Target, AlertTriangle } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { ColDef } from 'ag-grid-community';
 import AgGridTable from '@/components/ui/tableaggrid/AgGridTable';
@@ -771,6 +771,13 @@ export default function Dashboard() {
         }
         .animate-agent-walk {
           animation: agentWalkGait 1.3s infinite ease-in-out;
+        }
+        @keyframes floatIconAnim {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-6px); }
+        }
+        .animate-float-icon {
+          animation: floatIconAnim 2.5s ease-in-out infinite;
         }
       `}</style>
 
@@ -1754,22 +1761,118 @@ export default function Dashboard() {
 // Subcomponents
 
 function MetricCard({ title, value, path }: any) {
+  const getIcon = () => {
+    switch (title) {
+      case 'Total Policy': return (
+        <div
+          className="w-[42px] h-[42px] bg-[#737FBA]"
+          style={{
+            maskImage: 'url(/images/insurance-policy.png)',
+            WebkitMaskImage: 'url(/images/insurance-policy.png)',
+            maskSize: 'contain',
+            WebkitMaskSize: 'contain',
+            maskRepeat: 'no-repeat',
+            WebkitMaskRepeat: 'no-repeat',
+            maskPosition: 'center',
+            WebkitMaskPosition: 'center'
+          }}
+        />
+      );
+      case 'Total Quotation': return (
+        <div
+          className="w-[42px] h-[42px] bg-[#737FBA]"
+          style={{
+            maskImage: 'url(/images/Quotation.png)',
+            WebkitMaskImage: 'url(/images/Quotation.png)',
+            maskSize: 'contain',
+            WebkitMaskSize: 'contain',
+            maskRepeat: 'no-repeat',
+            WebkitMaskRepeat: 'no-repeat',
+            maskPosition: 'center',
+            WebkitMaskPosition: 'center'
+          }}
+        />
+      );
+      case 'Total Renewal': return (
+        <div
+          className="w-[42px] h-[42px] bg-[#737FBA]"
+          style={{
+            maskImage: 'url(/images/Renewal.png)',
+            WebkitMaskImage: 'url(/images/Renewal.png)',
+            maskSize: 'contain',
+            WebkitMaskSize: 'contain',
+            maskRepeat: 'no-repeat',
+            WebkitMaskRepeat: 'no-repeat',
+            maskPosition: 'center',
+            WebkitMaskPosition: 'center'
+          }}
+        />
+      );
+      case 'Total Customer': return (
+        <div
+          className="w-[42px] h-[42px] bg-[#737FBA]"
+          style={{
+            maskImage: 'url(/images/customer.png)',
+            WebkitMaskImage: 'url(/images/customer.png)',
+            maskSize: 'contain',
+            WebkitMaskSize: 'contain',
+            maskRepeat: 'no-repeat',
+            WebkitMaskRepeat: 'no-repeat',
+            maskPosition: 'center',
+            WebkitMaskPosition: 'center'
+          }}
+        />
+      );
+      case 'Total Lead': return (
+        <div
+          className="w-[42px] h-[42px] bg-[#737FBA]"
+          style={{
+            maskImage: 'url(/images/lead.png)',
+            WebkitMaskImage: 'url(/images/lead.png)',
+            maskSize: 'contain',
+            WebkitMaskSize: 'contain',
+            maskRepeat: 'no-repeat',
+            WebkitMaskRepeat: 'no-repeat',
+            maskPosition: 'center',
+            WebkitMaskPosition: 'center'
+          }}
+        />
+      );
+      case 'Total Claim': return (
+        <div
+          className="w-[42px] h-[42px] bg-[#737FBA]"
+          style={{
+            maskImage: 'url(/images/claim.png)',
+            WebkitMaskImage: 'url(/images/claim.png)',
+            maskSize: 'contain',
+            WebkitMaskSize: 'contain',
+            maskRepeat: 'no-repeat',
+            WebkitMaskRepeat: 'no-repeat',
+            maskPosition: 'center',
+            WebkitMaskPosition: 'center'
+          }}
+        />
+      );
+      default: return null;
+    }
+  };
+
   const content = (
-    <div className={`relative bg-white border border-[#2f439d96] rounded-md px-5 py-4 flex flex-col justify-center min-h-[105px] overflow-hidden transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_12px_30px_-8px_rgba(45,53,145,0.3)] group shadow-[0_4px_15px_-4px_rgba(0,0,0,0.05)] ${path ? 'cursor-pointer hover:border-[#2F439D]' : ''}`}>
+    <div className={`relative bg-white rounded-xl overflow-hidden border border-[#737fba] shadow-sm transition-all duration-300 hover:shadow-[0_12px_24px_-8px_rgba(115,127,186,0.3)] hover:border-[#737FBA] hover:-translate-y-1 group ${path ? 'cursor-pointer' : ''}`}>
 
-      {/* Soft Inner Gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#2D3591]/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-
-      {/* Decorative Graphic */}
-      <div className="absolute right-0 top-0 w-16 h-16 bg-gradient-to-bl from-[#2BBF8C]/10 to-transparent rounded-bl-full pointer-events-none" />
-      <div className="absolute -right-2 -bottom-2 w-10 h-10 border-[3px] border-[#2D3591]/10 rounded-full group-hover:scale-[2] transition-transform duration-700 pointer-events-none" />
-
-      <div className="relative z-10 flex flex-col">
-        <div className="flex items-center gap-2 mb-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#2BBF8C] shadow-[0_0_5px_rgba(43,191,140,0.8)]" />
-          <h4 className="text-[18px] font-medium text-gray-700 group-hover:text-[#2F439D] transition-colors">{title}</h4>
+      <div className="flex h-[100px]">
+        {/* Left Side: Icon Container */}
+        <div className="w-[90px] h-full bg-gradient-to-br from-[#737FBA]/5 to-[#737FBA]/10 flex items-center justify-center border-r border-[#737FBA]/20 group-hover:bg-[#737FBA]/10 transition-colors duration-300">
+          <div className="group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300 ease-out drop-shadow-sm">
+            {getIcon()}
+          </div>
         </div>
-        <div className="text-[28px] font-medium text-gray-800 tracking-tighter pl-3 drop-shadow-sm">{value}</div>
+
+        {/* Right Side: Text Container */}
+        <div className="flex-1 flex flex-col justify-center px-6">
+          <h4 className="text-[13px] font-medium text-gray-500 uppercase tracking-widest mb-1 group-hover:text-[#737FBA] transition-colors">{title}</h4>
+          <div className="text-[32px] font-semibold text-gray-800 leading-none tracking-tight">{value}</div>
+        </div>
       </div>
 
     </div>

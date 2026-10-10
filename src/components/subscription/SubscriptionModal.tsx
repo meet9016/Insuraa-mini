@@ -43,10 +43,10 @@ export default function SubscriptionModal({ isOpen, onClose, onSelectPlan, isExp
       const list: PlanApiItem[] = Array.isArray(resData)
         ? resData
         : Array.isArray(resData?.data)
-        ? resData.data
-        : Array.isArray(resData?.result)
-        ? resData.result
-        : [];
+          ? resData.data
+          : Array.isArray(resData?.result)
+            ? resData.result
+            : [];
 
       setPlansList(list);
 
@@ -220,11 +220,10 @@ export default function SubscriptionModal({ isOpen, onClose, onSelectPlan, isExp
                   <div
                     key={plan.plan_id || index}
                     onClick={() => setSelectedPlanId(planIdStr)}
-                    className={`bg-white rounded-2xl p-5 sm:p-6 flex flex-col justify-between transition-all cursor-pointer relative ${
-                      isSelected
-                        ? 'border-2 border-[#2E3192] ring-2 ring-[#2E3192]/20 shadow-xl scale-[1.02]'
-                        : 'border border-slate-200 hover:border-slate-300 shadow-sm'
-                    }`}
+                    className={`bg-white rounded-2xl p-5 sm:p-6 flex flex-col justify-between transition-all cursor-pointer relative ${isSelected
+                      ? 'border-2 border-[#2E3192] ring-2 ring-[#2E3192]/20 shadow-xl scale-[1.02]'
+                      : 'border border-slate-200 hover:border-slate-300 shadow-sm'
+                      }`}
                   >
                     <div>
                       <div className="flex items-center justify-between mb-3 mt-1">
@@ -280,11 +279,10 @@ export default function SubscriptionModal({ isOpen, onClose, onSelectPlan, isExp
                         e.stopPropagation();
                         setSelectedPlanId(planIdStr);
                       }}
-                      className={`w-full py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm ${
-                        isSelected
-                          ? 'bg-[#2E3192] hover:bg-[#232569] text-white'
-                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                      }`}
+                      className={`w-full py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm ${isSelected
+                        ? 'bg-[#2E3192] hover:bg-[#232569] text-white'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                        }`}
                     >
                       {isSelected ? 'Selected' : `Select ${plan.plan_name}`}
                     </button>

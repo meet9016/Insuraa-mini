@@ -76,6 +76,7 @@ function AiCreditHistoryTab() {
     if (!quoteResult?.credits) return;
     purchaseCredit({ credits: quoteResult.credits }, {
       onSuccess: (res) => {
+        console.log(res, 'res')
         if (res && (res.status === 400 || res.status === 500 || res.status === 'error')) {
           toast.error(res?.message || 'Failed to initiate payment');
           return;
@@ -269,7 +270,7 @@ function AiCreditHistoryTab() {
                     {/* Col 3: Credits Badge */}
                     <div className="lg:w-[130px] flex justify-start lg:justify-center">
                       <span className={`inline-flex items-center px-3.5 py-1.5 rounded-full text-[12.5px] font-bold shadow-sm ${isAddition ? (isBonus ? 'bg-purple-100 text-purple-700' : 'bg-emerald-100 text-emerald-700') : 'bg-rose-100 text-rose-700'}`}>
-                        {isAddition ? '+' : '-'}{Number(item.credits || 0).toLocaleString()} Credits
+                        {isAddition ? '+' : '-'}{Number(item.credits || 0).toLocaleString()} {isAddition ? 'Credits' : 'Debits'}
                       </span>
                     </div>
 
@@ -281,7 +282,7 @@ function AiCreditHistoryTab() {
                     {/* Col 5: Amount */}
                     <div className="flex flex-col items-start sm:items-end lg:w-[80px]">
                       <div className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Amount</div>
-                      <div className="font-extrabold text-slate-800 text-[16px] leading-none">{isFree ? 'Free' : `₹${Number(item.amount).toLocaleString()}`}</div>
+                      <div className="font-extrabold text-slate-800 text-[16px] leading-none">{isFree ? '1' : `₹${Number(item.amount).toLocaleString()}`}</div>
                     </div>
                   </div>
                 </div>

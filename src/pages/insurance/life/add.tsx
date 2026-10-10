@@ -458,6 +458,98 @@ export default function AddLifeInsurance() {
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const [aiData, setAiData] = useState<any>(null);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [aiFilledFields, setAiFilledFields] = useState<string[]>([]);
+
+  const getFieldHighlight = (fieldName: string) => {
+    return aiFilledFields.includes(fieldName) ? "!bg-emerald-50/50 !border-emerald-400 !ring-2 !ring-emerald-400/30 transition-all duration-500" : "";
+  };
+
+  const handleAiReadPolicy = async () => {
+    if (!policyPdf) {
+      toast.error('Please upload a policy PDF first');
+      return;
+    }
+    setIsAiLoading(true);
+    setAiData(null);
+    try {
+      const formDataUpload = new FormData();
+      formDataUpload.append('insurance_type', '1');
+      formDataUpload.append('policy_pdf', policyPdf);
+
+      const res = await api.post(endPointApi.LIFE_INSURANCE.AI_READ_POLICY, formDataUpload, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      if (res.data?.status === 200 && res.data?.data?.ai_data) {
+        toast.success(res.data?.message || 'Data Extracted Successfully');
+        const extractedData = res.data.data.ai_data;
+        setAiData(extractedData);
+
+        // Track which fields were auto-filled to highlight them
+        const newAiFilledFields: string[] = [];
+        
+        const fieldMapping: Record<string, any> = {
+          companies_id: extractedData.companies_id,
+          customer_id: extractedData.customer_id,
+          payment_mode: extractedData.payment_mode_id,
+          plan_type: extractedData.plan_type_id,
+          plan_name: extractedData.plan_id,
+          companies_agency_code: extractedData.companies_agency_code_id,
+          policy_number: extractedData.policy_number,
+          policy_start_date: extractedData.policy_start_date,
+          sum_assured: extractedData.sum_assured,
+          net_premium: extractedData.net_premium,
+          total_premium: extractedData.total_premium,
+          gst_amount: extractedData.gst_amount,
+          policy_term: extractedData.policy_term,
+          policy_premium_term: extractedData.policy_premium_term,
+          policy_end_date: extractedData.policy_term_end_date || extractedData.policy_premium_end_date,
+          policy_maturity_date: extractedData.maturity_date,
+          bank_name: extractedData.bank_name,
+          account_number: extractedData.account_number,
+          ifsc_code: extractedData.ifsc_code,
+          account_holder_name: extractedData.account_holder_name,
+        };
+
+
+
+        setFormData((prev: any) => {
+          const updatedData: any = { ...prev };
+          Object.entries(fieldMapping).forEach(([key, val]) => {
+            if (val !== null && val !== undefined && val !== '') {
+              updatedData[key] = String(val);
+              newAiFilledFields.push(key);
+            }
+          });
+          return updatedData;
+        });
+
+        setAiFilledFields(newAiFilledFields);
+      } else {
+        toast.error(res.data?.message || 'Failed to extract data');
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Error processing PDF');
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string>('');
+  useEffect(() => {
+    if (policyPdf) {
+      const url = URL.createObjectURL(policyPdf);
+      setPdfPreviewUrl(url);
+      return () => URL.revokeObjectURL(url);
+    } else if (existingPolicyPdfUrl) {
+      setPdfPreviewUrl(existingPolicyPdfUrl);
+    } else {
+      setPdfPreviewUrl('');
+    }
+  }, [policyPdf, existingPolicyPdfUrl]);
+
   useEffect(() => {
     if (!router.isReady) return;
     const queryId = router.query.id ? String(router.query.id) : '';
@@ -853,720 +945,759 @@ export default function AddLifeInsurance() {
           <h1 className="text-xl font-semibold tracking-tight text-gray-900">{formData.life_insurance_id ? 'Edit Life Insurance' : 'Add Life Insurance'}</h1>
         </div>
 
-        {/* Form Container Card */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200/80">
+        <div className={`grid grid-cols-1 ${aiData && pdfPreviewUrl ? 'xl:grid-cols-2' : ''} gap-6 items-start`}>
+          {/* Form Container Card */}
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200/80">
 
-          {/* Form Content */}
-          <form onSubmit={handleSubmit} className="space-y-6 bg-white">
+            {/* Form Content */}
+            <form onSubmit={handleSubmit} className="space-y-6 bg-white">
 
-            {/* Top 2-Column Section: Customer Information & Policy PDF Details */}
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
-                {/* Customer Information */}
-                <div>
-                  <div className={sectionHeaderClass}>
-                    <div className="flex items-center gap-2">
-                      <User size={18} />
-                      <span>Customer Information</span>
+              {/* Top 2-Column Section: Customer Information & Policy PDF Details */}
+              <div className="space-y-4">
+                <div className={`grid grid-cols-1 ${aiData && pdfPreviewUrl ? 'lg:grid-cols-2 xl:grid-cols-1' : 'lg:grid-cols-2'} gap-4 items-start`}>
+                  {/* Customer Information */}
+                  <div>
+                    <div className={sectionHeaderClass}>
+                      <div className="flex items-center gap-2">
+                        <User size={18} />
+                        <span>Customer Information</span>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex justify-between items-center h-[20px] mb-2">
+                        <label className="text-sm font-semibold text-gray-700 block">Customer Name <span className="text-red-500">*</span></label>
+                        <button type="button" onClick={() => router.push('/customers/add')} className="text-xs text-[#2B4399] font-bold hover:underline">+ Add Customer</button>
+                      </div>
+                      <Select
+                        className={`${selectClass} ${errors.customer_id ? '!border-red-500 ring-2 ring-red-500/20' : ''} ${getFieldHighlight('customer_id')}`}
+                        value={formData.customer_id}
+                        onChange={(e: any) => handleChange('customer_id', e.target.value)}
+                        error={errors.customer_id}
+                      >
+                        <option value="">Select Customer Name</option>
+                        {customerList.map((cust: any) => {
+                          const id = cust.customer_id || cust.id;
+                          const name = cust.full_name || `Customer #${id}`;
+                          const phone = cust.number || '';
+                          const label = phone ? `${name} (${phone})` : name;
+                          return (
+                            <option key={id} value={id}>
+                              {label}
+                            </option>
+                          );
+                        })}
+                      </Select>
+                      {errors.customer_id && <p className="text-xs text-red-500 font-semibold mt-1">{errors.customer_id}</p>}
                     </div>
                   </div>
+
+                  {/* Policy PDF Details */}
                   <div>
-                    <div className="flex justify-between items-center h-[20px] mb-2">
-                      <label className="text-sm font-semibold text-gray-700 block">Customer Name <span className="text-red-500">*</span></label>
-                      <button type="button" onClick={() => router.push('/customers/add')} className="text-xs text-[#2B4399] font-bold hover:underline">+ Add Customer</button>
+                    <div className={sectionHeaderClass}>
+                      <div className="flex items-center gap-2">
+                        <FileText size={18} />
+                        <span>Policy PDF Details</span>
+                      </div>
                     </div>
+                    <div>
+                      <div className="flex justify-between items-center h-[20px] mb-2">
+                        <label className="text-sm font-semibold text-gray-700 block">Upload Policy PDF</label>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1">
+                          <FileUpload
+                            name="policy_pdf"
+                            accept=".pdf,.doc,.docx,image/*"
+                            file={policyPdf}
+                            existingUrl={existingPolicyPdfUrl}
+                            onChange={(file) => setPolicyPdf(file)}
+                            placeholder="Click or drag Policy PDF file to upload"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleAiReadPolicy}
+                          disabled={isAiLoading || !policyPdf}
+                          className="h-[46px] bg-[#2B4399] text-white px-5 rounded-xl text-sm font-bold hover:bg-[#203378] transition-colors shadow-2xs flex items-center justify-center gap-2 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isAiLoading ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span> : <Sparkles size={16} />}
+                          <span>{isAiLoading ? 'Reading...' : 'AI'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Note Banner spanning full width below both cards */}
+                <div className="bg-red-50/70 text-[#cf3838] p-3.5 rounded-xl text-xs border border-red-100 font-semibold leading-relaxed">
+                  Note: After Uploading The Policy PDF And Clicking The AI Button, The Form Will Be Auto-Filled. Please Review And Verify All Details Carefully, As AI-Generated Data May Not Be Fully Accurate, Before Saving Or Submitting.
+                </div>
+              </div>
+
+              {/* Insurance Information (Strict 4 Fields Per Row Grid) */}
+              <div>
+                <div className={sectionHeaderClass}>
+                  <div className="flex items-center gap-2">
+                    <Shield size={18} />
+                    <span>Insurance Information</span>
+                  </div>
+                </div>
+
+                <div className={`grid grid-cols-1 sm:grid-cols-2 ${aiData && pdfPreviewUrl ? 'lg:grid-cols-4 xl:grid-cols-3' : 'lg:grid-cols-4'} gap-4 items-start`}>
+                  {/* Row 1 */}
+                  <div>
+                    <label className={labelClass}>Insurance Company Name <span className="text-red-500">*</span></label>
+                    <div className={getFieldHighlight('companies_id')}>
+                      <CompanySelectWithAdd
+                        companyList={companyList}
+                        selectedId={formData.companies_id}
+                        onChange={(val: string) => handleChange('companies_id', val)}
+                        onAddCompany={handleAddCustomCompany}
+                        error={errors.companies_id}
+                      />
+                    </div>
+                    {errors.companies_id && <p className="text-xs text-red-500 font-semibold mt-1">{errors.companies_id}</p>}
+                  </div>
+                  <div>
+                    <label className={labelClass}>Plan Name</label>
+                    <div className={getFieldHighlight('plan_name')}>
+                      <PlanSelectWithAdd
+                        planList={planList}
+                        selectedId={formData.plan_name}
+                        companyId={formData.companies_id}
+                        onChange={(val: string) => handleChange('plan_name', val)}
+                        onAddPlan={handleAddCustomPlan}
+                        error={errors.plan_name}
+                      />
+                    </div>
+                    {errors.plan_name && <p className="text-xs text-red-500 font-semibold mt-1">{errors.plan_name}</p>}
+                  </div>
+                  <div>
+                    <label className={labelClass}>Agency Code</label>
                     <Select
-                      className={`${selectClass} ${errors.customer_id ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
-                      value={formData.customer_id}
-                      onChange={(e: any) => handleChange('customer_id', e.target.value)}
-                      error={errors.customer_id}
+                      className={`${selectClass} ${getFieldHighlight('companies_agency_code')}`}
+                      value={formData.companies_agency_code}
+                      onChange={(e: any) => handleChange('companies_agency_code', e.target.value)}
                     >
-                      <option value="">Select Customer Name</option>
-                      {customerList.map((cust: any) => {
-                        const id = cust.customer_id || cust.id;
-                        const name = cust.full_name || `Customer #${id}`;
-                        const phone = cust.number || '';
-                        const label = phone ? `${name} (${phone})` : name;
+                      <option value="">Select Agency Code</option>
+                      {agencyCodeList.map((ac: any) => {
+                        const id = ac.id || ac.agency_code_id || ac.code;
+                        const label = ac.code ? (ac.name ? `${ac.code} - ${ac.name}` : ac.code) : (ac.name || ac.agency_code || `Code #${id}`);
                         return (
-                          <option key={id} value={id}>
+                          <option key={id} value={ac.id || ac.code || id}>
                             {label}
                           </option>
                         );
                       })}
                     </Select>
-                    {errors.customer_id && <p className="text-xs text-red-500 font-semibold mt-1">{errors.customer_id}</p>}
-                  </div>
-                </div>
-
-                {/* Policy PDF Details */}
-                <div>
-                  <div className={sectionHeaderClass}>
-                    <div className="flex items-center gap-2">
-                      <FileText size={18} />
-                      <span>Policy PDF Details</span>
-                    </div>
                   </div>
                   <div>
-                    <div className="flex justify-between items-center h-[20px] mb-2">
-                      <label className="text-sm font-semibold text-gray-700 block">Upload Policy PDF</label>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1">
-                        <FileUpload
-                          name="policy_pdf"
-                          accept=".pdf,.doc,.docx,image/*"
-                          file={policyPdf}
-                          existingUrl={existingPolicyPdfUrl}
-                          onChange={(file) => setPolicyPdf(file)}
-                          placeholder="Click or drag Policy PDF file to upload"
-                        />
-                      </div>
-                      <button
-                        type="button"
-                        className="h-[46px] bg-[#2B4399] text-white px-5 rounded-xl text-sm font-bold hover:bg-[#203378] transition-colors shadow-2xs flex items-center justify-center gap-2 shrink-0"
-                      >
-                        <Sparkles size={16} />
-                        <span>AI</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Note Banner spanning full width below both cards */}
-              <div className="bg-red-50/70 text-[#cf3838] p-3.5 rounded-xl text-xs border border-red-100 font-semibold leading-relaxed">
-                Note: After Uploading The Policy PDF And Clicking The AI Button, The Form Will Be Auto-Filled. Please Review And Verify All Details Carefully, As AI-Generated Data May Not Be Fully Accurate, Before Saving Or Submitting.
-              </div>
-            </div>
-
-            {/* Insurance Information (Strict 4 Fields Per Row Grid) */}
-            <div>
-              <div className={sectionHeaderClass}>
-                <div className="flex items-center gap-2">
-                  <Shield size={18} />
-                  <span>Insurance Information</span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
-                {/* Row 1 */}
-                <div>
-                  <label className={labelClass}>Insurance Company Name <span className="text-red-500">*</span></label>
-                  <CompanySelectWithAdd
-                    companyList={companyList}
-                    selectedId={formData.companies_id}
-                    onChange={(val: string) => handleChange('companies_id', val)}
-                    onAddCompany={handleAddCustomCompany}
-                    error={errors.companies_id}
-                  />
-                  {errors.companies_id && <p className="text-xs text-red-500 font-semibold mt-1">{errors.companies_id}</p>}
-                </div>
-                <div>
-                  <label className={labelClass}>Plan Name</label>
-                  <PlanSelectWithAdd
-                    planList={planList}
-                    selectedId={formData.plan_name}
-                    companyId={formData.companies_id}
-                    onChange={(val: string) => handleChange('plan_name', val)}
-                    onAddPlan={handleAddCustomPlan}
-                    error={errors.plan_name}
-                  />
-                  {errors.plan_name && <p className="text-xs text-red-500 font-semibold mt-1">{errors.plan_name}</p>}
-                </div>
-                <div>
-                  <label className={labelClass}>Agency Code</label>
-                  <Select
-                    className={selectClass}
-                    value={formData.companies_agency_code}
-                    onChange={(e: any) => handleChange('companies_agency_code', e.target.value)}
-                  >
-                    <option value="">Select Agency Code</option>
-                    {agencyCodeList.map((ac: any) => {
-                      const id = ac.id || ac.agency_code_id || ac.code;
-                      const label = ac.code ? (ac.name ? `${ac.code} - ${ac.name}` : ac.code) : (ac.name || ac.agency_code || `Code #${id}`);
-                      return (
-                        <option key={id} value={ac.id || ac.code || id}>
-                          {label}
-                        </option>
-                      );
-                    })}
-                  </Select>
-                </div>
-                <div>
-                  <label className={labelClass}>Payment Mode <span className="text-red-500">*</span></label>
-                  <Select
-                    className={`${selectClass} ${errors.payment_mode ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
-                    value={formData.payment_mode}
-                    onChange={(e: any) => handleChange('payment_mode', e.target.value)}
-                    error={errors.payment_mode}
-                  >
-                    <option value="">Select Payment Mode</option>
-                    {paymentModes.map((pm: any) => (
-                      <option key={pm.id} value={pm.id}>
-                        {pm.name}
-                      </option>
-                    ))}
-                  </Select>
-                  {errors.payment_mode && <p className="text-xs text-red-500 font-semibold mt-1">{errors.payment_mode}</p>}
-                </div>
-
-                {/* Row 2 */}
-                <div>
-                  <label className={labelClass}>Policy Number <span className="text-red-500">*</span></label>
-                  <Input
-                    name="policy_number"
-                    placeholder="Enter Policy Number"
-                    value={formData.policy_number}
-                    onChange={(e: any) => handleChange('policy_number', e.target.value)}
-                    onBlur={() => handleBlur('policy_number')}
-                    error={errors.policy_number}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>Policy Premium Term (Y)<span className="text-red-500">*</span></label>
-                  {policyTermOptions.length > 0 ? (
+                    <label className={labelClass}>Payment Mode <span className="text-red-500">*</span></label>
                     <Select
-                      className={`${selectClass} ${errors.policy_premium_term ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
-                      value={formData.policy_premium_term}
-                      onChange={(e: any) => handleChange('policy_premium_term', e.target.value)}
-                      error={errors.policy_premium_term}
+                      className={`${selectClass} ${errors.payment_mode ? '!border-red-500 ring-2 ring-red-500/20' : ''} ${getFieldHighlight('payment_mode')}`}
+                      value={formData.payment_mode}
+                      onChange={(e: any) => handleChange('payment_mode', e.target.value)}
+                      error={errors.payment_mode}
                     >
-                      <option value="">Select Premium Term</option>
-                      {policyTermOptions.map((pt: any) => (
-                        <option key={pt.id} value={pt.term || pt.id}>
-                          {pt.term || pt.id}
+                      <option value="">Select Payment Mode</option>
+                      {paymentModes.map((pm: any) => (
+                        <option key={pm.id} value={pm.id}>
+                          {pm.name}
                         </option>
                       ))}
                     </Select>
-                  ) : (
-                    <Input
-                      name="policy_premium_term"
-                      placeholder="Enter Premium Term"
-                      value={formData.policy_premium_term}
-                      onChange={(e: any) => handleChange('policy_premium_term', e.target.value)}
-                      onBlur={() => handleBlur('policy_premium_term')}
-                      error={errors.policy_premium_term}
-                    />
-                  )}
-                  {policyTermOptions.length > 0 && errors.policy_premium_term && <p className="text-xs text-red-500 font-semibold mt-1">{errors.policy_premium_term}</p>}
-                </div>
-                <div>
-                  <label className={labelClass}>Policy Term (Y)<span className="text-red-500">*</span></label>
-                  {policyTermOptions.length > 0 ? (
-                    <Select
-                      className={`${selectClass} ${errors.policy_term ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
-                      value={formData.policy_term}
-                      onChange={(e: any) => handleChange('policy_term', e.target.value)}
-                      error={errors.policy_term}
-                    >
-                      <option value="">Select Policy Term</option>
-                      {policyTermOptions.map((pt: any) => (
-                        <option key={pt.id} value={pt.term || pt.id}>
-                          {pt.term || pt.id}
-                        </option>
-                      ))}
-                    </Select>
-                  ) : (
-                    <Input
-                      name="policy_term"
-                      placeholder="Enter Policy Term"
-                      value={formData.policy_term}
-                      onChange={(e: any) => handleChange('policy_term', e.target.value)}
-                      onBlur={() => handleBlur('policy_term')}
-                      error={errors.policy_term}
-                    />
-                  )}
-                  {policyTermOptions.length > 0 && errors.policy_term && <p className="text-xs text-red-500 font-semibold mt-1">{errors.policy_term}</p>}
-                </div>
-                <div>
-                  <label className={labelClass}>Policy Login Date <span className="text-red-500">*</span></label>
-                  <DatePicker
-                    className={`${selectClass} ${errors.policy_login_date ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
-                    placeholder="Select Login Date"
-                    value={formData.policy_login_date}
-                    onChange={(dateStr: string) => handleChange('policy_login_date', dateStr)}
-                    error={errors.policy_login_date}
-                  />
-                </div>
-
-                {/* Row 3 */}
-                <div>
-                  <label className={labelClass}>Policy Start Date <span className="text-red-500">*</span></label>
-                  <DatePicker
-                    className={`${selectClass} ${errors.policy_start_date ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
-                    placeholder="Select Start Date"
-                    value={formData.policy_start_date}
-                    onChange={(dateStr: string) => handleChange('policy_start_date', dateStr)}
-                    error={errors.policy_start_date}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>Policy Premium End Date <span className="text-red-500">*</span></label>
-                  <DatePicker
-                    className={`${selectClass} ${errors.policy_end_date ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
-                    placeholder="Select Premium End Date"
-                    value={formData.policy_end_date}
-                    onChange={(dateStr: string) => handleChange('policy_end_date', dateStr)}
-                    error={errors.policy_end_date}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>Policy Maturity Date <span className="text-red-500">*</span></label>
-                  <DatePicker
-                    className={`${selectClass} ${errors.policy_maturity_date ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
-                    placeholder="Select Maturity Date"
-                    value={formData.policy_maturity_date}
-                    onChange={(dateStr: string) => handleChange('policy_maturity_date', dateStr)}
-                    error={errors.policy_maturity_date}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>Maturity Amount</label>
-                  <Input
-                    name="maturity_amount"
-                    placeholder="Enter Maturity Amount"
-                    value={formData.maturity_amount}
-                    onChange={(e: any) => handleChange('maturity_amount', e.target.value)}
-                    onBlur={() => handleBlur('maturity_amount')}
-                    error={errors.maturity_amount}
-                  />
-                </div>
-
-                {/* Row 4 */}
-                <div>
-                  <label className={labelClass}>Plan Type <span className="text-red-500">*</span></label>
-                  <Select
-                    className={`${selectClass} ${errors.plan_type ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
-                    value={formData.plan_type}
-                    onChange={(e: any) => handleChange('plan_type', e.target.value)}
-                    error={errors.plan_type}
-                  >
-                    <option value="">Select Plan Type</option>
-                    {planTypeOptions.map((pt: any) => (
-                      <option key={pt.id} value={pt.id}>
-                        {pt.name}
-                      </option>
-                    ))}
-                  </Select>
-                  {errors.plan_type && <p className="text-xs text-red-500 font-semibold mt-1">{errors.plan_type}</p>}
-                </div>
-                <div>
-                  <label className={labelClass}>Sum Assured <span className="text-red-500">*</span></label>
-                  <Input
-                    name="sum_assured"
-                    placeholder="Enter Sum Assured"
-                    value={formData.sum_assured}
-                    onChange={(e: any) => handleChange('sum_assured', e.target.value)}
-                    onBlur={() => handleBlur('sum_assured')}
-                    error={errors.sum_assured}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>Net Premium<span className="text-red-500">*</span></label>
-                  <Input
-                    name="net_premium"
-                    placeholder="Enter Net Premium"
-                    value={formData.net_premium}
-                    onChange={(e: any) => handleChange('net_premium', e.target.value)}
-                    onBlur={() => handleBlur('net_premium')}
-                    error={errors.net_premium}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>GST Amount</label>
-                  <Input
-                    name="gst_amount"
-                    placeholder="Enter GST Amount"
-                    value={formData.gst_amount}
-                    onChange={(e: any) => handleChange('gst_amount', e.target.value)}
-                    onBlur={() => handleBlur('gst_amount')}
-                    error={errors.gst_amount}
-                  />
-                </div>
-
-                {/* Dynamic Riders Fields */}
-                <div className="col-span-1 sm:col-span-2 lg:col-span-4 space-y-5">
-                  {riders.map((rider, index) => (
-                    <div key={rider.id} className="flex flex-col sm:flex-row items-start gap-4">
-                      <div className="flex-1 w-full sm:w-1/3">
-                        <label className={labelClass}>Rider Name</label>
-                        <Select
-                          className={selectClass}
-                          value={rider.riders_id}
-                          onChange={(e: any) => updateRider(rider.id, 'riders_id', e.target.value)}
-                        >
-                          <option value="">Select Rider</option>
-                          {riderListOptions.map((rd: any) => {
-                            const rId = rd.id || rd.rider_id;
-                            const rName = rd.name || rd.rider_name || `Rider #${rId}`;
-                            return (
-                              <option key={rId} value={rId}>
-                                {rName}
-                              </option>
-                            );
-                          })}
-                        </Select>
-                      </div>
-                      <div className="flex-1 w-full sm:w-1/3">
-                        <label className={labelClass}>Rider Amount</label>
-                        <Input
-                          name={`riders_amount_${rider.id}`}
-                          placeholder="Enter Amount"
-                          value={rider.riders_amount}
-                          onChange={(e: any) => updateRider(rider.id, 'riders_amount', e.target.value)}
-                        />
-                      </div>
-                      <div className="flex-1 w-full sm:w-1/3">
-                        <label className={labelClass}>Note</label>
-                        <Input
-                          name={`riders_note_${rider.id}`}
-                          placeholder="Enter Note"
-                          value={rider.riders_note}
-                          onChange={(e: any) => updateRider(rider.id, 'riders_note', e.target.value)}
-                        />
-                      </div>
-                      <div className="shrink-0 mt-[25px]">
-                        {index === 0 ? (
-                          <button
-                            type="button"
-                            onClick={addRider}
-                            className="w-[36px] h-[36px] bg-[#2B4399] hover:bg-[#203378] text-white rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
-                            title="Add Rider"
-                          >
-                            <Plus size={18} />
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => removeRider(rider.id)}
-                            className="w-[36px] h-[36px] bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
-                            title="Remove Rider"
-                          >
-                            <Minus size={18} />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Row 5 */}
-                <div>
-                  <label className={labelClass}>Total Net Premium</label>
-                  <Input
-                    name="total_net_premium"
-                    placeholder="Total Net Premium"
-                    value={formData.total_net_premium}
-                    onChange={(e: any) => handleChange('total_net_premium', e.target.value)}
-                    readOnly
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>Total Premium</label>
-                  <Input
-                    name="total_premium"
-                    placeholder="Total Premium"
-                    value={formData.total_premium}
-                    onChange={(e: any) => handleChange('total_premium', e.target.value)}
-                    readOnly
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>Customer Payment Mode</label>
-                  <Select
-                    className={selectClass}
-                    value={formData.customer_payment_mode}
-                    onChange={(e: any) => handleChange('customer_payment_mode', e.target.value)}
-                  >
-                    <option value="">Select Payment Mode</option>
-                    <option value="1">Cash / Online</option>
-                    <option value="2">Cheque</option>
-                    <option value="3">Net Banking</option>
-                  </Select>
-                </div>
-                <div>
-                  <label className={labelClass}>Premium Overdue Days</label>
-                  <Select
-                    className={selectClass}
-                    value={formData.premium_overdue_days}
-                    onChange={(e: any) => handleChange('premium_overdue_days', e.target.value)}
-                  >
-                    <option value="">Select Overdue Days</option>
-                    <option value="15">15 Days</option>
-                    <option value="30">30 Days</option>
-                    <option value="45">45 Days</option>
-                    <option value="60">60 Days</option>
-                  </Select>
-                </div>
-              </div>
-            </div>
-
-            {/* Options */}
-            <div>
-              <div className={sectionHeaderClass}>
-                <div className="flex items-center gap-2">
-                  <Settings size={18} />
-                  <span>Options</span>
-                </div>
-              </div>
-              <Input
-                as="checkbox"
-                name="regenerate_installments"
-                label="Mark All Installments As Paid"
-                helperText="Check To Mark All Installments Up To Today's Date As Paid On Save."
-                checked={formData.regenerate_installments}
-                onChange={(e: any) => handleChange('regenerate_installments', e.target.checked)}
-                checkboxColor="#2B4399"
-              />
-            </div>
-
-            {/* Nominee Details (Exact 4 Columns Row with Square Icon Button) */}
-            <div>
-              <div className={sectionHeaderClass}>
-                <div className="flex items-center justify-between w-full">
-                  <div className="flex items-center gap-2">
-                    <Users size={18} />
-                    <span>Nominee Details</span>
+                    {errors.payment_mode && <p className="text-xs text-red-500 font-semibold mt-1">{errors.payment_mode}</p>}
                   </div>
-                  <button
-                    type="button"
-                    onClick={addNominee}
-                    className="w-[36px] h-[36px] bg-[#2B4399] hover:bg-[#203378] text-white rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
-                    title="Add Nominee"
-                  >
-                    <Plus size={18} />
-                  </button>
-                </div>
-              </div>
 
-              <div className="space-y-5">
-                {nominees.map((nominee, index) => (
-                  <div key={nominee.id} className="flex flex-col sm:flex-row items-start gap-4">
-                    <div className="flex-1 w-full sm:w-1/3">
-                      <label className={labelClass}>Nominee Name <span className="text-red-500">*</span></label>
-                      <Input
-                        name={`nomainee_name_${nominee.id}`}
-                        placeholder="Nominee Name *"
-                        value={nominee.nomainee_name}
-                        onChange={(e: any) => updateNominee(nominee.id, 'nomainee_name', e.target.value)}
-                        error={errors.nomainee_name && !nominee.nomainee_name ? errors.nomainee_name : undefined}
-                      />
-                    </div>
-                    <div className="flex-1 w-full sm:w-1/3">
-                      <label className={labelClass}>Relationship</label>
+                  {/* Row 2 */}
+                  <div>
+                    <label className={labelClass}>Policy Number <span className="text-red-500">*</span></label>
+                    <Input
+                      name="policy_number"
+                      placeholder="Enter Policy Number"
+                      value={formData.policy_number}
+                      onChange={(e: any) => handleChange('policy_number', e.target.value)}
+                      onBlur={() => handleBlur('policy_number')}
+                      error={errors.policy_number}
+                      className={getFieldHighlight('policy_number')}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Policy Premium Term (Y)<span className="text-red-500">*</span></label>
+                    {policyTermOptions.length > 0 ? (
                       <Select
-                        className={selectClass}
-                        value={nominee.nomainee_relationship}
-                        onChange={(e: any) => updateNominee(nominee.id, 'nomainee_relationship', e.target.value)}
+                        className={`${selectClass} ${errors.policy_premium_term ? '!border-red-500 ring-2 ring-red-500/20' : ''} ${getFieldHighlight('policy_premium_term')}`}
+                        value={formData.policy_premium_term}
+                        onChange={(e: any) => handleChange('policy_premium_term', e.target.value)}
+                        error={errors.policy_premium_term}
                       >
-                        <option value="">Select Relationship</option>
-                        {relationshipOptions.map((rel: any) => (
-                          <option key={rel.id} value={rel.id}>
-                            {rel.name}
+                        <option value="">Select Premium Term</option>
+                        {policyTermOptions.map((pt: any) => (
+                          <option key={pt.id} value={pt.term || pt.id}>
+                            {pt.term || pt.id}
                           </option>
                         ))}
                       </Select>
-                    </div>
-                    <div className="flex-1 w-full sm:w-1/3">
-                      <label className={labelClass}>Percentage (%)</label>
+                    ) : (
                       <Input
-                        name={`nomainee_per_${nominee.id}`}
-                        placeholder="Percentage (%)"
-                        value={nominee.nomainee_per}
-                        onChange={(e: any) => updateNominee(nominee.id, 'nomainee_per', e.target.value)}
+                        name="policy_premium_term"
+                        placeholder="Enter Premium Term"
+                        value={formData.policy_premium_term}
+                        onChange={(e: any) => handleChange('policy_premium_term', e.target.value)}
+                        onBlur={() => handleBlur('policy_premium_term')}
+                        error={errors.policy_premium_term}
+                        className={getFieldHighlight('policy_premium_term')}
                       />
-                    </div>
-                    {index > 0 && (
-                      <div className="shrink-0 mt-[25px]">
-                        <button
-                          type="button"
-                          onClick={() => removeNominee(nominee.id)}
-                          className="w-[36px] h-[36px] bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
-                          title="Remove Nominee"
-                        >
-                          <Minus size={18} />
-                        </button>
-                      </div>
                     )}
+                    {policyTermOptions.length > 0 && errors.policy_premium_term && <p className="text-xs text-red-500 font-semibold mt-1">{errors.policy_premium_term}</p>}
                   </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Note Details */}
-            <div>
-              <div className={sectionHeaderClass}>
-                <div className="flex items-center gap-2">
-                  <BookOpen size={18} />
-                  <span>Note Details</span>
-                </div>
-              </div>
-              <div>
-                <label className={labelClass}>Note</label>
-                <Input
-                  as="textarea"
-                  name="note"
-                  placeholder="Enter Note"
-                  value={formData.note}
-                  onChange={(e: any) => handleChange('note', e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* Bank Details IN Policy (Exact 4 Columns Row Grid) */}
-            <div>
-              <div className={sectionHeaderClass}>
-                <div className="flex items-center gap-2">
-                  <Building2 size={18} />
-                  <span>Bank Details IN Policy</span>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
-                <div>
-                  <label className={labelClass}>Bank Name</label>
-                  <Input
-                    name="bank_name"
-                    placeholder="Enter Bank Name"
-                    value={formData.bank_name}
-                    onChange={(e: any) => handleChange('bank_name', e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>Account Type</label>
-                  <Input
-                    name="account_type"
-                    placeholder="Enter Account Type"
-                    value={formData.account_type}
-                    onChange={(e: any) => handleChange('account_type', e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>Account Number</label>
-                  <Input
-                    name="account_number"
-                    placeholder="Enter Account Number"
-                    value={formData.account_number}
-                    onChange={(e: any) => handleChange('account_number', e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>IFSC CODE</label>
-                  <Input
-                    name="ifsc_code"
-                    placeholder="Enter IFSC CODE"
-                    value={formData.ifsc_code}
-                    onChange={(e: any) => handleChange('ifsc_code', e.target.value)}
-                    onBlur={() => handleBlur('ifsc_code')}
-                    error={errors.ifsc_code}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>Account Holder Name</label>
-                  <Input
-                    name="account_holder_name"
-                    placeholder="Enter Account Holder Name"
-                    value={formData.account_holder_name}
-                    onChange={(e: any) => handleChange('account_holder_name', e.target.value)}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Additional Document Information (Exact 4 Columns Row with Square Icon Button) */}
-
-
-            <div className="">
-              <div className={sectionHeaderClass}>
-                <div className="flex items-center justify-between w-full">
-                  <div className="flex items-center gap-2">
-                    <FileText size={18} />
-                    <span>Additional Document Information</span>
+                  <div>
+                    <label className={labelClass}>Policy Term (Y)<span className="text-red-500">*</span></label>
+                    {policyTermOptions.length > 0 ? (
+                      <Select
+                        className={`${selectClass} ${errors.policy_term ? '!border-red-500 ring-2 ring-red-500/20' : ''} ${getFieldHighlight('policy_term')}`}
+                        value={formData.policy_term}
+                        onChange={(e: any) => handleChange('policy_term', e.target.value)}
+                        error={errors.policy_term}
+                      >
+                        <option value="">Select Policy Term</option>
+                        {policyTermOptions.map((pt: any) => (
+                          <option key={pt.id} value={pt.term || pt.id}>
+                            {pt.term || pt.id}
+                          </option>
+                        ))}
+                      </Select>
+                    ) : (
+                      <Input
+                        name="policy_term"
+                        placeholder="Enter Policy Term"
+                        value={formData.policy_term}
+                        onChange={(e: any) => handleChange('policy_term', e.target.value)}
+                        onBlur={() => handleBlur('policy_term')}
+                        error={errors.policy_term}
+                        className={getFieldHighlight('policy_term')}
+                      />
+                    )}
+                    {policyTermOptions.length > 0 && errors.policy_term && <p className="text-xs text-red-500 font-semibold mt-1">{errors.policy_term}</p>}
                   </div>
-                  <button
-                    type="button"
-                    onClick={addDocument}
-                    className="w-[36px] h-[36px] bg-[#2B4399] hover:bg-[#203378] text-white rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
-                    title="Add Document"
-                  >
-                    <Plus size={18} />
-                  </button>
-                </div>
-              </div>
+                  <div>
+                    <label className={labelClass}>Policy Login Date <span className="text-red-500">*</span></label>
+                    <DatePicker
+                      className={`${selectClass} ${errors.policy_login_date ? '!border-red-500 ring-2 ring-red-500/20' : ''} ${getFieldHighlight('policy_login_date')}`}
+                      placeholder="Select Login Date"
+                      value={formData.policy_login_date}
+                      onChange={(dateStr: string) => handleChange('policy_login_date', dateStr)}
+                      error={errors.policy_login_date}
+                    />
+                  </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-                {(() => {
-                  const selectedDocumentIds = documents.map(d => String(d.other_document_name)).filter(id => id !== '' && id !== 'undefined');
+                  {/* Row 3 */}
+                  <div>
+                    <label className={labelClass}>Policy Start Date <span className="text-red-500">*</span></label>
+                    <DatePicker
+                      className={`${selectClass} ${errors.policy_start_date ? '!border-red-500 ring-2 ring-red-500/20' : ''} ${getFieldHighlight('policy_start_date')}`}
+                      placeholder="Select Start Date"
+                      value={formData.policy_start_date}
+                      onChange={(dateStr: string) => handleChange('policy_start_date', dateStr)}
+                      error={errors.policy_start_date}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Policy Premium End Date <span className="text-red-500">*</span></label>
+                    <DatePicker
+                      className={`${selectClass} ${errors.policy_end_date ? '!border-red-500 ring-2 ring-red-500/20' : ''} ${getFieldHighlight('policy_end_date')}`}
+                      placeholder="Select Premium End Date"
+                      value={formData.policy_end_date}
+                      onChange={(dateStr: string) => handleChange('policy_end_date', dateStr)}
+                      error={errors.policy_end_date}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Policy Maturity Date <span className="text-red-500">*</span></label>
+                    <DatePicker
+                      className={`${selectClass} ${errors.policy_maturity_date ? '!border-red-500 ring-2 ring-red-500/20' : ''} ${getFieldHighlight('policy_maturity_date')}`}
+                      placeholder="Select Maturity Date"
+                      value={formData.policy_maturity_date}
+                      onChange={(dateStr: string) => handleChange('policy_maturity_date', dateStr)}
+                      error={errors.policy_maturity_date}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Maturity Amount</label>
+                    <Input
+                      name="maturity_amount"
+                      placeholder="Enter Maturity Amount"
+                      value={formData.maturity_amount}
+                      onChange={(e: any) => handleChange('maturity_amount', e.target.value)}
+                      onBlur={() => handleBlur('maturity_amount')}
+                      error={errors.maturity_amount}
+                      className={getFieldHighlight('maturity_amount')}
+                    />
+                  </div>
 
-                  return documents.map((doc, index) => (
-                    <div key={doc.id} className="relative bg-white rounded-2xl border border-gray-200/80 p-5 shadow-2xs hover:shadow-md transition-shadow">
-                      {index > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => removeDocument(doc.id)}
-                          className="absolute top-4 right-4 w-8 h-8 bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 hover:text-red-700 rounded-xl flex items-center justify-center transition-colors z-10"
-                          title="Remove Document"
-                        >
-                          <Minus size={16} strokeWidth={2.5} />
-                        </button>
-                      )}
+                  {/* Row 4 */}
+                  <div>
+                    <label className={labelClass}>Plan Type <span className="text-red-500">*</span></label>
+                    <Select
+                      className={`${selectClass} ${errors.plan_type ? '!border-red-500 ring-2 ring-red-500/20' : ''} ${getFieldHighlight('plan_type')}`}
+                      value={formData.plan_type}
+                      onChange={(e: any) => handleChange('plan_type', e.target.value)}
+                      error={errors.plan_type}
+                    >
+                      <option value="">Select Plan Type</option>
+                      {planTypeOptions.map((pt: any) => (
+                        <option key={pt.id} value={pt.id}>
+                          {pt.name}
+                        </option>
+                      ))}
+                    </Select>
+                    {errors.plan_type && <p className="text-xs text-red-500 font-semibold mt-1">{errors.plan_type}</p>}
+                  </div>
+                  <div>
+                    <label className={labelClass}>Sum Assured <span className="text-red-500">*</span></label>
+                    <Input
+                      name="sum_assured"
+                      placeholder="Enter Sum Assured"
+                      value={formData.sum_assured}
+                      onChange={(e: any) => handleChange('sum_assured', e.target.value)}
+                      onBlur={() => handleBlur('sum_assured')}
+                      error={errors.sum_assured}
+                      className={getFieldHighlight('sum_assured')}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Net Premium<span className="text-red-500">*</span></label>
+                    <Input
+                      name="net_premium"
+                      placeholder="Enter Net Premium"
+                      value={formData.net_premium}
+                      onChange={(e: any) => handleChange('net_premium', e.target.value)}
+                      onBlur={() => handleBlur('net_premium')}
+                      error={errors.net_premium}
+                      className={getFieldHighlight('net_premium')}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>GST Amount</label>
+                    <Input
+                      name="gst_amount"
+                      placeholder="Enter GST Amount"
+                      value={formData.gst_amount}
+                      onChange={(e: any) => handleChange('gst_amount', e.target.value)}
+                      onBlur={() => handleBlur('gst_amount')}
+                      error={errors.gst_amount}
+                      className={getFieldHighlight('gst_amount')}
+                    />
+                  </div>
 
-                      <div className="flex items-start gap-3 mb-4 pr-10">
-                        <div className="w-10 h-10 bg-[#EEF2FF] text-[#2B4399] rounded-xl flex items-center justify-center shrink-0">
-                          <FileText size={20} strokeWidth={2} />
+                  {/* Dynamic Riders Fields */}
+                  <div className={`col-span-1 sm:col-span-2 ${aiData && pdfPreviewUrl ? 'lg:col-span-4 xl:col-span-3' : 'lg:col-span-4'} space-y-5`}>
+                    {riders.map((rider, index) => (
+                      <div key={rider.id} className="flex flex-col sm:flex-row items-start gap-4">
+                        <div className="flex-1 w-full sm:w-1/3">
+                          <label className={labelClass}>Rider Name</label>
+                          <Select
+                            className={selectClass}
+                            value={rider.riders_id}
+                            onChange={(e: any) => updateRider(rider.id, 'riders_id', e.target.value)}
+                          >
+                            <option value="">Select Rider</option>
+                            {riderListOptions.map((rd: any) => {
+                              const rId = rd.id || rd.rider_id;
+                              const rName = rd.name || rd.rider_name || `Rider #${rId}`;
+                              return (
+                                <option key={rId} value={rId}>
+                                  {rName}
+                                </option>
+                              );
+                            })}
+                          </Select>
                         </div>
-                        <div>
-                          <h4 className="text-sm font-bold text-gray-900 mb-0.5">Document Name </h4>
-                          <p className="text-[11px] text-gray-500">Select the document you want to upload</p>
-                        </div>
-                      </div>
-
-                      <div className="space-y-4">
-                        <Select
-                          className={selectClass}
-                          value={doc.other_document_name}
-                          onChange={(e: any) => updateDocument(doc.id, 'other_document_name', e.target.value)}
-                        >
-                          <option value="">Select Document Name</option>
-                          {documentListOptions.map((dc: any) => {
-                            const dId = String(dc.id || dc.document_id);
-                            const dName = dc.name || dc.document_name || `Doc #${dId}`;
-                            const isSelectedByOther = selectedDocumentIds.includes(dId) && String(doc.other_document_name) !== dId;
-
-                            return (
-                              <option key={dId} value={dId} disabled={isSelectedByOther}>
-                                {dName}
-                              </option>
-                            );
-                          })}
-                        </Select>
-
-                        <div className="w-full">
-                          <FileUpload
-                            name={`other_document_image_${doc.id}`}
-                            file={doc.other_document_image}
-                            existingUrl={(doc as any).existing_image_url}
-                            onChange={(file) => updateDocument(doc.id, 'other_document_image', file)}
-                            placeholder="Click or drag image to upload"
+                        <div className="flex-1 w-full sm:w-1/3">
+                          <label className={labelClass}>Rider Amount</label>
+                          <Input
+                            name={`riders_amount_${rider.id}`}
+                            placeholder="Enter Amount"
+                            value={rider.riders_amount}
+                            onChange={(e: any) => updateRider(rider.id, 'riders_amount', e.target.value)}
                           />
                         </div>
+                        <div className="flex-1 w-full sm:w-1/3">
+                          <label className={labelClass}>Note</label>
+                          <Input
+                            name={`riders_note_${rider.id}`}
+                            placeholder="Enter Note"
+                            value={rider.riders_note}
+                            onChange={(e: any) => updateRider(rider.id, 'riders_note', e.target.value)}
+                          />
+                        </div>
+                        <div className="shrink-0 mt-[25px]">
+                          {index === 0 ? (
+                            <button
+                              type="button"
+                              onClick={addRider}
+                              className="w-[36px] h-[36px] bg-[#2B4399] hover:bg-[#203378] text-white rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
+                              title="Add Rider"
+                            >
+                              <Plus size={18} />
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => removeRider(rider.id)}
+                              className="w-[36px] h-[36px] bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
+                              title="Remove Rider"
+                            >
+                              <Minus size={18} />
+                            </button>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ));
-                })()}
+                    ))}
+                  </div>
+
+                  {/* Row 5 */}
+                  <div>
+                    <label className={labelClass}>Total Net Premium</label>
+                    <Input
+                      name="total_net_premium"
+                      placeholder="Total Net Premium"
+                      value={formData.total_net_premium}
+                      onChange={(e: any) => handleChange('total_net_premium', e.target.value)}
+                      readOnly
+                      className={getFieldHighlight('total_net_premium')}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Total Premium</label>
+                    <Input
+                      name="total_premium"
+                      placeholder="Total Premium"
+                      value={formData.total_premium}
+                      onChange={(e: any) => handleChange('total_premium', e.target.value)}
+                      readOnly
+                      className={getFieldHighlight('total_premium')}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Customer Payment Mode</label>
+                    <Select
+                      className={`${selectClass} ${getFieldHighlight('customer_payment_mode')}`}
+                      value={formData.customer_payment_mode}
+                      onChange={(e: any) => handleChange('customer_payment_mode', e.target.value)}
+                    >
+                      <option value="">Select Payment Mode</option>
+                      <option value="1">Cash / Online</option>
+                      <option value="2">Cheque</option>
+                      <option value="3">Net Banking</option>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className={labelClass}>Premium Overdue Days</label>
+                    <Select
+                      className={`${selectClass} ${getFieldHighlight('premium_overdue_days')}`}
+                      value={formData.premium_overdue_days}
+                      onChange={(e: any) => handleChange('premium_overdue_days', e.target.value)}
+                    >
+                      <option value="">Select Overdue Days</option>
+                      <option value="15">15 Days</option>
+                      <option value="30">30 Days</option>
+                      <option value="45">45 Days</option>
+                      <option value="60">60 Days</option>
+                    </Select>
+                  </div>
+                </div>
               </div>
-            </div>
 
-            {/* Bottom Action Bar */}
-            <div className="pt-6">
-              <ActionButtons
-                onCancel={() => router.back()}
-                onSubmit={() => handleSubmit()}
-                isSubmitting={isSubmitting}
-                submitText="Save Insurance"
-              />
-            </div>
+              {/* Options */}
+              <div>
+                <div className={sectionHeaderClass}>
+                  <div className="flex items-center gap-2">
+                    <Settings size={18} />
+                    <span>Options</span>
+                  </div>
+                </div>
+                <Input
+                  as="checkbox"
+                  name="regenerate_installments"
+                  label="Mark All Installments As Paid"
+                  helperText="Check To Mark All Installments Up To Today's Date As Paid On Save."
+                  checked={formData.regenerate_installments}
+                  onChange={(e: any) => handleChange('regenerate_installments', e.target.checked)}
+                  checkboxColor="#2B4399"
+                />
+              </div>
 
-          </form>
+              {/* Nominee Details (Exact 4 Columns Row with Square Icon Button) */}
+              <div>
+                <div className={sectionHeaderClass}>
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex items-center gap-2">
+                      <Users size={18} />
+                      <span>Nominee Details</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={addNominee}
+                      className="w-[36px] h-[36px] bg-[#2B4399] hover:bg-[#203378] text-white rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
+                      title="Add Nominee"
+                    >
+                      <Plus size={18} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-5">
+                  {nominees.map((nominee, index) => (
+                    <div key={nominee.id} className="flex flex-col sm:flex-row items-start gap-4">
+                      <div className="flex-1 w-full sm:w-1/3">
+                        <label className={labelClass}>Nominee Name <span className="text-red-500">*</span></label>
+                        <Input
+                          name={`nomainee_name_${nominee.id}`}
+                          placeholder="Nominee Name *"
+                          value={nominee.nomainee_name}
+                          onChange={(e: any) => updateNominee(nominee.id, 'nomainee_name', e.target.value)}
+                          error={errors.nomainee_name && !nominee.nomainee_name ? errors.nomainee_name : undefined}
+                        />
+                      </div>
+                      <div className="flex-1 w-full sm:w-1/3">
+                        <label className={labelClass}>Relationship</label>
+                        <Select
+                          className={selectClass}
+                          value={nominee.nomainee_relationship}
+                          onChange={(e: any) => updateNominee(nominee.id, 'nomainee_relationship', e.target.value)}
+                        >
+                          <option value="">Select Relationship</option>
+                          {relationshipOptions.map((rel: any) => (
+                            <option key={rel.id} value={rel.id}>
+                              {rel.name}
+                            </option>
+                          ))}
+                        </Select>
+                      </div>
+                      <div className="flex-1 w-full sm:w-1/3">
+                        <label className={labelClass}>Percentage (%)</label>
+                        <Input
+                          name={`nomainee_per_${nominee.id}`}
+                          placeholder="Percentage (%)"
+                          value={nominee.nomainee_per}
+                          onChange={(e: any) => updateNominee(nominee.id, 'nomainee_per', e.target.value)}
+                        />
+                      </div>
+                      {index > 0 && (
+                        <div className="shrink-0 mt-[25px]">
+                          <button
+                            type="button"
+                            onClick={() => removeNominee(nominee.id)}
+                            className="w-[36px] h-[36px] bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
+                            title="Remove Nominee"
+                          >
+                            <Minus size={18} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Note Details */}
+              <div>
+                <div className={sectionHeaderClass}>
+                  <div className="flex items-center gap-2">
+                    <BookOpen size={18} />
+                    <span>Note Details</span>
+                  </div>
+                </div>
+                <div>
+                  <label className={labelClass}>Note</label>
+                  <Input
+                    as="textarea"
+                    name="note"
+                    placeholder="Enter Note"
+                    value={formData.note}
+                    onChange={(e: any) => handleChange('note', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Bank Details IN Policy (Exact 4 Columns Row Grid) */}
+              <div>
+                <div className={sectionHeaderClass}>
+                  <div className="flex items-center gap-2">
+                    <Building2 size={18} />
+                    <span>Bank Details IN Policy</span>
+                  </div>
+                </div>
+                <div className={`grid grid-cols-1 sm:grid-cols-2 ${aiData && pdfPreviewUrl ? 'lg:grid-cols-4 xl:grid-cols-3' : 'lg:grid-cols-4'} gap-4 items-start`}>
+                  <div>
+                    <label className={labelClass}>Bank Name</label>
+                    <Input
+                      name="bank_name"
+                      placeholder="Enter Bank Name"
+                      value={formData.bank_name}
+                      onChange={(e: any) => handleChange('bank_name', e.target.value)}
+                      className={getFieldHighlight('bank_name')}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Account Type</label>
+                    <Input
+                      name="account_type"
+                      placeholder="Enter Account Type"
+                      value={formData.account_type}
+                      onChange={(e: any) => handleChange('account_type', e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Account Number</label>
+                    <Input
+                      name="account_number"
+                      placeholder="Enter Account Number"
+                      value={formData.account_number}
+                      onChange={(e: any) => handleChange('account_number', e.target.value)}
+                      className={getFieldHighlight('account_number')}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>IFSC CODE</label>
+                    <Input
+                      name="ifsc_code"
+                      placeholder="Enter IFSC CODE"
+                      value={formData.ifsc_code}
+                      onChange={(e: any) => handleChange('ifsc_code', e.target.value)}
+                      onBlur={() => handleBlur('ifsc_code')}
+                      error={errors.ifsc_code}
+                      className={getFieldHighlight('ifsc_code')}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Account Holder Name</label>
+                    <Input
+                      name="account_holder_name"
+                      placeholder="Enter Account Holder Name"
+                      value={formData.account_holder_name}
+                      onChange={(e: any) => handleChange('account_holder_name', e.target.value)}
+                      className={getFieldHighlight('account_holder_name')}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Additional Document Information (Exact 4 Columns Row with Square Icon Button) */}
+
+
+              <div className="">
+                <div className={sectionHeaderClass}>
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex items-center gap-2">
+                      <FileText size={18} />
+                      <span>Additional Document Information</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={addDocument}
+                      className="w-[36px] h-[36px] bg-[#2B4399] hover:bg-[#203378] text-white rounded-xl shadow-2xs flex items-center justify-center transition-colors shrink-0"
+                      title="Add Document"
+                    >
+                      <Plus size={18} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className={`grid grid-cols-1 ${aiData && pdfPreviewUrl ? 'lg:grid-cols-3 xl:grid-cols-2' : 'lg:grid-cols-3'} gap-5`}>
+                  {(() => {
+                    const selectedDocumentIds = documents.map(d => String(d.other_document_name)).filter(id => id !== '' && id !== 'undefined');
+
+                    return documents.map((doc, index) => (
+                      <div key={doc.id} className="relative bg-white rounded-2xl border border-gray-200/80 p-5 shadow-2xs hover:shadow-md transition-shadow">
+                        {index > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => removeDocument(doc.id)}
+                            className="absolute top-4 right-4 w-8 h-8 bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 hover:text-red-700 rounded-xl flex items-center justify-center transition-colors z-10"
+                            title="Remove Document"
+                          >
+                            <Minus size={16} strokeWidth={2.5} />
+                          </button>
+                        )}
+
+                        <div className="flex items-start gap-3 mb-4 pr-10">
+                          <div className="w-10 h-10 bg-[#EEF2FF] text-[#2B4399] rounded-xl flex items-center justify-center shrink-0">
+                            <FileText size={20} strokeWidth={2} />
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-bold text-gray-900 mb-0.5">Document Name </h4>
+                            <p className="text-[11px] text-gray-500">Select the document you want to upload</p>
+                          </div>
+                        </div>
+
+                        <div className="space-y-4">
+                          <Select
+                            className={selectClass}
+                            value={doc.other_document_name}
+                            onChange={(e: any) => updateDocument(doc.id, 'other_document_name', e.target.value)}
+                          >
+                            <option value="">Select Document Name</option>
+                            {documentListOptions.map((dc: any) => {
+                              const dId = String(dc.id || dc.document_id);
+                              const dName = dc.name || dc.document_name || `Doc #${dId}`;
+                              const isSelectedByOther = selectedDocumentIds.includes(dId) && String(doc.other_document_name) !== dId;
+
+                              return (
+                                <option key={dId} value={dId} disabled={isSelectedByOther}>
+                                  {dName}
+                                </option>
+                              );
+                            })}
+                          </Select>
+
+                          <div className="w-full">
+                            <FileUpload
+                              name={`other_document_image_${doc.id}`}
+                              file={doc.other_document_image}
+                              existingUrl={(doc as any).existing_image_url}
+                              onChange={(file) => updateDocument(doc.id, 'other_document_image', file)}
+                              placeholder="Click or drag image to upload"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              </div>
+
+              {/* Bottom Action Bar */}
+              <div className="pt-6">
+                <ActionButtons
+                  onCancel={() => router.back()}
+                  onSubmit={() => handleSubmit()}
+                  isSubmitting={isSubmitting}
+                  submitText="Save Insurance"
+                />
+              </div>
+
+            </form>
+          </div>
+
+          {/* PDF Preview Container */}
+          {aiData && pdfPreviewUrl && (
+            <div className="hidden xl:flex flex-col bg-[#2e3192]/5 rounded-2xl shadow-[0_2px_20px_-4px_rgba(0,0,0,0.05)] border border-[#2e3192]/10 overflow-hidden sticky top-6 h-[calc(100vh-48px)]">
+              <div className="bg-white px-5 py-4 border-b border-gray-200/80 flex items-center justify-between gap-3 shrink-0 shadow-sm z-10">
+                <div className="flex items-center gap-2.5 text-gray-800 font-extrabold tracking-tight">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                    <FileText size={16} strokeWidth={2.5} />
+                  </div>
+                  <span>Policy Document</span>
+                </div>
+                <span className="text-[11px] font-extrabold bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded-full uppercase tracking-wider border border-emerald-100/50 shadow-sm flex items-center gap-1.5">
+                  <Sparkles size={12} className="text-emerald-500" /> AI Parsed
+                </span>
+              </div>
+              <iframe src={`${pdfPreviewUrl}#navpanes=0&view=FitH`} className="w-full flex-1 border-0 mix-blend-multiply" title="Policy PDF" />
+            </div>
+          )}
         </div>
       </div>
     </div>

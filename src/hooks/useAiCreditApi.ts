@@ -68,6 +68,8 @@ export const usePurchaseAiCredit = () => {
       formData.append('credits', payload.credits.toString());
 
       const response = await api.post(endPointApi.AI_CREDIT.AI_CREDIT_PURCHASE, formData);
+      console.log(response, 'responce');
+      
       return response?.data;
     },
   });

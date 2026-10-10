@@ -80,6 +80,7 @@ export interface EndPointApi {
     LIFE_INSURANCE_LIST: string;
     DELETE_LIFE_INSURANCE: string;
     VIEW_LIFE_INSURANCE: string;
+    AI_READ_POLICY: string;
   };
   HEALTH_INSURANCE: {
     INSERT_HEALTH_INSURANCE: string;
@@ -88,6 +89,7 @@ export interface EndPointApi {
     HEALTH_INSURANCE_LIST: string;
     DELETE_HEALTH_INSURANCE: string;
     VIEW_HEALTH_INSURANCE: string;
+    AI_READ_POLICY: string;
   };
   MOTOR_INSURANCE: {
     INSERT_MOTOR_INSURANCE: string;
@@ -96,6 +98,7 @@ export interface EndPointApi {
     MOTOR_INSURANCE_LIST: string;
     DELETE_MOTOR_INSURANCE: string;
     VIEW_MOTOR_INSURANCE: string;
+    AI_READ_POLICY: string;
   };
   HEALTH_QUOTATION: {
     HEALTH_QUOTATION_MASTER_DATA: string;
@@ -129,6 +132,7 @@ export interface EndPointApi {
     OTHER_INSURANCE_LIST: string;
     DELETE_OTHER_INSURANCE: string;
     VIEW_OTHER_INSURANCE: string;
+    AI_READ_POLICY: string;
   };
   DASHBOARD: {
     DASHBOARD_SUMMARY: string;
@@ -257,6 +261,7 @@ const endPointApi: EndPointApi = {
     LIFE_INSURANCE_LIST: 'life_insurance_list',
     DELETE_LIFE_INSURANCE: 'delete_life_insurance',
     VIEW_LIFE_INSURANCE: 'view_life_insurance',
+    AI_READ_POLICY: 'ai_read_policy',
   },
   HEALTH_INSURANCE: {
     INSERT_HEALTH_INSURANCE: 'insert_health_insurance',
@@ -265,6 +270,7 @@ const endPointApi: EndPointApi = {
     HEALTH_INSURANCE_LIST: 'health_insurance_list',
     DELETE_HEALTH_INSURANCE: 'delete_health_insurance',
     VIEW_HEALTH_INSURANCE: 'view_health_insurance',
+    AI_READ_POLICY: 'ai_read_policy',
   },
   MOTOR_INSURANCE: {
     INSERT_MOTOR_INSURANCE: 'insert_motor_insurance',
@@ -273,6 +279,7 @@ const endPointApi: EndPointApi = {
     MOTOR_INSURANCE_LIST: 'motor_insurance_list',
     DELETE_MOTOR_INSURANCE: 'delete_motor_insurance',
     VIEW_MOTOR_INSURANCE: 'view_motor_insurance',
+    AI_READ_POLICY: 'ai_read_policy',
   },
   HEALTH_QUOTATION: {
     HEALTH_QUOTATION_MASTER_DATA: 'health_quotation_master_data',
@@ -306,6 +313,7 @@ const endPointApi: EndPointApi = {
     OTHER_INSURANCE_LIST: 'other_insurance_list',
     DELETE_OTHER_INSURANCE: 'delete_other_insurance',
     VIEW_OTHER_INSURANCE: 'view_other_insurance',
+    AI_READ_POLICY: 'ai_read_policy',
   },
   DASHBOARD: {
     DASHBOARD_SUMMARY: 'dashboard_summary',

@@ -242,7 +242,7 @@ export default function FileUpload({
                   {placeholder}
                 </p>
                 <p className="text-[11px] text-gray-400 font-medium">
-                  Supports PDF, PNG, JPG & Docs (Drag & Drop available)
+                  {/* Supports PDF, PNG, JPG & Docs (Drag & Drop available) */}
                 </p>
               </div>
             </div>

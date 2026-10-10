@@ -384,6 +384,89 @@ export default function AddHealthInsurance() {
   const [existingPolicyPdfUrl, setExistingPolicyPdfUrl] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const [aiData, setAiData] = useState<any>(null);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [aiFilledFields, setAiFilledFields] = useState<string[]>([]);
+
+  const getFieldHighlight = (fieldName: string) => {
+    return aiFilledFields.includes(fieldName) ? "!bg-emerald-50/50 !border-emerald-400 !ring-2 !ring-emerald-400/30 transition-all duration-500" : "";
+  };
+
+  const handleAiReadPolicy = async () => {
+    if (!policyPdf) {
+      toast.error('Please upload a policy PDF first');
+      return;
+    }
+    setIsAiLoading(true);
+    setAiData(null);
+    try {
+      const formDataUpload = new FormData();
+      formDataUpload.append('insurance_type', '2');
+      formDataUpload.append('policy_pdf', policyPdf);
+
+      const res = await api.post(endPointApi.HEALTH_INSURANCE.AI_READ_POLICY, formDataUpload, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      
+      if (res.data?.status === 200 && res.data?.data?.ai_data) {
+        toast.success(res.data?.message || 'Data Extracted Successfully');
+        const extractedData = res.data.data.ai_data;
+        setAiData(extractedData);
+        
+        // Auto-fill form
+        const newAiFilledFields: string[] = [];
+        
+        const fieldMapping: Record<string, any> = {
+          companies_id: extractedData.companies_id,
+          customer_id: extractedData.customer_id,
+          payment_mode: extractedData.payment_mode_id,
+          plan_type: extractedData.plan_type_id,
+          plan_name: extractedData.plan_id,
+          companies_agency_code: extractedData.companies_agency_code_id,
+          policy_number: extractedData.policy_number,
+          policy_start_date: extractedData.policy_start_date,
+          policy_end_date: extractedData.policy_end_date || extractedData.policy_term_end_date,
+          sum_assured: extractedData.sum_assured,
+          net_premium: extractedData.net_premium,
+          total_premium: extractedData.total_premium,
+          gst_amount: extractedData.gst_amount,
+        };
+
+        setFormData((prev: any) => {
+          const updatedData: any = { ...prev };
+          Object.entries(fieldMapping).forEach(([key, val]) => {
+            if (val !== null && val !== undefined && val !== '') {
+              updatedData[key] = String(val);
+              newAiFilledFields.push(key);
+            }
+          });
+          return updatedData;
+        });
+
+        setAiFilledFields(newAiFilledFields);
+      } else {
+        toast.error(res.data?.message || 'Failed to extract data');
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Error processing PDF');
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string>('');
+  useEffect(() => {
+    if (policyPdf) {
+      const url = URL.createObjectURL(policyPdf);
+      setPdfPreviewUrl(url);
+      return () => URL.revokeObjectURL(url);
+    } else if (existingPolicyPdfUrl) {
+      setPdfPreviewUrl(existingPolicyPdfUrl);
+    } else {
+      setPdfPreviewUrl('');
+    }
+  }, [policyPdf, existingPolicyPdfUrl]);
+
   // Fetch company plans and agency code based on selected company_id
   const { data: plansRes } = useHealthInsuranceCompanyPlansAndAgency(formData.companies_id);
   const companyPlans = plansRes?.plan_list || [];
@@ -769,15 +852,16 @@ export default function AddHealthInsurance() {
           <h1 className="text-xl font-semibold tracking-tight text-gray-900">{id ? 'Edit Health Insurance' : 'Add Health Insurance'}</h1>
         </div>
 
-        {/* Form Container Card */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200/80">
+        <div className={`grid grid-cols-1 ${aiData && pdfPreviewUrl ? 'xl:grid-cols-2' : ''} gap-6 items-start`}>
+          {/* Form Container Card */}
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200/80">
 
-          {/* Form Content */}
-          <form onSubmit={handleSubmit} className="space-y-6 bg-white">
+            {/* Form Content */}
+            <form onSubmit={handleSubmit} className="space-y-6 bg-white">
 
-          {/* Top 2-Column Section: Customer Information & Policy PDF Details */}
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+            {/* Top 2-Column Section: Customer Information & Policy PDF Details */}
+            <div className="space-y-4">
+              <div className={`grid grid-cols-1 ${aiData && pdfPreviewUrl ? 'lg:grid-cols-2 xl:grid-cols-1' : 'lg:grid-cols-2'} gap-4 items-start`}>
               {/* Customer Information */}
               <div>
                 <div className={sectionHeaderClass}>
@@ -792,7 +876,7 @@ export default function AddHealthInsurance() {
                     <button type="button" onClick={() => router.push('/customers/add')} className="text-xs text-[#2B4399] font-bold hover:underline">+ Add Customer</button>
                   </div>
                   <Select
-                    className={`${selectClass} ${errors.customer_id ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
+                    className={`${selectClass} ${errors.customer_id ? '!border-red-500 ring-2 ring-red-500/20' : ''} ${getFieldHighlight('customer_id')}`}
                     value={formData.customer_id}
                     onChange={(e: any) => handleChange('customer_id', e.target.value)}
                     error={errors.customer_id}
@@ -839,10 +923,12 @@ export default function AddHealthInsurance() {
                     </div>
                     <button
                       type="button"
-                      className="h-[46px] bg-[#2B4399] text-white px-5 rounded-xl text-sm font-bold hover:bg-[#203378] transition-colors shadow-2xs flex items-center justify-center gap-2 shrink-0"
+                      onClick={handleAiReadPolicy}
+                      disabled={isAiLoading || !policyPdf}
+                      className="h-[46px] bg-[#2B4399] text-white px-5 rounded-xl text-sm font-bold hover:bg-[#203378] transition-colors shadow-2xs flex items-center justify-center gap-2 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <Sparkles size={16} />
-                      <span>AI</span>
+                      {isAiLoading ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span> : <Sparkles size={16} />}
+                      <span>{isAiLoading ? 'Reading...' : 'AI'}</span>
                     </button>
                   </div>
                 </div>
@@ -864,32 +950,34 @@ export default function AddHealthInsurance() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
+            <div className={`grid grid-cols-1 sm:grid-cols-2 ${aiData && pdfPreviewUrl ? 'lg:grid-cols-4 xl:grid-cols-3' : 'lg:grid-cols-4'} gap-4 items-start`}>
               {/* Row 1 */}
               <div>
                 <label className={labelClass}>Insurance Company Name <span className="text-red-500">*</span></label>
-                <CompanySelectWithAdd
-                  companyList={companyList}
-                  selectedId={formData.companies_id}
-                  onChange={(val: string) => {
-                    setFormData(prev => ({
-                      ...prev,
-                      companies_id: val,
-                      plan_name: '',
-                      companies_agency_code: '',
-                    }));
-                    if (errors.companies_id) {
-                      const { errors: newErrors } = validateHealthInsurance({ ...formData, companies_id: val });
-                      setErrors(prev => ({ ...prev, companies_id: newErrors.companies_id || '' }));
-                    }
-                  }}
-                  onAddCompany={handleAddCustomCompany}
-                  error={errors.companies_id}
-                />
+                <div className={getFieldHighlight('companies_id')}>
+                  <CompanySelectWithAdd
+                    companyList={companyList}
+                    selectedId={formData.companies_id}
+                    onChange={(val: string) => {
+                      setFormData(prev => ({
+                        ...prev,
+                        companies_id: val,
+                        plan_name: '',
+                        companies_agency_code: '',
+                      }));
+                      if (errors.companies_id) {
+                        const { errors: newErrors } = validateHealthInsurance({ ...formData, companies_id: val });
+                        setErrors(prev => ({ ...prev, companies_id: newErrors.companies_id || '' }));
+                      }
+                    }}
+                    onAddCompany={handleAddCustomCompany}
+                    error={errors.companies_id}
+                  />
+                </div>
                 {errors.companies_id && <p className="text-xs text-red-500 font-semibold mt-1">{errors.companies_id}</p>}
               </div>
 
-              <div>
+              <div className={getFieldHighlight('plan_name')}>
                 <label className={labelClass}>Plan Name <span className="text-red-500">*</span></label>
                 <PlanSelectWithAdd
                   planList={planList}
@@ -905,7 +993,7 @@ export default function AddHealthInsurance() {
               <div>
                 <label className={labelClass}>Company Agency Code</label>
                 <Select
-                  className={selectClass}
+                  className={`${selectClass} ${getFieldHighlight('companies_agency_code')}`}
                   value={formData.companies_agency_code}
                   onChange={(e: any) => handleChange('companies_agency_code', e.target.value)}
                 >
@@ -944,7 +1032,7 @@ export default function AddHealthInsurance() {
               <div>
                 <label className={labelClass}>Payment Mode <span className="text-red-500">*</span></label>
                 <Select
-                  className={`${selectClass} ${errors.payment_mode ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
+                  className={`${selectClass} ${errors.payment_mode ? '!border-red-500 ring-2 ring-red-500/20' : ''} ${getFieldHighlight('payment_mode')}`}
                   value={formData.payment_mode}
                   onChange={(e: any) => handleChange('payment_mode', e.target.value)}
                   error={errors.payment_mode}
@@ -968,6 +1056,7 @@ export default function AddHealthInsurance() {
                   onChange={(e: any) => handleChange('policy_number', e.target.value)}
                   onBlur={() => handleBlur('policy_number')}
                   error={errors.policy_number}
+                  className={getFieldHighlight('policy_number')}
                 />
               </div>
 
@@ -985,7 +1074,7 @@ export default function AddHealthInsurance() {
               <div>
                 <label className={labelClass}>Policy Start Date <span className="text-red-500">*</span></label>
                 <DatePicker
-                  className={`${selectClass} ${errors.policy_start_date ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
+                  className={`${selectClass} ${errors.policy_start_date ? '!border-red-500 ring-2 ring-red-500/20' : ''} ${getFieldHighlight('policy_start_date')}`}
                   value={formData.policy_start_date}
                   onChange={(date) => handleChange('policy_start_date', date)}
                   placeholder="Select Policy Start Date"
@@ -997,7 +1086,7 @@ export default function AddHealthInsurance() {
               <div>
                 <label className={labelClass}>Policy End Date <span className="text-red-500">*</span></label>
                 <DatePicker
-                  className={`${selectClass} ${errors.policy_end_date ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
+                  className={`${selectClass} ${errors.policy_end_date ? '!border-red-500 ring-2 ring-red-500/20' : ''} ${getFieldHighlight('policy_end_date')}`}
                   value={formData.policy_end_date}
                   onChange={(date) => handleChange('policy_end_date', date)}
                   placeholder="Select Policy End Date"
@@ -1018,7 +1107,7 @@ export default function AddHealthInsurance() {
               <div>
                 <label className={labelClass}>Plan Type <span className="text-red-500">*</span></label>
                 <Select
-                  className={`${selectClass} ${errors.plan_type ? '!border-red-500 ring-2 ring-red-500/20' : ''}`}
+                  className={`${selectClass} ${errors.plan_type ? '!border-red-500 ring-2 ring-red-500/20' : ''} ${getFieldHighlight('plan_type')}`}
                   value={formData.plan_type}
                   onChange={(e: any) => handleChange('plan_type', e.target.value)}
                   error={errors.plan_type}
@@ -1042,6 +1131,7 @@ export default function AddHealthInsurance() {
                   onChange={(e: any) => handleChange('sum_assured', e.target.value)}
                   onBlur={() => handleBlur('sum_assured')}
                   error={errors.sum_assured}
+                  className={getFieldHighlight('sum_assured')}
                 />
               </div>
 
@@ -1120,6 +1210,7 @@ export default function AddHealthInsurance() {
                   onChange={(e: any) => handleChange('net_premium', e.target.value)}
                   onBlur={() => handleBlur('net_premium')}
                   error={errors.net_premium}
+                  className={getFieldHighlight('net_premium')}
                 />
               </div>
 
@@ -1132,6 +1223,7 @@ export default function AddHealthInsurance() {
                   onChange={(e: any) => handleChange('gst_amount', e.target.value)}
                   onBlur={() => handleBlur('gst_amount')}
                   error={errors.gst_amount}
+                  className={getFieldHighlight('gst_amount')}
                 />
               </div>
 
@@ -1144,6 +1236,7 @@ export default function AddHealthInsurance() {
                   onChange={(e: any) => handleChange('total_premium', e.target.value)}
                   onBlur={() => handleBlur('total_premium')}
                   error={errors.total_premium}
+                  className={getFieldHighlight('total_premium')}
                 />
               </div>
 
@@ -1272,7 +1365,7 @@ export default function AddHealthInsurance() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            <div className={`grid grid-cols-1 ${aiData && pdfPreviewUrl ? 'lg:grid-cols-3 xl:grid-cols-2' : 'lg:grid-cols-3'} gap-5`}>
               {(() => {
                 const selectedDocumentIds = documents.map(d => String(d.document_name)).filter(id => id !== '' && id !== 'undefined');
 
@@ -1346,8 +1439,27 @@ export default function AddHealthInsurance() {
           </div>
 
         </form>
+        </div>
+        
+        {/* PDF Preview Container */}
+        {aiData && pdfPreviewUrl && (
+          <div className="hidden xl:flex flex-col bg-[#2e3192]/5 rounded-2xl shadow-[0_2px_20px_-4px_rgba(0,0,0,0.05)] border border-[#2e3192]/10 overflow-hidden sticky top-6 h-[calc(100vh-48px)]">
+             <div className="bg-white px-5 py-4 border-b border-gray-200/80 flex items-center justify-between gap-3 shrink-0 shadow-sm z-10">
+               <div className="flex items-center gap-2.5 text-gray-800 font-extrabold tracking-tight">
+                 <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                   <FileText size={16} strokeWidth={2.5} />
+                 </div>
+                 <span>Policy Document</span>
+               </div>
+               <span className="text-[11px] font-extrabold bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded-full uppercase tracking-wider border border-emerald-100/50 shadow-sm flex items-center gap-1.5">
+                 <Sparkles size={12} className="text-emerald-500" /> AI Parsed
+               </span>
+             </div>
+             <iframe src={`${pdfPreviewUrl}#navpanes=0&view=FitH`} className="w-full flex-1 border-0 mix-blend-multiply" title="Policy PDF" />
+          </div>
+        )}
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
 }
