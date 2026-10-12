@@ -137,6 +137,7 @@ export default function OtherInsuranceList() {
             rowData={fullRowData}
             columnDefs={columnDefs as any}
             loading={isLoading}
+            rowHeight={85}
             pagination={true}
             paginationPageSize={limit}
             onPaginationChanged={handlePaginationChanged}

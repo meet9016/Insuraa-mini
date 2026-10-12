@@ -196,6 +196,7 @@ export default function GeneralAgencyCodeList() {
             rowData={fullRowData}
             columnDefs={columnDefs as any}
             loading={isLoadingList}
+            rowHeight={65}
             pagination={true}
             paginationPageSize={limit}
             onPaginationChanged={handlePaginationChanged}

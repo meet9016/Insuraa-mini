@@ -783,7 +783,7 @@ export default function Dashboard() {
 
       <div className="w-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">
         {/* Metric Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-5">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {metricsList.map((metric, idx) => (
             <MetricCard
               key={idx}
@@ -1765,7 +1765,7 @@ function MetricCard({ title, value, path }: any) {
     switch (title) {
       case 'Total Policy': return (
         <div
-          className="w-[42px] h-[42px] bg-[#737FBA]"
+          className="w-[36px] h-[36px] bg-[#4A5FA8]"
           style={{
             maskImage: 'url(/images/insurance-policy.png)',
             WebkitMaskImage: 'url(/images/insurance-policy.png)',
@@ -1780,7 +1780,7 @@ function MetricCard({ title, value, path }: any) {
       );
       case 'Total Quotation': return (
         <div
-          className="w-[42px] h-[42px] bg-[#737FBA]"
+          className="w-[36px] h-[36px] bg-[#4A5FA8]"
           style={{
             maskImage: 'url(/images/Quotation.png)',
             WebkitMaskImage: 'url(/images/Quotation.png)',
@@ -1795,7 +1795,7 @@ function MetricCard({ title, value, path }: any) {
       );
       case 'Total Renewal': return (
         <div
-          className="w-[42px] h-[42px] bg-[#737FBA]"
+          className="w-[36px] h-[36px] bg-[#4A5FA8]"
           style={{
             maskImage: 'url(/images/Renewal.png)',
             WebkitMaskImage: 'url(/images/Renewal.png)',
@@ -1810,7 +1810,7 @@ function MetricCard({ title, value, path }: any) {
       );
       case 'Total Customer': return (
         <div
-          className="w-[42px] h-[42px] bg-[#737FBA]"
+          className="w-[36px] h-[36px] bg-[#4A5FA8]"
           style={{
             maskImage: 'url(/images/customer.png)',
             WebkitMaskImage: 'url(/images/customer.png)',
@@ -1825,7 +1825,7 @@ function MetricCard({ title, value, path }: any) {
       );
       case 'Total Lead': return (
         <div
-          className="w-[42px] h-[42px] bg-[#737FBA]"
+          className="w-[36px] h-[36px] bg-[#4A5FA8]"
           style={{
             maskImage: 'url(/images/lead.png)',
             WebkitMaskImage: 'url(/images/lead.png)',
@@ -1840,7 +1840,7 @@ function MetricCard({ title, value, path }: any) {
       );
       case 'Total Claim': return (
         <div
-          className="w-[42px] h-[42px] bg-[#737FBA]"
+          className="w-[36px] h-[36px] bg-[#4A5FA8]"
           style={{
             maskImage: 'url(/images/claim.png)',
             WebkitMaskImage: 'url(/images/claim.png)',
@@ -1858,20 +1858,20 @@ function MetricCard({ title, value, path }: any) {
   };
 
   const content = (
-    <div className={`relative bg-white rounded-xl overflow-hidden border border-[#737fba] shadow-sm transition-all duration-300 hover:shadow-[0_12px_24px_-8px_rgba(115,127,186,0.3)] hover:border-[#737FBA] hover:-translate-y-1 group ${path ? 'cursor-pointer' : ''}`}>
+    <div className={`relative bg-white rounded-xl overflow-hidden border border-[#4A5FA8]/25 shadow-sm transition-all duration-300 hover:shadow-[0_10px_20px_-6px_rgba(74,95,168,0.2)] hover:border-[#4A5FA8] hover:-translate-y-0.5 group ${path ? 'cursor-pointer' : ''}`}>
 
-      <div className="flex h-[100px]">
+      <div className="flex h-[82px]">
         {/* Left Side: Icon Container */}
-        <div className="w-[90px] h-full bg-gradient-to-br from-[#737FBA]/5 to-[#737FBA]/10 flex items-center justify-center border-r border-[#737FBA]/20 group-hover:bg-[#737FBA]/10 transition-colors duration-300">
-          <div className="group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300 ease-out drop-shadow-sm">
+        <div className="w-[74px] h-full bg-[#F2F7FF] flex items-center justify-center border-r border-[#E0EAFF] transition-colors duration-300">
+          <div className="group-hover:scale-105 transition-transform duration-300 ease-out">
             {getIcon()}
           </div>
         </div>
 
         {/* Right Side: Text Container */}
-        <div className="flex-1 flex flex-col justify-center px-6">
-          <h4 className="text-[13px] font-medium text-gray-500 uppercase tracking-widest mb-1 group-hover:text-[#737FBA] transition-colors">{title}</h4>
-          <div className="text-[32px] font-semibold text-gray-800 leading-none tracking-tight">{value}</div>
+        <div className="flex-1 flex flex-col justify-center px-5">
+          <h4 className="text-[13px] font-medium text-gray-500 mb-1 group-hover:text-[#2B4399] transition-colors">{title}</h4>
+          <div className="text-[26px] font-bold text-[#2B4399] leading-none">{value}</div>
         </div>
       </div>
 
@@ -2296,3 +2296,6 @@ function renderPolicyCategory(categoryTitle: string, items: PolicyRenewalItem[],
     </div>
   );
 }
+
+
+

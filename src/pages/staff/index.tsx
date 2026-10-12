@@ -170,6 +170,7 @@ export default function StaffPage() {
             rowData={fullRowData}
             columnDefs={columnDefs as any}
             loading={isLoading}
+            rowHeight={65}
             pagination={true}
             paginationPageSize={limit}
             onPaginationChanged={handlePaginationChanged}
