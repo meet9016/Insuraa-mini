@@ -51,16 +51,17 @@ function AppContent({ Component, pageProps }: AppProps) {
   const router = useRouter();
   const isLoginPage = router.pathname === "/auth/login" || router.pathname === "/auth/register";
   const is404Page = router.pathname === "/404";
-  const hideLayout = isLoginPage || is404Page;
+  const isLandingPage = router.pathname === "/";
+  const hideLayout = isLoginPage || is404Page || isLandingPage;
   const leadStatusStatus = useAppSelector((state) => state.leadStatus.status);
   const hasDispatched = useRef(false);
 
   useEffect(() => {
-    if (!isLoginPage && !hasDispatched.current) {
+    if (!isLoginPage && !isLandingPage && !hasDispatched.current) {
       hasDispatched.current = true;
       if (leadStatusStatus === 'idle') dispatch(fetchLeadStatuses());
     }
-  }, [leadStatusStatus, dispatch, isLoginPage]);
+  }, [leadStatusStatus, dispatch, isLoginPage, isLandingPage]);
 
   const [mounted, setMounted] = useState(false);
   const [showInitialLoader, setShowInitialLoader] = useState(true);

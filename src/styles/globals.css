@@ -976,3 +976,75 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .group\/sub:hover .animate-icon-dashboard {
   animation: dashboardPulse 1.2s infinite ease-in-out;
 }
+
+/* Unique Landing Page Keyframe Animations */
+@keyframes heroFloat {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-12px) rotate(0.5deg);
+  }
+}
+
+@keyframes badgeFloatSlow {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes badgeFloatReverse {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(8px);
+  }
+}
+
+@keyframes glowPulseSlow {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.75;
+    transform: scale(1.08);
+  }
+}
+
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-hero-float {
+  animation: heroFloat 5s ease-in-out infinite;
+}
+
+.animate-badge-float {
+  animation: badgeFloatSlow 4s ease-in-out infinite;
+}
+
+.animate-badge-float-rev {
+  animation: badgeFloatReverse 4.5s ease-in-out infinite;
+}
+
+.animate-glow-pulse {
+  animation: glowPulseSlow 6s ease-in-out infinite;
+}
+
+.animate-gradient-text {
+  background-size: 200% auto;
+  animation: gradientShift 4s ease infinite;
+}

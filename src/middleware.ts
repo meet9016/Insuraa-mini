@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/auth/login", "/auth/register"];
+const PUBLIC_PATHS = ["/", "/auth/login", "/auth/register"];
 const TOKEN_COOKIE_NAME = "crm_token";
 
 function isPublicPath(pathname: string) {
+  if (pathname === "/") return true;
   return PUBLIC_PATHS.some(
-    (path) => pathname === path || pathname.startsWith(path + "/")
+    (path) => path !== "/" && (pathname === path || pathname.startsWith(path + "/"))
   );
 }
 
