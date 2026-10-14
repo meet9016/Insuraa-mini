@@ -1,6 +1,7 @@
-import React from 'react';
-import { X, FileText, Calendar, CreditCard, Building2, UserCheck, ShieldCheck, Download, ExternalLink, Paperclip, Users, Layers, AlertCircle } from 'lucide-react';
-import { useViewLifeInsurance } from '@/hooks/useLifeInsuranceApi';
+import React, { useState } from 'react';
+import { X, FileText, Calendar, CreditCard, Building2, UserCheck, ShieldCheck, Download, ExternalLink, Paperclip, Users, Layers, AlertCircle, Loader2, CheckCircle2, Clock } from 'lucide-react';
+import { useViewLifeInsurance, useLifeInsuranceActions } from '@/hooks/useLifeInsuranceApi';
+import { formatDateToYMD } from '@/utils/helper';
 
 interface LifeInsuranceViewModalProps {
   isOpen: boolean;
@@ -14,13 +15,36 @@ export default function LifeInsuranceViewModal({
   lifeInsuranceId
 }: LifeInsuranceViewModalProps) {
   const { data, isLoading } = useViewLifeInsurance(isOpen ? lifeInsuranceId : null);
+  const { updateLifeInstallmentStatus } = useLifeInsuranceActions();
+  const [updatingInfo, setUpdatingInfo] = useState<{ id: string | number; newStatus: string } | null>(null);
+
+  const handleStatusChange = async (inst: any, newStatus: string) => {
+    const currentInstId = inst?.id || inst?.installment_id;
+    const targetLifeInsuranceId = data?.id || data?.life_insurance_id || lifeInsuranceId;
+
+    if (!currentInstId || !targetLifeInsuranceId) return;
+
+    const paymentDate = formatDateToYMD(inst?.payment_date || inst?.start_date || inst?.due_date);
+
+    setUpdatingInfo({ id: currentInstId, newStatus });
+    try {
+      await updateLifeInstallmentStatus({
+        life_insurance_id: targetLifeInsuranceId,
+        installment_id: currentInstId,
+        payment_date: paymentDate,
+        payment_status: newStatus,
+      });
+    } finally {
+      setUpdatingInfo(null);
+    }
+  };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden border border-gray-100">
-        
+
         {/* Header */}
         <div className="bg-[#2B4399] text-white px-6 py-4 flex items-center justify-between shadow-md">
           <div className="flex items-center gap-3">
@@ -252,23 +276,73 @@ export default function LifeInsuranceViewModal({
                           <th className="py-2.5 px-3">Amount</th>
                           <th className="py-2.5 px-3">GST</th>
                           <th className="py-2.5 px-3">Final Amount</th>
-                          <th className="py-2.5 px-3">Status</th>
+                          <th className="py-2.5 px-3 min-w-[170px]">Status</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100">
-                        {data.installments.map((inst: any, idx: number) => (
-                          <tr key={inst.id || idx} className="hover:bg-gray-50/50">
-                            <td className="py-2.5 px-3 font-medium text-gray-800">{inst.start_date || '-'}</td>
-                            <td className="py-2.5 px-3 text-gray-700">₹{inst.amount || '0'}</td>
-                            <td className="py-2.5 px-3 text-gray-700">₹{inst.gst_amount || '0'}</td>
-                            <td className="py-2.5 px-3 font-bold text-gray-900">₹{inst.final_amount || inst.amount || '0'}</td>
-                            <td className="py-2.5 px-3">
-                              <span className={`px-2 py-0.5 text-[10px] font-bold rounded ${inst.payment_status === '1' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
-                                {inst.payment_status === '1' ? 'Paid' : 'Pending'}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
+                        {data.installments.map((inst: any, idx: number) => {
+                          const instId = inst.id || inst.installment_id;
+                          const isUpdating = updatingInfo?.id === instId;
+                          const isPaid = String(inst.payment_status) === '2' || String(inst.payment_status).toLowerCase() === 'paid';
+
+                          return (
+                            <tr key={instId || idx} className="hover:bg-gray-50/50 transition-colors">
+                              <td className="py-2.5 px-3 font-medium text-gray-800">{inst.start_date || '-'}</td>
+                              <td className="py-2.5 px-3 text-gray-700">₹{inst.amount || '0'}</td>
+                              <td className="py-2.5 px-3 text-gray-700">₹{inst.gst_amount || '0'}</td>
+                              <td className="py-2.5 px-3 font-bold text-gray-900">₹{inst.final_amount || inst.amount || '0'}</td>
+                              <td className="py-2.5 px-3">
+                                <div className="inline-flex items-center p-0.5 bg-slate-100/90 rounded-full border border-slate-200/90 shadow-2xs">
+                                  {/* Paid Option Pill */}
+                                  <button
+                                    type="button"
+                                    disabled={isUpdating}
+                                    onClick={() => {
+                                      if (!isPaid && !isUpdating) {
+                                        handleStatusChange(inst, '2');
+                                      }
+                                    }}
+                                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all duration-200 select-none ${isPaid
+                                      ? 'bg-emerald-600 text-white shadow-xs font-bold cursor-default'
+                                      : 'text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 cursor-pointer active:scale-95'
+                                      } ${isUpdating && !isPaid ? 'opacity-70' : ''}`}
+                                    title={isPaid ? 'Status: Paid' : 'Click to mark as Paid'}
+                                  >
+                                    {isUpdating && updatingInfo?.newStatus === '2' ? (
+                                      <Loader2 className="w-3 h-3 animate-spin text-white" />
+                                    ) : (
+                                      <CheckCircle2 className={`w-3 h-3 ${isPaid ? 'text-white' : 'text-slate-400'}`} />
+                                    )}
+                                    <span>Paid</span>
+                                  </button>
+
+                                  {/* Unpaid Option Pill */}
+                                  <button
+                                    type="button"
+                                    disabled={isUpdating}
+                                    onClick={() => {
+                                      if (isPaid && !isUpdating) {
+                                        handleStatusChange(inst, '1');
+                                      }
+                                    }}
+                                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all duration-200 select-none ${!isPaid
+                                      ? 'bg-amber-500 text-white shadow-xs font-bold cursor-default'
+                                      : 'text-slate-500 hover:text-amber-700 hover:bg-amber-50 cursor-pointer active:scale-95'
+                                      } ${isUpdating && isPaid ? 'opacity-70' : ''}`}
+                                    title={!isPaid ? 'Status: Unpaid' : 'Click to mark as Unpaid'}
+                                  >
+                                    {isUpdating && updatingInfo?.newStatus === '1' ? (
+                                      <Loader2 className="w-3 h-3 animate-spin text-white" />
+                                    ) : (
+                                      <Clock className={`w-3 h-3 ${!isPaid ? 'text-white' : 'text-slate-400'}`} />
+                                    )}
+                                    <span>Unpaid</span>
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>

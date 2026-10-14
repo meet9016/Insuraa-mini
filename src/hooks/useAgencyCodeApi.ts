@@ -127,7 +127,44 @@ export const useAgencyCodeActions = () => {
     }
   };
 
-  return { insertAgencyCode, deleteAgencyCode };
+  const bulkDeleteAgencyCode = async (ids: (string | number)[]) => {
+    if (!ids || ids.length === 0) return { success: false, message: 'No records selected' };
+    try {
+      const formData = new FormData();
+      formData.append('ids', ids.join(','));
+
+      const response = await api.post(endPointApi.GENERAL_AGENCY_CODE.BULK_DELETE_AGENCY_CODE, formData);
+      const resData = response?.data;
+
+      if (resData?.status === 200 || resData?.status === '200' || resData?.success) {
+        const data = resData?.data;
+        const deletedCount = data?.deleted_count ?? ids.length;
+        const skipped = Array.isArray(data?.skipped) ? data.skipped : [];
+        const skippedCount = data?.skipped_count ?? skipped.length;
+
+        if (skippedCount > 0) {
+          if (deletedCount > 0) {
+            toast.success(resData?.message || `${deletedCount} records deleted, ${skippedCount} skipped`);
+          } else {
+            toast.warn(resData?.message || `${skippedCount} records could not be deleted`);
+          }
+        } else {
+          toast.success(resData?.message || `${deletedCount} General Agency Code(s) deleted successfully`);
+        }
+
+        queryClient.invalidateQueries({ queryKey: ['agencyCodeList'] });
+        return { success: true, deletedCount, skippedCount, skipped };
+      } else {
+        toast.error(resData?.message || 'Failed to bulk delete General Agency Codes');
+        return { success: false };
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Error deleting General Agency Codes');
+      return { success: false };
+    }
+  };
+
+  return { insertAgencyCode, deleteAgencyCode, bulkDeleteAgencyCode };
 };
 
 // ─── Life Insurance Agency Code Hooks ──────────────────────────────────────────
@@ -237,5 +274,42 @@ export const useLifeAgencyCodeActions = () => {
     }
   };
 
-  return { insertAgencyCode, deleteAgencyCode };
+  const bulkDeleteLifeAgencyCode = async (ids: (string | number)[]) => {
+    if (!ids || ids.length === 0) return { success: false, message: 'No records selected' };
+    try {
+      const formData = new FormData();
+      formData.append('ids', ids.join(','));
+
+      const response = await api.post(endPointApi.LIFE_AGENCY_CODE.BULK_DELETE_AGENCY_CODE, formData);
+      const resData = response?.data;
+
+      if (resData?.status === 200 || resData?.status === '200' || resData?.success) {
+        const data = resData?.data;
+        const deletedCount = data?.deleted_count ?? ids.length;
+        const skipped = Array.isArray(data?.skipped) ? data.skipped : [];
+        const skippedCount = data?.skipped_count ?? skipped.length;
+
+        if (skippedCount > 0) {
+          if (deletedCount > 0) {
+            toast.success(resData?.message || `${deletedCount} records deleted, ${skippedCount} skipped`);
+          } else {
+            toast.warn(resData?.message || `${skippedCount} records could not be deleted`);
+          }
+        } else {
+          toast.success(resData?.message || `${deletedCount} Life Agency Code(s) deleted successfully`);
+        }
+
+        queryClient.invalidateQueries({ queryKey: ['lifeAgencyCodeList'] });
+        return { success: true, deletedCount, skippedCount, skipped };
+      } else {
+        toast.error(resData?.message || 'Failed to bulk delete Life Agency Codes');
+        return { success: false };
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Error deleting Life Agency Codes');
+      return { success: false };
+    }
+  };
+
+  return { insertAgencyCode, deleteAgencyCode, bulkDeleteLifeAgencyCode, bulkDeleteAgencyCode: bulkDeleteLifeAgencyCode };
 };

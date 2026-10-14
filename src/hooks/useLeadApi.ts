@@ -243,9 +243,51 @@ export const useLeadActions = () => {
     }
   };
 
+  const bulkDeleteLead = async (ids: (string | number)[]) => {
+    if (!ids || ids.length === 0) return { success: false, message: 'No records selected' };
+    try {
+      const formData = new FormData();
+      // Pass all selected IDs as comma-separated values
+      formData.append('ids', ids.join(','));
+
+      const response = await api.post(endPointApi.LEAD.BULK_DELETE_LEAD, formData);
+      const resData = response?.data;
+
+      if (resData?.status === 200 || resData?.status === '200' || resData?.success) {
+        const data = resData?.data;
+        const deletedCount = data?.deleted_count ?? ids.length;
+        const skipped = Array.isArray(data?.skipped) ? data.skipped : [];
+        const skippedCount = data?.skipped_count ?? skipped.length;
+
+        if (skippedCount > 0) {
+          if (deletedCount > 0) {
+            toast.success(resData?.message || `${deletedCount} records deleted, ${skippedCount} skipped`);
+          } else {
+            toast.warn(resData?.message || `${skippedCount} records could not be deleted`);
+          }
+        } else {
+          toast.success(resData?.message || `${deletedCount} lead records deleted successfully`);
+        }
+
+        queryClient.invalidateQueries({ queryKey: ['leadTableList'] });
+        queryClient.invalidateQueries({ queryKey: ['leadKanbanList'] });
+        return { success: true, data: resData };
+      } else {
+        toast.error(resData?.message || 'Failed to bulk delete leads');
+        return { success: false, message: resData?.message };
+      }
+    } catch (err: any) {
+      const errMsg = err?.response?.data?.message || err?.message || 'Error bulk deleting leads';
+      toast.error(errMsg);
+      return { success: false, message: errMsg };
+    }
+  };
+
   return {
     insertLead,
     deleteLead,
     updateLeadStatus,
+    bulkDeleteLead,
   };
 };
+

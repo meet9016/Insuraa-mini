@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Download, LayoutGrid, List } from 'lucide-react';
+import { Plus, Download, LayoutGrid, List, Trash2 } from 'lucide-react';
 import AgGridTable from '@/components/ui/tableaggrid/AgGridTable';
 import TableHeader from '@/components/ui/TableHeader';
 import DeleteConfirmationModal from '@/components/ui/DeleteConfirmationModal';
@@ -40,6 +40,12 @@ export default function TableView({
   const [limit, setLimit] = useState<number>(10);
   const [debouncedSearch, setDebouncedSearch] = useState(search);
 
+  // Bulk Delete state
+  const [selectedRows, setSelectedRows] = useState<any[]>([]);
+  const [gridApi, setGridApi] = useState<any>(null);
+  const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState<boolean>(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState<boolean>(false);
+
   React.useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(search);
@@ -54,7 +60,7 @@ export default function TableView({
     search: debouncedSearch,
     enabled: true,
   });
-  const { deleteLead } = useLeadActions();
+  const { deleteLead, bulkDeleteLead } = useLeadActions();
 
   // Delete modal state
   const [deleteModalState, setDeleteModalState] = useState<{
@@ -109,6 +115,36 @@ export default function TableView({
     }
   };
 
+  const handleConfirmBulkDelete = async () => {
+    if (!selectedRows || selectedRows.length === 0) return;
+    const ids = selectedRows
+      .map((r: any) => r?.lead_id)
+      .filter(Boolean);
+
+    if (ids.length === 0) return;
+
+    setIsBulkDeleting(true);
+    const res = await bulkDeleteLead(ids);
+    setIsBulkDeleting(false);
+    setIsBulkDeleteModalOpen(false);
+
+    if (res?.success) {
+      setSelectedRows([]);
+      if (gridApi) {
+        gridApi.deselectAll();
+      }
+    }
+  };
+
+  const handleSelectionChanged = (event: any) => {
+    if (!event?.api) return;
+    const selected = event.api.getSelectedRows() || [];
+    const valid = selected.filter(
+      (item: any) => item && item.lead_id && !String(item.lead_id).startsWith('placeholder-')
+    );
+    setSelectedRows(valid);
+  };
+
   const leadTableList = tableRes?.leadList || [];
   const totalRecords = tableRes?.totalRecords ?? leadTableList.length ?? 0;
 
@@ -130,7 +166,7 @@ export default function TableView({
     if (total === 0) return [];
     if (total <= leadTableList.length && page === 1) return leadTableList;
 
-    const padded = new Array(total).fill(null).map((_, idx) => ({ id: `placeholder-${idx}` }));
+    const padded = new Array(total).fill(null).map((_, idx) => ({ id: `placeholder-${idx}`, lead_id: `placeholder-${idx}` }));
     const startIndex = (page - 1) * limit;
     leadTableList.forEach((lead: any, i: number) => {
       if (startIndex + i < total) {
@@ -170,6 +206,16 @@ export default function TableView({
         showSearch={showSearch && !!onSearchChange}
         extraActions={
           <>
+            {selectedRows.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setIsBulkDeleteModalOpen(true)}
+                className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold rounded-md shadow-sm transition-all flex items-center gap-2 animate-in fade-in duration-200"
+              >
+                <Trash2 size={16} />
+                <span>Bulk Delete ({selectedRows.length})</span>
+              </button>
+            )}
             {onViewModeChange && (
               <div className="bg-white border border-gray-200 p-1 rounded-md flex items-center shadow-sm">
                 <button
@@ -220,6 +266,8 @@ export default function TableView({
         pagination={true}
         paginationPageSize={limit}
         onPaginationChanged={handlePaginationChanged}
+        onSelectionChanged={handleSelectionChanged}
+        onGridReady={(params) => setGridApi(params.api)}
       />
 
       {/* Delete Confirmation Modal */}
@@ -230,6 +278,17 @@ export default function TableView({
         title="Delete Lead"
         itemName={deleteModalState.name}
         isDeleting={deleteModalState.isDeleting}
+      />
+
+      {/* Bulk Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={isBulkDeleteModalOpen}
+        onClose={() => !isBulkDeleting && setIsBulkDeleteModalOpen(false)}
+        onConfirm={handleConfirmBulkDelete}
+        title="Bulk Delete Leads"
+        itemName={`${selectedRows.length} selected lead(s)`}
+        description={`Are you sure you want to delete ${selectedRows.length} selected lead(s)? This action cannot be undone.`}
+        isDeleting={isBulkDeleting}
       />
 
       {/* Reminder & Notes Modal */}
@@ -243,6 +302,3 @@ export default function TableView({
     </div>
   );
 }
-
-
-

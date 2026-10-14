@@ -220,12 +220,52 @@ export const useClaimActions = () => {
         }
     };
 
+    const bulkDeleteClaim = async (ids: (string | number)[]) => {
+        if (!ids || ids.length === 0) return { success: false, message: 'No records selected' };
+        try {
+            const formData = new FormData();
+            // Pass IDs as comma-separated values: ids = 1,2,3
+            formData.append('ids', ids.join(','));
+
+            const response = await api.post(endPointApi.CLAIM.BULK_DELETE_CLAIM, formData);
+            const resData = response?.data;
+
+            if (resData?.status === 200 || resData?.status === '200' || resData?.success) {
+                const data = resData?.data;
+                const deletedCount = data?.deleted_count ?? ids.length;
+                const skipped = Array.isArray(data?.skipped) ? data.skipped : [];
+                const skippedCount = data?.skipped_count ?? skipped.length;
+
+                if (skippedCount > 0) {
+                    if (deletedCount > 0) {
+                        toast.success(resData?.message || `${deletedCount} records deleted, ${skippedCount} skipped`);
+                    } else {
+                        toast.warn(resData?.message || `${skippedCount} records could not be deleted`);
+                    }
+                } else {
+                    toast.success(resData?.message || `${deletedCount} claim records deleted successfully`);
+                }
+
+                queryClient.invalidateQueries({ queryKey: ['claimList'] });
+                return { success: true, data: resData };
+            } else {
+                toast.error(resData?.message || 'Failed to bulk delete claims');
+                return { success: false, message: resData?.message };
+            }
+        } catch (err: any) {
+            const errMsg = err?.response?.data?.message || err?.message || 'Error bulk deleting claims';
+            toast.error(errMsg);
+            return { success: false, message: errMsg };
+        }
+    };
+
     return {
         insertClaim: saveClaimMutation.mutateAsync,
         editClaim: saveClaimMutation.mutateAsync,
         isSubmitting: saveClaimMutation.isPending,
         isInserting: saveClaimMutation.isPending,
         deleteClaim,
+        bulkDeleteClaim,
     };
 };
 

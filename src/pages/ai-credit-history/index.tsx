@@ -298,7 +298,7 @@ export default function AiCreditHistoryPage() {
 
         <div className="w-full flex-1 min-h-[500px]">
           <AgGridTable
-            rowData={fullRowData}
+            rowData={fullRowData as any}
             columnDefs={columnDefs as any}
             loading={isLoading}
             pagination={true}

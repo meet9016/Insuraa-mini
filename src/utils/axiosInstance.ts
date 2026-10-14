@@ -1,5 +1,5 @@
-"use client";
 import axios from "axios";
+import { showSkippedRecordsModal } from "@/components/ui/SkippedRecordsModal";
 
 // Default base URL from environment or a fallback
 const baseURL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000/api/v1/";
@@ -9,6 +9,21 @@ const apiAdminInstance = axios.create({
 });
 
 export const api = apiAdminInstance;
+
+// Helper to check and show modal for skipped records in bulk operations
+const checkAndShowSkippedRecords = (payload: any) => {
+  if (!payload) return;
+  const data = payload?.data || payload;
+  const skipped = data?.skipped || payload?.skipped;
+  const skippedCount = data?.skipped_count ?? payload?.skipped_count ?? (Array.isArray(skipped) ? skipped.length : 0);
+
+  if (Array.isArray(skipped) && skipped.length > 0 && Number(skippedCount) > 0) {
+    showSkippedRecordsModal({
+      message: payload?.message || data?.message,
+      skipped,
+    });
+  }
+};
 
 // Request Interceptor
 apiAdminInstance.interceptors.request.use(
@@ -27,11 +42,15 @@ apiAdminInstance.interceptors.request.use(
 // Response Interceptor
 apiAdminInstance.interceptors.response.use(
   function (response) {
-    // Add any common response handling logic here
+    checkAndShowSkippedRecords(response?.data);
     return response;
   },
   (error) => {
     const { response } = error;
+
+    if (response?.data) {
+      checkAndShowSkippedRecords(response.data);
+    }
 
     // Handle Unauthorized errors
     if (response && response.status === 401) {
@@ -43,3 +62,4 @@ apiAdminInstance.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+

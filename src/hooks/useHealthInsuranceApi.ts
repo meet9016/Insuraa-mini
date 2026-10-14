@@ -211,9 +211,49 @@ export const useHealthInsuranceActions = () => {
     }
   };
 
+  const bulkDeleteHealthInsurance = async (ids: (string | number)[]) => {
+    if (!ids || ids.length === 0) return { success: false, message: 'No records selected' };
+    try {
+      const formData = new FormData();
+     // Pass IDs as comma-separated values: ids = 1,2,3
+      formData.append('ids', ids.join(','));
+
+      const response = await api.post(endPointApi.HEALTH_INSURANCE.BULK_DELETE_HEALTH_INSURANCE, formData);
+      const resData = response?.data;
+
+      if (resData?.status === 200 || resData?.status === '200' || resData?.status === 'success' || resData?.success) {
+        const data = resData?.data;
+        const deletedCount = data?.deleted_count ?? ids.length;
+        const skipped = Array.isArray(data?.skipped) ? data.skipped : [];
+        const skippedCount = data?.skipped_count ?? skipped.length;
+
+        if (skippedCount > 0) {
+          if (deletedCount > 0) {
+            toast.success(resData?.message || `${deletedCount} records deleted, ${skippedCount} skipped`);
+          } else {
+            toast.warn(resData?.message || `${skippedCount} records could not be deleted`);
+          }
+        } else {
+          toast.success(resData?.message || `${deletedCount} health insurance records deleted successfully`);
+        }
+
+        queryClient.invalidateQueries({ queryKey: ['healthInsuranceList'] });
+        return { success: true, data: resData };
+      } else {
+        toast.error(resData?.message || 'Failed to bulk delete health insurance');
+        return { success: false, message: resData?.message };
+      }
+    } catch (err: any) {
+      const errMsg = err?.response?.data?.message || err?.message || 'Error bulk deleting health insurance';
+      toast.error(errMsg);
+      return { success: false, message: errMsg };
+    }
+  };
+
   return {
     insertHealthInsurance,
     deleteHealthInsurance,
+    bulkDeleteHealthInsurance,
   };
 };
 

@@ -34,7 +34,7 @@ export default function HealthInsuranceViewModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden border border-gray-100">
 
         {/* Header */}
@@ -221,9 +221,15 @@ export default function HealthInsuranceViewModal({
                             <td className="py-2.5 px-3 text-gray-700">₹{inst.gst_amount || '0'}</td>
                             <td className="py-2.5 px-3 font-bold text-gray-900">₹{inst.final_amount || inst.amount || '0'}</td>
                             <td className="py-2.5 px-3">
-                              <span className={`px-2 py-0.5 text-[10px] font-bold rounded ${String(inst.payment_status) === '1' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
-                                {String(inst.payment_status) === '1' ? 'Paid' : 'Pending'}
-                              </span>
+                              {String(inst.payment_status) === '2' || String(inst.payment_status).toLowerCase() === 'paid' ? (
+                                <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                  Paid
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-amber-50 text-amber-700 border border-amber-200">
+                                  Unpaid
+                                </span>
+                              )}
                             </td>
                           </tr>
                         ))}

@@ -13,6 +13,8 @@ export interface EndPointApi {
     INSERT_CUSTOMER: string;
     CUSTOMER_LIST: string;
     GET_PINCODE_DETAILS: string;
+    BULK_DELETE_CUSTOMER: string;
+    SINGLE_CUSTOMER_LIST: string;
   };
   COMPANY: {
     INSERT_COMPANY: string;
@@ -21,6 +23,8 @@ export interface EndPointApi {
     FETCH_COMPANY_PLANS: string;
     DELETE_COMPANY: string;
     DELETE_COMPANY_PLAN: string;
+    BULK_DELETE_COMPANY: string;
+    BULK_DELETE_COMPANY_PLAN: string;
   };
   LIFE_COMPANY: {
     INSERT_COMPANY: string;
@@ -29,33 +33,40 @@ export interface EndPointApi {
     FETCH_COMPANY_PLANS: string;
     DELETE_COMPANY: string;
     DELETE_COMPANY_PLAN: string;
+    BULK_DELETE_COMPANY_LIFE: string;
+    BULK_DELETE_COMPANY_PLAN_LIFE: string;
   };
   RIDER: {
     INSERT_RIDER: string;
     RIDER_LIST: string;
     DELETE_RIDER: string;
+    BULK_DELETE_RIDER: string;
   };
   DOCUMENT: {
     INSERT_DOCUMENT: string;
     DOCUMENT_LIST: string;
     DELETE_DOCUMENT: string;
+    BULK_DELETE_DOCUMENT: string;
   };
   SOURCE_OF_LEAD: {
     INSERT_LEAD_PRODUCT: string;
     LEAD_PRODUCT_LIST: string;
     DELETE_LEAD_PRODUCT: string;
+    BULK_DELETE_LEAD_PRODUCT: string;
   };
   GENERAL_AGENCY_CODE: {
     COMPANY_DROPDOWN_LIST: string;
     INSERT_AGENCY_CODE: string;
     AGENCY_CODE_LIST: string;
     DELETE_AGENCY_CODE: string;
+    BULK_DELETE_AGENCY_CODE: string;
   };
   LIFE_AGENCY_CODE: {
     COMPANY_DROPDOWN_LIST: string;
     INSERT_AGENCY_CODE: string;
     AGENCY_CODE_LIST: string;
     DELETE_AGENCY_CODE: string;
+    BULK_DELETE_AGENCY_CODE: string;
   };
   LEAD: {
     INSERT_LEAD: string;
@@ -72,6 +83,7 @@ export interface EndPointApi {
     LEAD_REMINDER_LIST: string;
     DELETE_LEAD_REMINDER: string;
     UPDATE_LEAD_STATUS: string;
+    BULK_DELETE_LEAD: string;
   };
   LIFE_INSURANCE: {
     INSERT_LIFE_INSURANCE: string;
@@ -79,8 +91,10 @@ export interface EndPointApi {
     LIFE_INSURANCE_COMPANY_PLANS_AND_AGENCY: string;
     LIFE_INSURANCE_LIST: string;
     DELETE_LIFE_INSURANCE: string;
+    BULK_DELETE_LIFE_INSURANCE: string;
     VIEW_LIFE_INSURANCE: string;
     AI_READ_POLICY: string;
+    UPDATE_LIFE_INSTALLMENT_STATUS: string;
   };
   HEALTH_INSURANCE: {
     INSERT_HEALTH_INSURANCE: string;
@@ -88,6 +102,7 @@ export interface EndPointApi {
     HEALTH_INSURANCE_COMPANY_PLANS_AND_AGENCY: string;
     HEALTH_INSURANCE_LIST: string;
     DELETE_HEALTH_INSURANCE: string;
+    BULK_DELETE_HEALTH_INSURANCE: string;
     VIEW_HEALTH_INSURANCE: string;
     AI_READ_POLICY: string;
   };
@@ -97,6 +112,7 @@ export interface EndPointApi {
     MOTOR_INSURANCE_COMPANY_PLANS_AND_AGENCY: string;
     MOTOR_INSURANCE_LIST: string;
     DELETE_MOTOR_INSURANCE: string;
+    BULK_DELETE_MOTOR_INSURANCE: string;
     VIEW_MOTOR_INSURANCE: string;
     AI_READ_POLICY: string;
   };
@@ -106,6 +122,7 @@ export interface EndPointApi {
     HEALTH_QUOTATION_PRODUCT_LIST_DROPDOWN: string;
     HEALTH_QUOTATION_LIST: string;
     DELETE_HEALTH_QUOTATION: string;
+    BULK_DELETE_HEALTH_QUOTATION: string;
     HEALTH_QUOTATION_EDIT: string;
   };
   MOTOR_QUOTATION: {
@@ -114,6 +131,7 @@ export interface EndPointApi {
     MOTOR_QUOTATION_PRODUCT_LIST_DROPDOWN: string;
     MOTOR_QUOTATION_LIST: string;
     DELETE_MOTOR_QUOTATION: string;
+    BULK_DELETE_MOTOR_QUOTATION: string;
     MOTOR_QUOTATION_EDIT: string;
   };
   CLAIM: {
@@ -123,6 +141,7 @@ export interface EndPointApi {
     INSURANCE_TYPE_LIST: string;
     CLAIM_LIST: string;
     DELETE_CLAIM: string;
+    BULK_DELETE_CLAIM: string;
     EDIT_CLAIM: string;
   };
   OTHER_INSURANCE: {
@@ -131,6 +150,7 @@ export interface EndPointApi {
     OTHER_INSURANCE_COMPANY_PLANS_AND_AGENCY: string;
     OTHER_INSURANCE_LIST: string;
     DELETE_OTHER_INSURANCE: string;
+    BULK_DELETE_OTHER_INSURANCE: string;
     VIEW_OTHER_INSURANCE: string;
     AI_READ_POLICY: string;
   };
@@ -155,6 +175,7 @@ export interface EndPointApi {
     VIEW_STAFF: string;
     DELETE_STAFF: string;
     UPDATE_STAFF_STATUS: string;
+    BULK_DELETE_STAFF: string;
   };
   AI_CREDIT: {
     AI_CREDIT_INFO: string;
@@ -164,6 +185,9 @@ export interface EndPointApi {
   };
   SETTINGS: {
     APP_SETTINGS: string;
+  };
+  SEARCH: {
+    GLOBAL_SEARCH: string;
   };
 }
 
@@ -179,6 +203,7 @@ const endPointApi: EndPointApi = {
     VIEW_STAFF: 'view_staff',
     DELETE_STAFF: 'delete_staff',
     UPDATE_STAFF_STATUS: 'update_staff_status',
+    BULK_DELETE_STAFF: 'bulk_delete_staff',
   },
   AUTH: {
     SEND_LOGIN_OTP: 'send_login_otp',
@@ -194,6 +219,8 @@ const endPointApi: EndPointApi = {
     INSERT_CUSTOMER: 'insert_customer',
     CUSTOMER_LIST: 'customer_list',
     GET_PINCODE_DETAILS: 'getPincodeDetails',
+    BULK_DELETE_CUSTOMER: 'bulk_delete_customer',
+    SINGLE_CUSTOMER_LIST: 'single_customer_list',
   },
   COMPANY: {
     INSERT_COMPANY: 'insert_company',
@@ -202,6 +229,8 @@ const endPointApi: EndPointApi = {
     FETCH_COMPANY_PLANS: 'fetch_company_plans',
     DELETE_COMPANY: 'delete_company',
     DELETE_COMPANY_PLAN: 'delete_company_plan',
+    BULK_DELETE_COMPANY: 'bulk_delete_company',
+    BULK_DELETE_COMPANY_PLAN: 'bulk_delete_company_plan',
   },
   LIFE_COMPANY: {
     INSERT_COMPANY: 'insert_company_life',
@@ -210,33 +239,40 @@ const endPointApi: EndPointApi = {
     FETCH_COMPANY_PLANS: 'fetch_company_plans_life',
     DELETE_COMPANY: 'delete_company_life',
     DELETE_COMPANY_PLAN: 'delete_company_plan_life',
+    BULK_DELETE_COMPANY_LIFE: 'bulk_delete_company_life',
+    BULK_DELETE_COMPANY_PLAN_LIFE: 'bulk_delete_company_plan_life',
   },
   RIDER: {
     INSERT_RIDER: 'insert_life_insurance_riders',
     RIDER_LIST: 'life_insurance_riders_list',
     DELETE_RIDER: 'delete_life_insurance_riders',
+    BULK_DELETE_RIDER: 'bulk_delete_life_insurance_riders',
   },
   DOCUMENT: {
     INSERT_DOCUMENT: 'insert_document_name',
     DOCUMENT_LIST: 'document_name_list',
     DELETE_DOCUMENT: 'delete_document_name',
+    BULK_DELETE_DOCUMENT: 'bulk_delete_document_name',
   },
   SOURCE_OF_LEAD: {
     INSERT_LEAD_PRODUCT: 'insert_lead_product',
     LEAD_PRODUCT_LIST: 'lead_product_list',
     DELETE_LEAD_PRODUCT: 'delete_lead_product',
+    BULK_DELETE_LEAD_PRODUCT: 'bulk_delete_lead_product',
   },
   GENERAL_AGENCY_CODE: {
     COMPANY_DROPDOWN_LIST: 'company_dropdown_list',
     INSERT_AGENCY_CODE: 'insert_agency_code',
     AGENCY_CODE_LIST: 'agency_code_list',
     DELETE_AGENCY_CODE: 'delete_agency_code',
+    BULK_DELETE_AGENCY_CODE: 'bulk_delete_agency_code',
   },
   LIFE_AGENCY_CODE: {
     COMPANY_DROPDOWN_LIST: 'company_dropdown_list_life',
     INSERT_AGENCY_CODE: 'insert_agency_code_life',
     AGENCY_CODE_LIST: 'agency_code_list_life',
     DELETE_AGENCY_CODE: 'delete_agency_code_life',
+    BULK_DELETE_AGENCY_CODE: 'bulk_delete_agency_code_life',
   },
   LEAD: {
     INSERT_LEAD: 'insert_lead',
@@ -253,6 +289,7 @@ const endPointApi: EndPointApi = {
     LEAD_REMINDER_LIST: 'lead_reminder_list',
     DELETE_LEAD_REMINDER: 'delete_lead_reminder',
     UPDATE_LEAD_STATUS: 'update_lead_status',
+    BULK_DELETE_LEAD: 'bulk_delete_lead',
   },
   LIFE_INSURANCE: {
     INSERT_LIFE_INSURANCE: 'insert_life_insurance',
@@ -260,8 +297,10 @@ const endPointApi: EndPointApi = {
     LIFE_INSURANCE_COMPANY_PLANS_AND_AGENCY: 'life_insurance_company_plans_and_agency',
     LIFE_INSURANCE_LIST: 'life_insurance_list',
     DELETE_LIFE_INSURANCE: 'delete_life_insurance',
+    BULK_DELETE_LIFE_INSURANCE: 'bulk_delete_life_insurance',
     VIEW_LIFE_INSURANCE: 'view_life_insurance',
     AI_READ_POLICY: 'ai_read_policy',
+    UPDATE_LIFE_INSTALLMENT_STATUS: 'update_life_installment_status',
   },
   HEALTH_INSURANCE: {
     INSERT_HEALTH_INSURANCE: 'insert_health_insurance',
@@ -269,6 +308,7 @@ const endPointApi: EndPointApi = {
     HEALTH_INSURANCE_COMPANY_PLANS_AND_AGENCY: 'health_insurance_company_plans_and_agency',
     HEALTH_INSURANCE_LIST: 'health_insurance_list',
     DELETE_HEALTH_INSURANCE: 'delete_health_insurance',
+    BULK_DELETE_HEALTH_INSURANCE: 'bulk_delete_health_insurance',
     VIEW_HEALTH_INSURANCE: 'view_health_insurance',
     AI_READ_POLICY: 'ai_read_policy',
   },
@@ -278,6 +318,7 @@ const endPointApi: EndPointApi = {
     MOTOR_INSURANCE_COMPANY_PLANS_AND_AGENCY: 'motor_insurance_company_plans_and_agency',
     MOTOR_INSURANCE_LIST: 'motor_insurance_list',
     DELETE_MOTOR_INSURANCE: 'delete_motor_insurance',
+    BULK_DELETE_MOTOR_INSURANCE: 'bulk_delete_motor_insurance',
     VIEW_MOTOR_INSURANCE: 'view_motor_insurance',
     AI_READ_POLICY: 'ai_read_policy',
   },
@@ -287,6 +328,7 @@ const endPointApi: EndPointApi = {
     HEALTH_QUOTATION_PRODUCT_LIST_DROPDOWN: 'health_quotation_product_list_dropdown',
     HEALTH_QUOTATION_LIST: 'health_insurance_qution_list',
     DELETE_HEALTH_QUOTATION: 'delete_health_quotation',
+    BULK_DELETE_HEALTH_QUOTATION: 'bulk_delete_health_quotation',
     HEALTH_QUOTATION_EDIT: 'health_quotation_edit',
   },
   MOTOR_QUOTATION: {
@@ -295,6 +337,7 @@ const endPointApi: EndPointApi = {
     MOTOR_QUOTATION_PRODUCT_LIST_DROPDOWN: 'motor_quotation_product_list_dropdown',
     MOTOR_QUOTATION_LIST: 'motor_quotation_list',
     DELETE_MOTOR_QUOTATION: 'delete_motor_quotation',
+    BULK_DELETE_MOTOR_QUOTATION: 'bulk_delete_motor_quotation',
     MOTOR_QUOTATION_EDIT: 'motor_quotation_edit',
   },
   CLAIM: {
@@ -304,6 +347,7 @@ const endPointApi: EndPointApi = {
     INSURANCE_TYPE_LIST: 'insurance_type_list',
     CLAIM_LIST: 'claim_list',
     DELETE_CLAIM: 'delete_claim',
+    BULK_DELETE_CLAIM: 'bulk_delete_claim',
     EDIT_CLAIM: 'edit_claim',
   },
   OTHER_INSURANCE: {
@@ -312,6 +356,7 @@ const endPointApi: EndPointApi = {
     OTHER_INSURANCE_COMPANY_PLANS_AND_AGENCY: 'other_insurance_company_plans_and_agency',
     OTHER_INSURANCE_LIST: 'other_insurance_list',
     DELETE_OTHER_INSURANCE: 'delete_other_insurance',
+    BULK_DELETE_OTHER_INSURANCE: 'bulk_delete_other_insurance',
     VIEW_OTHER_INSURANCE: 'view_other_insurance',
     AI_READ_POLICY: 'ai_read_policy',
   },
@@ -334,6 +379,9 @@ const endPointApi: EndPointApi = {
   },
   SETTINGS: {
     APP_SETTINGS: 'app_settings',
+  },
+  SEARCH: {
+    GLOBAL_SEARCH: 'global_search',
   },
 };
 

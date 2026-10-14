@@ -31,6 +31,7 @@ import {
 
 import { useAppSelector } from '@/redux/hooks';
 import { useFetchAiCredits, useGetAiCreditQuote, usePurchaseAiCredit } from '@/hooks/useAiCreditApi';
+import HeaderSearch from '@/components/HeaderSearch';
 import { toast } from 'react-toastify';
 
 const NAV_LINKS = [
@@ -259,14 +260,7 @@ export default function Header({ onOpenSubscription, onOpenSubscriptionHistory }
 
         {/* Actions & Search */}
         <div className="hidden lg:flex items-center gap-2 flex-1 justify-start ml-8">
-          <div className="relative w-full max-w-[500px] group">
-            <input
-              type="text"
-              placeholder="Search customer, policy, loan, SIP..."
-              className="w-full pl-3 pr-9 py-2 bg-white border border-gray-200 rounded-md text-sm transition-all focus:outline-none focus:ring-1 focus:ring-[#2D3591] focus:border-[#2D3591] shadow-inner"
-            />
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
-          </div>
+          <HeaderSearch />
         </div>
 
         {/* Right side actions */}
@@ -598,6 +592,9 @@ export default function Header({ onOpenSubscription, onOpenSubscriptionHistory }
       {/* Mobile Menu Dropdown */}
       {mobileMenuOpen && (
         <div className="xl:hidden absolute top-[72px] left-0 w-full bg-white/95 backdrop-blur-xl shadow-2xl border-b border-gray-200 max-h-[calc(100vh-72px)] overflow-y-auto z-40">
+          <div className="p-4 pb-2 border-b border-gray-100">
+            <HeaderSearch isMobile onCloseMobile={() => setMobileMenuOpen(false)} />
+          </div>
           <nav className="flex flex-col p-4 gap-2">
             {navLinks.map((link, idx) => {
               const isActive = pathname === link.path;

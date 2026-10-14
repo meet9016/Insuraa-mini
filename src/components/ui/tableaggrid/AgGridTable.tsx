@@ -39,6 +39,9 @@ interface AgGridTableProps<T = any> {
   paginationPageSize?: number;
   paginationPageSizeSelector?: number[];
   onPaginationChanged?: (event: any) => void;
+  onSelectionChanged?: (event: any) => void;
+  onGridReady?: (params: any) => void;
+  showCheckbox?: boolean;
 }
 
 const CustomNoRowsOverlay = () => {
@@ -74,6 +77,9 @@ export default function AgGridTable<T = any>({
   paginationPageSize = 10,
   paginationPageSizeSelector = [10, 25, 50, 100],
   onPaginationChanged,
+  onSelectionChanged,
+  onGridReady,
+  showCheckbox = true,
 }: AgGridTableProps<T>) {
   const containerStyle = useMemo(() => ({ width: "100%", height: "100%" }), []);
   const gridStyle = useMemo(
@@ -99,12 +105,13 @@ export default function AgGridTable<T = any>({
   }, []);
 
   const rowSelection = useMemo<any>(() => {
+    if (!showCheckbox) return undefined;
     return {
       mode: "multiRow",
       checkboxes: true,
       headerCheckbox: true,
     };
-  }, []);
+  }, [showCheckbox]);
 
   const noRowsOverlayComponent = useMemo(() => CustomNoRowsOverlay, []);
 
@@ -125,6 +132,8 @@ export default function AgGridTable<T = any>({
             paginationPageSize={paginationPageSize}
             paginationPageSizeSelector={paginationPageSizeSelector}
             onPaginationChanged={onPaginationChanged}
+            onSelectionChanged={onSelectionChanged}
+            onGridReady={onGridReady}
             noRowsOverlayComponent={noRowsOverlayComponent}
             overlayNoRowsTemplate={overlayNoRowsTemplate}
             enableBrowserTooltips={true}

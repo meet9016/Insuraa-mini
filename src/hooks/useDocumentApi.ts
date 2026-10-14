@@ -82,8 +82,46 @@ export const useDocumentActions = () => {
     }
   };
 
+  const bulkDeleteDocument = async (ids: (string | number)[]) => {
+    if (!ids || ids.length === 0) return { success: false, message: 'No records selected' };
+    try {
+      const formData = new FormData();
+      formData.append('ids', ids.join(','));
+
+      const response = await api.post(endPointApi.DOCUMENT.BULK_DELETE_DOCUMENT, formData);
+      const resData = response?.data;
+
+      if (resData?.status === 200 || resData?.status === '200' || resData?.success) {
+        const data = resData?.data;
+        const deletedCount = data?.deleted_count ?? ids.length;
+        const skipped = Array.isArray(data?.skipped) ? data.skipped : [];
+        const skippedCount = data?.skipped_count ?? skipped.length;
+
+        if (skippedCount > 0) {
+          if (deletedCount > 0) {
+            toast.success(resData?.message || `${deletedCount} records deleted, ${skippedCount} skipped`);
+          } else {
+            toast.warn(resData?.message || `${skippedCount} records could not be deleted`);
+          }
+        } else {
+          toast.success(resData?.message || `${deletedCount} Document(s) deleted successfully`);
+        }
+
+        queryClient.invalidateQueries({ queryKey: ['documentList'] });
+        return { success: true, deletedCount, skippedCount, skipped };
+      } else {
+        toast.error(resData?.message || 'Failed to bulk delete documents');
+        return { success: false };
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Error deleting documents');
+      return { success: false };
+    }
+  };
+
   return {
     insertDocument,
     deleteDocument,
+    bulkDeleteDocument,
   };
 };

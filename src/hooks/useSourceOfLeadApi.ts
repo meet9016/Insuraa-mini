@@ -85,8 +85,47 @@ export const useSourceOfLeadActions = () => {
     }
   };
 
+  const bulkDeleteLeadProduct = async (ids: (string | number)[]) => {
+    if (!ids || ids.length === 0) return { success: false, message: 'No records selected' };
+    try {
+      const formData = new FormData();
+      formData.append('ids', ids.join(','));
+
+      const response = await api.post(endPointApi.SOURCE_OF_LEAD.BULK_DELETE_LEAD_PRODUCT, formData);
+      const resData = response?.data;
+
+      if (resData?.status === 200 || resData?.status === '200' || resData?.success) {
+        const data = resData?.data;
+        const deletedCount = data?.deleted_count ?? ids.length;
+        const skipped = Array.isArray(data?.skipped) ? data.skipped : [];
+        const skippedCount = data?.skipped_count ?? skipped.length;
+
+        if (skippedCount > 0) {
+          if (deletedCount > 0) {
+            toast.success(resData?.message || `${deletedCount} records deleted, ${skippedCount} skipped`);
+          } else {
+            toast.warn(resData?.message || `${skippedCount} records could not be deleted`);
+          }
+        } else {
+          toast.success(resData?.message || `${deletedCount} Lead Product(s) deleted successfully`);
+        }
+
+        queryClient.invalidateQueries({ queryKey: ['sourceOfLeadList'] });
+        queryClient.invalidateQueries({ queryKey: ['leadProductDropdown'] });
+        return { success: true, deletedCount, skippedCount, skipped };
+      } else {
+        toast.error(resData?.message || 'Failed to bulk delete lead products');
+        return { success: false };
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Error deleting lead products');
+      return { success: false };
+    }
+  };
+
   return {
     insertLeadProduct,
     deleteLeadProduct,
+    bulkDeleteLeadProduct,
   };
 };

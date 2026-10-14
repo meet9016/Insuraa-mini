@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/utils/axiosInstance';
 import endPointApi from '@/utils/endPointApi';
 import { toast } from 'react-toastify';
@@ -39,6 +39,98 @@ export const useCustomerList = ({ page = 1, limit = 10, search = '' }: UseCustom
       }
     }
   });
+};
+export const useCustomerActions = () => {
+  const queryClient = useQueryClient();
+
+  const bulkDeleteCustomer = async (ids: (string | number)[]) => {
+    if (!ids || ids.length === 0) {
+      return {
+        success: false,
+        message: 'No records selected',
+      };
+    }
+
+    try {
+      const formData = new FormData();
+
+      // Pass IDs as comma-separated values: ids = 1,2,3
+      formData.append('ids', ids.join(','));
+
+      const response = await api.post(
+        endPointApi.CUSTOMER.BULK_DELETE_CUSTOMER,
+        formData
+      );
+
+      const resData = response?.data;
+
+      if (
+        resData?.status === 200 ||
+        resData?.status === '200' ||
+        resData?.success
+      ) {
+        const data = resData?.data;
+
+        const deletedCount = data?.deleted_count ?? ids.length;
+        const skipped = Array.isArray(data?.skipped)
+          ? data.skipped
+          : [];
+
+        const skippedCount = data?.skipped_count ?? skipped.length;
+
+        if (skippedCount > 0) {
+          if (deletedCount > 0) {
+            toast.success(
+              resData?.message ||
+                `${deletedCount} records deleted, ${skippedCount} skipped`
+            );
+          } else {
+            toast.warn(
+              resData?.message ||
+                `${skippedCount} records could not be deleted`
+            );
+          }
+        } else {
+          toast.success(
+            resData?.message ||
+              `${deletedCount} customer records deleted successfully`
+          );
+        }
+
+        queryClient.invalidateQueries({
+          queryKey: ['customerList'],
+        });
+
+        return {
+          success: true,
+          data: resData,
+        };
+      } else {
+        toast.error(
+          resData?.message || 'Failed to bulk delete customers'
+        );
+
+        return {
+          success: false,
+          message: resData?.message,
+        };
+      }
+    } catch (err: any) {
+      const errMsg =
+        err?.response?.data?.message ||
+        err?.message ||
+        'Error bulk deleting customers';
+
+      toast.error(errMsg);
+
+      return {
+        success: false,
+        message: errMsg,
+      };
+    }
+  };
+
+  return { bulkDeleteCustomer };
 };
 
 export interface PincodeDetailsData {
@@ -82,4 +174,22 @@ export const usePincodeDetails = (pincode?: string) => {
     refetchOnReconnect: false,
   });
 };
+
+export const useViewCustomer = (customerId: string | number | null) => {
+  return useQuery({
+    queryKey: ['viewCustomer', customerId],
+    enabled: Boolean(customerId && !String(customerId).startsWith('placeholder-')),
+    queryFn: async () => {
+      if (!customerId) return null;
+      const formData = new FormData();
+      formData.append('customer_id', String(customerId));
+
+      const response = await api.post(endPointApi.CUSTOMER.SINGLE_CUSTOMER_LIST, formData);
+      const resData = response?.data;
+      return resData?.data || resData || null;
+    }
+  });
+};
+
+export const useSingleCustomerList = useViewCustomer;
 

@@ -194,9 +194,52 @@ export const useMotorQuotationActions = () => {
     }
   };
 
+  const bulkDeleteMotorQuotation = async (ids: (string | number)[]) => {
+    if (!ids || ids.length === 0) return { success: false, message: 'No records selected' };
+    try {
+      const formData = new FormData();
+    // Pass all selected IDs as comma-separated values
+    formData.append('ids', ids.join(','));
+    
+      const response = await api.post(
+        endPointApi.MOTOR_QUOTATION.BULK_DELETE_MOTOR_QUOTATION,
+        formData
+      );
+      const resData = response?.data;
+
+      if (resData?.status === 200 || resData?.status === '200' || resData?.success) {
+        const data = resData?.data;
+        const deletedCount = data?.deleted_count ?? ids.length;
+        const skipped = Array.isArray(data?.skipped) ? data.skipped : [];
+        const skippedCount = data?.skipped_count ?? skipped.length;
+
+        if (skippedCount > 0) {
+          if (deletedCount > 0) {
+            toast.success(resData?.message || `${deletedCount} records deleted, ${skippedCount} skipped`);
+          } else {
+            toast.warn(resData?.message || `${skippedCount} records could not be deleted`);
+          }
+        } else {
+          toast.success(resData?.message || `${deletedCount} motor quotation records deleted successfully`);
+        }
+
+        queryClient.invalidateQueries({ queryKey: ['motorQuotationList'] });
+        return { success: true, data: resData };
+      } else {
+        toast.error(resData?.message || 'Failed to bulk delete motor quotations');
+        return { success: false, message: resData?.message };
+      }
+    } catch (err: any) {
+      const errMsg = err?.response?.data?.message || err?.message || 'Error bulk deleting motor quotations';
+      toast.error(errMsg);
+      return { success: false, message: errMsg };
+    }
+  };
+
   return {
     insertMotorQuotation,
     deleteMotorQuotation,
+    bulkDeleteMotorQuotation,
   };
 };
 

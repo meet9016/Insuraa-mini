@@ -18,6 +18,7 @@ import Loader from "@/components/Loader";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Head from "next/head";
 import { useFetchAppSettings } from "@/hooks/useSettingsApi";
+import SkippedRecordsModal from "@/components/ui/SkippedRecordsModal";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -108,6 +109,7 @@ function AppContent({ Component, pageProps }: AppProps) {
         theme="colored"
       />
       <Toaster position="top-right" reverseOrder={false} />
+      <SkippedRecordsModal />
     </div>
     </>
   );

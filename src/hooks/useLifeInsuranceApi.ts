@@ -282,7 +282,88 @@ export const useLifeInsuranceActions = () => {
     }
   };
 
-  return { insertLifeInsurance, deleteLifeInsurance };
+  const bulkDeleteLifeInsurance = async (ids: (string | number)[]) => {
+    if (!ids || ids.length === 0) return { success: false, message: 'No records selected' };
+    try {
+      const formData = new FormData();
+  // Pass all selected IDs as comma-separated values
+    formData.append('ids', ids.join(','));
+
+      const response = await api.post(endPointApi.LIFE_INSURANCE.BULK_DELETE_LIFE_INSURANCE, formData);
+      const resData = response?.data;
+
+      if (resData?.status === 200 || resData?.status === '200' || resData?.status === 'success' || resData?.success) {
+        const data = resData?.data;
+        const deletedCount = data?.deleted_count ?? ids.length;
+        const skipped = Array.isArray(data?.skipped) ? data.skipped : [];
+        const skippedCount = data?.skipped_count ?? skipped.length;
+
+        if (skippedCount > 0) {
+          if (deletedCount > 0) {
+            toast.success(resData?.message || `${deletedCount} records deleted, ${skippedCount} skipped`);
+          } else {
+            toast.warn(resData?.message || `${skippedCount} records could not be deleted`);
+          }
+        } else {
+          toast.success(resData?.message || `${deletedCount} records deleted successfully`);
+        }
+
+        queryClient.invalidateQueries({ queryKey: ['lifeInsuranceList'] });
+        return { success: true, data: resData };
+      } else {
+        toast.error(resData?.message || 'Failed to bulk delete life insurance');
+        return { success: false, message: resData?.message };
+      }
+    } catch (err: any) {
+      const errMsg = err?.response?.data?.message || err?.message || 'Error bulk deleting life insurance';
+      toast.error(errMsg);
+      return { success: false, message: errMsg };
+    }
+  };
+
+  const updateLifeInstallmentStatus = async ({
+    life_insurance_id,
+    installment_id,
+    payment_date,
+    payment_status,
+  }: {
+    life_insurance_id: string | number;
+    installment_id: string | number;
+    payment_date: string;
+    payment_status: string | number;
+  }) => {
+    try {
+      const formData = new FormData();
+      formData.append('life_insurance_id', String(life_insurance_id));
+      formData.append('installment_id', String(installment_id));
+      formData.append('payment_date', String(payment_date));
+      formData.append('payment_status', String(payment_status));
+
+      const response = await api.post(endPointApi.LIFE_INSURANCE.UPDATE_LIFE_INSTALLMENT_STATUS, formData);
+      const resData = response?.data;
+
+      if (resData?.status === 200 || resData?.status === '200' || resData?.status === 'success' || resData?.success) {
+        toast.success(resData?.message || 'Installment status updated successfully');
+        queryClient.invalidateQueries({ queryKey: ['viewLifeInsurance'] });
+        queryClient.invalidateQueries({ queryKey: ['lifeInsuranceList'] });
+        return { success: true, data: resData };
+      } else {
+        toast.error(resData?.message || 'Failed to update installment status');
+        return { success: false, message: resData?.message };
+      }
+    } catch (err: any) {
+      const errMsg = err?.response?.data?.message || err?.message || 'Error updating installment status';
+      toast.error(errMsg);
+      return { success: false, message: errMsg };
+    }
+  };
+
+  return { insertLifeInsurance, deleteLifeInsurance, bulkDeleteLifeInsurance, updateLifeInstallmentStatus };
+};
+
+export const useUpdateLifeInstallmentStatus = () => {
+  const { updateLifeInstallmentStatus } = useLifeInsuranceActions();
+  return { updateLifeInstallmentStatus };
 };
 
 export const useViewLifeInsurance = (lifeInsuranceId: string | number | null) => {

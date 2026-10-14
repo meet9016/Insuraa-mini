@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
+import { Trash2 } from 'lucide-react';
 import AgGridTable from '@/components/ui/tableaggrid/AgGridTable';
 import TableHeader from '@/components/ui/TableHeader';
 import DeleteConfirmationModal from '@/components/ui/DeleteConfirmationModal';
@@ -9,12 +10,18 @@ import { getMotorQuotationColumns } from '@/utils/tableColumns';
 
 export default function MotorQuotationList() {
   const router = useRouter();
-  const { deleteMotorQuotation } = useMotorQuotationActions();
+  const { deleteMotorQuotation, bulkDeleteMotorQuotation } = useMotorQuotationActions();
 
   const [page, setPage] = useState<number>(1);
   const [limit, setLimit] = useState<number>(10);
   const [search, setSearch] = useState<string>('');
   const [debouncedSearch, setDebouncedSearch] = useState<string>('');
+
+  // Selected rows for bulk operations
+  const [selectedRows, setSelectedRows] = useState<any[]>([]);
+  const [gridApi, setGridApi] = useState<any>(null);
+  const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState<boolean>(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState<boolean>(false);
 
   // Delete Modal state
   const [deleteModalState, setDeleteModalState] = useState<{
@@ -66,6 +73,15 @@ export default function MotorQuotationList() {
     }
   };
 
+  const handleSelectionChanged = (event: any) => {
+    if (!event?.api) return;
+    const selected = event.api.getSelectedRows() || [];
+    const valid = selected.filter(
+      (item: any) => item && (item.quotation_id || item.id) && !String(item.quotation_id || item.id).startsWith('placeholder-')
+    );
+    setSelectedRows(valid);
+  };
+
   const fullRowData = useMemo(() => {
     if (!totalRecords || totalRecords <= quotationList.length) return quotationList;
     const padded = new Array(totalRecords).fill(null).map((_, idx) => ({ id: `placeholder-${idx}` }));
@@ -99,6 +115,27 @@ export default function MotorQuotationList() {
     }
   };
 
+  const handleConfirmBulkDelete = async () => {
+    if (!selectedRows || selectedRows.length === 0) return;
+    const ids = selectedRows
+      .map((r: any) => r?.quotation_id || r?.id)
+      .filter(Boolean);
+
+    if (ids.length === 0) return;
+
+    setIsBulkDeleting(true);
+    const res = await bulkDeleteMotorQuotation(ids);
+    setIsBulkDeleting(false);
+    setIsBulkDeleteModalOpen(false);
+
+    if (res?.success) {
+      setSelectedRows([]);
+      if (gridApi) {
+        gridApi.deselectAll();
+      }
+    }
+  };
+
   const columnDefs = useMemo(
     () =>
       getMotorQuotationColumns({
@@ -127,6 +164,18 @@ export default function MotorQuotationList() {
           onSearchChange={handleSearchChange}
           buttonText="Add Motor Quotation"
           onButtonClick={() => router.push('/quotation/motor/add')}
+          extraActions={
+            selectedRows.length > 0 ? (
+              <button
+                type="button"
+                onClick={() => setIsBulkDeleteModalOpen(true)}
+                className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold rounded-md shadow-sm transition-all flex items-center gap-2 animate-in fade-in duration-200"
+              >
+                <Trash2 size={16} />
+                <span>Bulk Delete ({selectedRows.length})</span>
+              </button>
+            ) : null
+          }
         />
 
         <div className="w-full">
@@ -138,6 +187,8 @@ export default function MotorQuotationList() {
             pagination={true}
             paginationPageSize={limit}
             onPaginationChanged={handlePaginationChanged}
+            onSelectionChanged={handleSelectionChanged}
+            onGridReady={(params) => setGridApi(params.api)}
           />
         </div>
       </div>
@@ -150,6 +201,17 @@ export default function MotorQuotationList() {
         title="Delete Motor Quotation Record"
         itemName={deleteModalState.name}
         isDeleting={deleteModalState.isDeleting}
+      />
+
+      {/* Bulk Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={isBulkDeleteModalOpen}
+        onClose={() => !isBulkDeleting && setIsBulkDeleteModalOpen(false)}
+        onConfirm={handleConfirmBulkDelete}
+        title="Bulk Delete Motor Quotations"
+        itemName={`${selectedRows.length} selected record(s)`}
+        description={`Are you sure you want to delete ${selectedRows.length} selected motor quotation record(s)? This action cannot be undone.`}
+        isDeleting={isBulkDeleting}
       />
     </div>
   );

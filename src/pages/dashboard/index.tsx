@@ -619,11 +619,12 @@ export default function Dashboard() {
         const isPending = val === 1 || val === '1' || !val || String(val).toLowerCase() === 'pending';
         return (
           <div className="flex items-center h-full">
-            <span className={`font-bold text-[11px] px-2.5 py-0.5 rounded-md border uppercase tracking-wider ${isPending
+            <span className={`inline-flex items-center gap-1.5 font-semibold text-xs px-2.5 py-1 rounded-md border ${isPending
               ? 'bg-amber-50 text-amber-700 border-amber-200'
               : 'bg-emerald-50 text-emerald-700 border-emerald-200'
               }`}>
-              {isPending ? 'Pending' : String(val)}
+              <span className={`w-1.5 h-1.5 rounded-full ${isPending ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+              {isPending ? 'Pending' : (String(val).toLowerCase() === '2' ? 'Paid' : String(val))}
             </span>
           </div>
         );
@@ -687,17 +688,20 @@ export default function Dashboard() {
     {
       headerName: 'Days',
       field: 'days_left',
-      minWidth: 100,
+      minWidth: 110,
       cellRenderer: (params: any) => {
         const days = params.value;
         const isExpired = params.data?.is_expired === 1 || Number(days) <= 0;
         return (
-          <span className={`font-bold text-[11px] px-2.5 py-0.5 rounded-full border ${isExpired
-            ? 'bg-rose-100 text-rose-700 border-rose-200'
-            : 'bg-amber-100 text-amber-800 border-amber-200'
-            }`}>
-            {isExpired ? 'Expired' : `${days} days`}
-          </span>
+          <div className="flex items-center h-full">
+            <span className={`inline-flex items-center gap-1.5 font-semibold text-xs px-2.5 py-1 rounded-md border ${isExpired
+              ? 'bg-rose-50 text-rose-700 border-rose-200'
+              : 'bg-amber-50 text-amber-700 border-amber-200'
+              }`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${isExpired ? 'bg-rose-500' : 'bg-amber-500'}`} />
+              {isExpired ? 'Expired' : `${days} Days`}
+            </span>
+          </div>
         );
       },
     },
@@ -924,6 +928,8 @@ export default function Dashboard() {
               columnDefs={paymentPendingColumnDefs}
               loading={loadingPaymentPending}
               height="380px"
+              rowHeight={52}
+              showCheckbox={false}
             />
           </div>
         </div>
@@ -1050,6 +1056,8 @@ export default function Dashboard() {
               columnDefs={renewalPendingColumnDefs}
               loading={loadingRenewalPending}
               height="380px"
+              rowHeight={52}
+              showCheckbox={false}
             />
           </div>
         </div>

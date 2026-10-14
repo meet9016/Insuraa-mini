@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import Head from 'next/head';
+import { Trash2 } from 'lucide-react';
 import AgGridTable from '@/components/ui/tableaggrid/AgGridTable';
 import DeleteConfirmationModal from '@/components/ui/DeleteConfirmationModal';
 import TableHeader from '@/components/ui/TableHeader';
@@ -21,6 +22,12 @@ export default function AddCompanies() {
   const [debouncedSearch, setDebouncedSearch] = useState<string>('');
   const [page, setPage] = useState<number>(1);
   const [limit, setLimit] = useState<number>(10);
+
+  // Selected rows for bulk company deletion
+  const [selectedRows, setSelectedRows] = useState<any[]>([]);
+  const [gridApi, setGridApi] = useState<any>(null);
+  const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState<boolean>(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState<boolean>(false);
 
   const [activePlansCompany, setActivePlansCompany] = useState<any>(null);
   const [isAddPlanOpen, setIsAddPlanOpen] = useState(false);
@@ -76,6 +83,15 @@ export default function AddCompanies() {
     }
   };
 
+  const handleSelectionChanged = (event: any) => {
+    if (!event?.api) return;
+    const selected = event.api.getSelectedRows() || [];
+    const valid = selected.filter(
+      (item: any) => item && (item.id || item.company_id) && !String(item.id || item.company_id).startsWith('placeholder-')
+    );
+    setSelectedRows(valid);
+  };
+
   const fullRowData = useMemo(() => {
     if (!totalRecords || totalRecords <= companyList.length) return companyList;
     const padded = new Array(totalRecords).fill(null).map((_, idx) => ({ id: `placeholder-${idx}` }));
@@ -93,7 +109,14 @@ export default function AddCompanies() {
   const { data: planList = [], isLoading: isLoadingPlans } = useCompanyPlans(activeCompanyId);
 
   // Company API actions hook
-  const { insertCompany, insertCompanyPlan, deleteCompany, deleteCompanyPlan } = useCompanyActions();
+  const {
+    insertCompany,
+    insertCompanyPlan,
+    deleteCompany,
+    deleteCompanyPlan,
+    bulkDeleteCompany,
+    bulkDeleteCompanyPlan,
+  } = useCompanyActions();
 
   const handleEditCompany = (company: any) => {
     const companyId = company?.id || company?.company_id || '';
@@ -176,6 +199,27 @@ export default function AddCompanies() {
     }
   };
 
+  const handleConfirmBulkDelete = async () => {
+    if (!selectedRows || selectedRows.length === 0) return;
+    const ids = selectedRows
+      .map((r: any) => r?.id || r?.company_id)
+      .filter(Boolean);
+
+    if (ids.length === 0) return;
+
+    setIsBulkDeleting(true);
+    const res = await bulkDeleteCompany(ids);
+    setIsBulkDeleting(false);
+    setIsBulkDeleteModalOpen(false);
+
+    if (res?.success) {
+      setSelectedRows([]);
+      if (gridApi) {
+        gridApi.deselectAll();
+      }
+    }
+  };
+
   const columnDefs = useMemo(
     () =>
       getCompanyColumns({
@@ -217,7 +261,7 @@ export default function AddCompanies() {
   );
 
   return (
-    <div className="bg-[#f8fafc]  flex flex-col">
+    <div className="bg-[#f8fafc] flex flex-col">
       <Head>
         <title>Companies - Insuraa</title>
       </Head>
@@ -236,6 +280,18 @@ export default function AddCompanies() {
             setCompanyNameError('');
             setIsAddCompanyOpen(true);
           }}
+          extraActions={
+            selectedRows.length > 0 ? (
+              <button
+                type="button"
+                onClick={() => setIsBulkDeleteModalOpen(true)}
+                className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold rounded-md shadow-sm transition-all flex items-center gap-2 animate-in fade-in duration-200"
+              >
+                <Trash2 size={16} />
+                <span>Bulk Delete ({selectedRows.length})</span>
+              </button>
+            ) : null
+          }
         />
 
         <div className="w-full">
@@ -246,6 +302,8 @@ export default function AddCompanies() {
             pagination={true}
             paginationPageSize={limit}
             onPaginationChanged={handlePaginationChanged}
+            onSelectionChanged={handleSelectionChanged}
+            onGridReady={(params) => setGridApi(params.api)}
           />
         </div>
       </div>
@@ -258,6 +316,17 @@ export default function AddCompanies() {
         title={deleteModalState.type === 'company' ? "Delete Company" : "Delete Plan"}
         itemName={deleteModalState.name}
         isDeleting={deleteModalState.isDeleting}
+      />
+
+      {/* Bulk Delete Confirmation Modal for Companies */}
+      <DeleteConfirmationModal
+        isOpen={isBulkDeleteModalOpen}
+        onClose={() => !isBulkDeleting && setIsBulkDeleteModalOpen(false)}
+        onConfirm={handleConfirmBulkDelete}
+        title="Bulk Delete Companies"
+        itemName={`${selectedRows.length} selected company(ies)`}
+        description={`Are you sure you want to delete ${selectedRows.length} selected company(ies)? This action cannot be undone.`}
+        isDeleting={isBulkDeleting}
       />
 
       <CompanyModal
@@ -279,6 +348,7 @@ export default function AddCompanies() {
         planList={planList}
         isLoadingPlans={isLoadingPlans}
         planColumnDefs={planColumnDefs}
+        onBulkDeletePlans={bulkDeleteCompanyPlan}
         onAddPlanClick={() => {
           setEditingPlanId(null);
           setPlanName('');

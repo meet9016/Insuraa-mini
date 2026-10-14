@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
+import { Trash2 } from 'lucide-react';
 import AgGridTable from '@/components/ui/tableaggrid/AgGridTable';
 import TableHeader from '@/components/ui/TableHeader';
 import DeleteConfirmationModal from '@/components/ui/DeleteConfirmationModal';
@@ -10,12 +11,18 @@ import { getMotorInsuranceColumns } from '@/utils/tableColumns';
 
 export default function MotorInsuranceList() {
   const router = useRouter();
-  const { deleteMotorInsurance } = useMotorInsuranceActions();
+  const { deleteMotorInsurance, bulkDeleteMotorInsurance } = useMotorInsuranceActions();
 
   const [page, setPage] = useState<number>(1);
   const [limit, setLimit] = useState<number>(10);
   const [search, setSearch] = useState<string>('');
   const [debouncedSearch, setDebouncedSearch] = useState<string>('');
+
+  // Selected rows for bulk operations
+  const [selectedRows, setSelectedRows] = useState<any[]>([]);
+  const [gridApi, setGridApi] = useState<any>(null);
+  const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState<boolean>(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState<boolean>(false);
 
   // View Modal state
   const [viewId, setViewId] = useState<string | null>(null);
@@ -65,6 +72,15 @@ export default function MotorInsuranceList() {
     }
   };
 
+  const handleSelectionChanged = (event: any) => {
+    if (!event?.api) return;
+    const selected = event.api.getSelectedRows() || [];
+    const valid = selected.filter(
+      (item: any) => item && item.id && !String(item.id).startsWith('placeholder-')
+    );
+    setSelectedRows(valid);
+  };
+
   const fullRowData = useMemo(() => {
     if (!totalRecords || totalRecords <= insuranceList.length) return insuranceList;
     const padded = new Array(totalRecords).fill(null).map((_, idx) => ({ id: `placeholder-${idx}` }));
@@ -98,6 +114,27 @@ export default function MotorInsuranceList() {
     }
   };
 
+  const handleConfirmBulkDelete = async () => {
+    if (!selectedRows || selectedRows.length === 0) return;
+    const ids = selectedRows
+      .map((r: any) => r?.id || r?.motor_insurance_id)
+      .filter(Boolean);
+
+    if (ids.length === 0) return;
+
+    setIsBulkDeleting(true);
+    const res = await bulkDeleteMotorInsurance(ids);
+    setIsBulkDeleting(false);
+    setIsBulkDeleteModalOpen(false);
+
+    if (res?.success) {
+      setSelectedRows([]);
+      if (gridApi) {
+        gridApi.deselectAll();
+      }
+    }
+  };
+
   const columnDefs = useMemo(
     () =>
       getMotorInsuranceColumns({
@@ -123,6 +160,18 @@ export default function MotorInsuranceList() {
           onSearchChange={handleSearchChange}
           buttonText="Add Motor Insurance"
           onButtonClick={() => router.push('/insurance/motor/add')}
+          extraActions={
+            selectedRows.length > 0 ? (
+              <button
+                type="button"
+                onClick={() => setIsBulkDeleteModalOpen(true)}
+                className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold rounded-md shadow-sm transition-all flex items-center gap-2 animate-in fade-in duration-200"
+              >
+                <Trash2 size={16} />
+                <span>Bulk Delete ({selectedRows.length})</span>
+              </button>
+            ) : null
+          }
         />
 
         <div className="w-full">
@@ -134,6 +183,8 @@ export default function MotorInsuranceList() {
             pagination={true}
             paginationPageSize={limit}
             onPaginationChanged={handlePaginationChanged}
+            onSelectionChanged={handleSelectionChanged}
+            onGridReady={(params) => setGridApi(params.api)}
           />
         </div>
       </div>
@@ -145,7 +196,7 @@ export default function MotorInsuranceList() {
         motorInsuranceId={viewId}
       />
 
-      {/* Delete Confirmation Modal */}
+      {/* Single Delete Confirmation Modal */}
       <DeleteConfirmationModal
         isOpen={deleteModalState.isOpen}
         onClose={() => setDeleteModalState({ isOpen: false, id: '', name: '', isDeleting: false })}
@@ -153,6 +204,17 @@ export default function MotorInsuranceList() {
         title="Delete Motor Insurance Record"
         itemName={deleteModalState.name}
         isDeleting={deleteModalState.isDeleting}
+      />
+
+      {/* Bulk Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={isBulkDeleteModalOpen}
+        onClose={() => !isBulkDeleting && setIsBulkDeleteModalOpen(false)}
+        onConfirm={handleConfirmBulkDelete}
+        title="Bulk Delete Motor Insurance"
+        itemName={`${selectedRows.length} selected record(s)`}
+        description={`Are you sure you want to delete ${selectedRows.length} selected motor insurance record(s)? This action cannot be undone.`}
+        isDeleting={isBulkDeleting}
       />
     </div>
   );

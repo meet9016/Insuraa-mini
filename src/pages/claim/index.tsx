@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
+import { Trash2 } from 'lucide-react';
 import AgGridTable from '@/components/ui/tableaggrid/AgGridTable';
 import TableHeader from '@/components/ui/TableHeader';
 import DeleteConfirmationModal from '@/components/ui/DeleteConfirmationModal';
@@ -9,12 +10,18 @@ import { getClaimColumns } from '@/utils/tableColumns';
 
 export default function ClaimList() {
   const router = useRouter();
-  const { deleteClaim } = useClaimActions();
+  const { deleteClaim, bulkDeleteClaim } = useClaimActions();
 
   const [page, setPage] = useState<number>(1);
   const [limit, setLimit] = useState<number>(10);
   const [search, setSearch] = useState<string>('');
   const [debouncedSearch, setDebouncedSearch] = useState<string>('');
+
+  // Selected rows for bulk operations
+  const [selectedRows, setSelectedRows] = useState<any[]>([]);
+  const [gridApi, setGridApi] = useState<any>(null);
+  const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState<boolean>(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState<boolean>(false);
 
   // Delete Modal state
   const [deleteModalState, setDeleteModalState] = useState<{
@@ -61,6 +68,15 @@ export default function ClaimList() {
     }
   };
 
+  const handleSelectionChanged = (event: any) => {
+    if (!event?.api) return;
+    const selected = event.api.getSelectedRows() || [];
+    const valid = selected.filter(
+      (item: any) => item && (item.claim_id || item.id) && !String(item.claim_id || item.id).startsWith('placeholder-')
+    );
+    setSelectedRows(valid);
+  };
+
   const handleDeleteClick = (data: any) => {
     const targetId = data?.claim_id || data?.id;
     const displayName = data?.claim_number ? `Claim #${data.claim_number}` : (data?.customer_name || 'Claim Record');
@@ -79,6 +95,27 @@ export default function ClaimList() {
     setDeleteModalState((prev) => ({ ...prev, isDeleting: false }));
     if (success) {
       setDeleteModalState({ isOpen: false, id: '', name: '', isDeleting: false });
+    }
+  };
+
+  const handleConfirmBulkDelete = async () => {
+    if (!selectedRows || selectedRows.length === 0) return;
+    const ids = selectedRows
+      .map((r: any) => r?.claim_id || r?.id)
+      .filter(Boolean);
+
+    if (ids.length === 0) return;
+
+    setIsBulkDeleting(true);
+    const res = await bulkDeleteClaim(ids);
+    setIsBulkDeleting(false);
+    setIsBulkDeleteModalOpen(false);
+
+    if (res?.success) {
+      setSelectedRows([]);
+      if (gridApi) {
+        gridApi.deselectAll();
+      }
     }
   };
 
@@ -118,6 +155,18 @@ export default function ClaimList() {
           onSearchChange={handleSearchChange}
           buttonText="Add Claim"
           onButtonClick={() => router.push('/claim/add')}
+          extraActions={
+            selectedRows.length > 0 ? (
+              <button
+                type="button"
+                onClick={() => setIsBulkDeleteModalOpen(true)}
+                className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold rounded-md shadow-sm transition-all flex items-center gap-2 animate-in fade-in duration-200"
+              >
+                <Trash2 size={16} />
+                <span>Bulk Delete ({selectedRows.length})</span>
+              </button>
+            ) : null
+          }
         />
 
         <div className="w-full">
@@ -129,6 +178,8 @@ export default function ClaimList() {
             pagination={true}
             paginationPageSize={limit}
             onPaginationChanged={handlePaginationChanged}
+            onSelectionChanged={handleSelectionChanged}
+            onGridReady={(params) => setGridApi(params.api)}
           />
         </div>
       </div>
@@ -141,6 +192,17 @@ export default function ClaimList() {
         title="Delete Claim Record"
         itemName={deleteModalState.name}
         isDeleting={deleteModalState.isDeleting}
+      />
+
+      {/* Bulk Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={isBulkDeleteModalOpen}
+        onClose={() => !isBulkDeleting && setIsBulkDeleteModalOpen(false)}
+        onConfirm={handleConfirmBulkDelete}
+        title="Bulk Delete Claims"
+        itemName={`${selectedRows.length} selected record(s)`}
+        description={`Are you sure you want to delete ${selectedRows.length} selected claim record(s)? This action cannot be undone.`}
+        isDeleting={isBulkDeleting}
       />
     </div>
   );

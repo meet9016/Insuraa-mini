@@ -151,10 +151,91 @@ export const useCompanyActions = () => {
     }
   };
 
+  const bulkDeleteCompany = async (ids: (string | number)[]) => {
+    if (!ids || ids.length === 0) return { success: false, message: 'No records selected' };
+    try {
+      const formData = new FormData();
+      // Pass all selected IDs as comma-separated values
+      formData.append('ids', ids.join(','));
+
+      const response = await api.post(endPointApi.COMPANY.BULK_DELETE_COMPANY, formData);
+      const resData = response?.data;
+
+      if (resData?.status === 200 || resData?.status === '200' || resData?.success) {
+        const data = resData?.data;
+        const deletedCount = data?.deleted_count ?? ids.length;
+        const skipped = Array.isArray(data?.skipped) ? data.skipped : [];
+        const skippedCount = data?.skipped_count ?? skipped.length;
+
+        if (skippedCount > 0) {
+          if (deletedCount > 0) {
+            toast.success(resData?.message || `${deletedCount} records deleted, ${skippedCount} skipped`);
+          } else {
+            toast.warn(resData?.message || `${skippedCount} records could not be deleted`);
+          }
+        } else {
+          toast.success(resData?.message || `${deletedCount} company records deleted successfully`);
+        }
+
+        queryClient.invalidateQueries({ queryKey: ['companyList'] });
+        return { success: true, data: resData };
+      } else {
+        toast.error(resData?.message || 'Failed to bulk delete companies');
+        return { success: false, message: resData?.message };
+      }
+    } catch (err: any) {
+      const errMsg = err?.response?.data?.message || err?.message || 'Error bulk deleting companies';
+      toast.error(errMsg);
+      return { success: false, message: errMsg };
+    }
+  };
+
+  const bulkDeleteCompanyPlan = async (ids: (string | number)[]) => {
+    if (!ids || ids.length === 0) return { success: false, message: 'No records selected' };
+    try {
+      const formData = new FormData();
+      // Pass all selected IDs as comma-separated values
+      formData.append('ids', ids.join(','));
+
+      const response = await api.post(endPointApi.COMPANY.BULK_DELETE_COMPANY_PLAN, formData);
+      const resData = response?.data;
+
+      if (resData?.status === 200 || resData?.status === '200' || resData?.success) {
+        const data = resData?.data;
+        const deletedCount = data?.deleted_count ?? ids.length;
+        const skipped = Array.isArray(data?.skipped) ? data.skipped : [];
+        const skippedCount = data?.skipped_count ?? skipped.length;
+
+        if (skippedCount > 0) {
+          if (deletedCount > 0) {
+            toast.success(resData?.message || `${deletedCount} records deleted, ${skippedCount} skipped`);
+          } else {
+            toast.warn(resData?.message || `${skippedCount} records could not be deleted`);
+          }
+        } else {
+          toast.success(resData?.message || `${deletedCount} plan records deleted successfully`);
+        }
+
+        queryClient.invalidateQueries({ queryKey: ['companyPlans'] });
+        queryClient.invalidateQueries({ queryKey: ['companyList'] });
+        return { success: true, data: resData };
+      } else {
+        toast.error(resData?.message || 'Failed to bulk delete plans');
+        return { success: false, message: resData?.message };
+      }
+    } catch (err: any) {
+      const errMsg = err?.response?.data?.message || err?.message || 'Error bulk deleting plans';
+      toast.error(errMsg);
+      return { success: false, message: errMsg };
+    }
+  };
+
   return {
     insertCompany,
     insertCompanyPlan,
     deleteCompany,
     deleteCompanyPlan,
+    bulkDeleteCompany,
+    bulkDeleteCompanyPlan,
   };
 };
