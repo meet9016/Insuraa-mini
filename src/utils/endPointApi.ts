@@ -5,6 +5,7 @@ export interface EndPointApi {
     SEND_SIGN_UP_OTP: string;
     VERIFY_SIGN_UP_OTP: string;
     PLAN_LIST: string;
+    DIRECT_PLAN_INFO: string;
     SUBSCRIPTION_POPUP: string;
     SUBSCRIPTION_LIST: string;
   };
@@ -189,6 +190,12 @@ export interface EndPointApi {
   SEARCH: {
     GLOBAL_SEARCH: string;
   };
+  PRICING: {
+    DIRECT_PLAN_INFO: string;
+    DIRECT_PLAN_QUOTE: string;
+    DIRECT_VERIFY_OTP: string;
+    DIRECT_PLAN_PURCHASE: string;
+  };
 }
 
 // Define and export the standard API endpoint object
@@ -211,6 +218,7 @@ const endPointApi: EndPointApi = {
     SEND_SIGN_UP_OTP: 'send_sign_up_otp',
     VERIFY_SIGN_UP_OTP: 'verify_sign_up_otp',
     PLAN_LIST: 'plan_list',
+    DIRECT_PLAN_INFO: 'direct_plan_info',
     SUBSCRIPTION_POPUP: 'subscription_popup',
     SUBSCRIPTION_LIST: 'subscription_list',
   },
@@ -382,6 +390,12 @@ const endPointApi: EndPointApi = {
   },
   SEARCH: {
     GLOBAL_SEARCH: 'global_search',
+  },
+  PRICING: {
+    DIRECT_PLAN_INFO: 'direct_plan_info',
+    DIRECT_PLAN_QUOTE: 'direct_plan_quote',
+    DIRECT_VERIFY_OTP: 'direct_verify_otp',
+    DIRECT_PLAN_PURCHASE: 'direct_plan_purchase',
   },
 };
 

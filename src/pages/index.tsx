@@ -58,8 +58,20 @@ import {
   Minus,
   Plus,
   Wallet,
-  Receipt
+  Receipt,
+  Loader2
 } from 'lucide-react';
+import {
+  useDirectPlanInfo,
+  fetchDirectPlanQuote,
+  DirectPlanQuoteData,
+  fetchSendSignUpOtp,
+  fetchDirectVerifyOtp,
+  fetchDirectPlanPurchase,
+} from '@/hooks/usePricingApi';
+import { api } from '@/utils/axiosInstance';
+import endPointApi from '@/utils/endPointApi';
+import { toast } from 'react-toastify';
 
 export default function LandingPage() {
   const router = useRouter();
@@ -67,15 +79,25 @@ export default function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  // Pricing & Payment Flow States (Customized with Insuraa Brand Colors)
+  // Pricing & Payment Flow States (Powered purely by dynamic useDirectPlanInfo hook)
+  const { data: planData, isLoading: isLoadingPlans } = useDirectPlanInfo();
   const [expandedCards, setExpandedCards] = useState<Record<string, boolean>>({});
   const [pricingModalOpen, setPricingModalOpen] = useState(false);
-  const [selectedPlanTier, setSelectedPlanTier] = useState<'silver' | 'gold' | 'platinum'>('silver');
-  const [employeesCount, setEmployeesCount] = useState<number>(10);
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'quarterly' | 'yearly'>('yearly');
+  const [selectedPlanTier, setSelectedPlanTier] = useState<string>('silver');
+  const [policiesCount, setPoliciesCount] = useState<number>(100);
+  const [billingCycle, setBillingCycle] = useState<string>('yearly');
   const [couponCode, setCouponCode] = useState<string>('');
+  const [appliedCouponCode, setAppliedCouponCode] = useState<string>('');
   const [isCouponApplied, setIsCouponApplied] = useState<boolean>(false);
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState<boolean>(false);
+  const [isFetchingQuote, setIsFetchingQuote] = useState<boolean>(false);
+  const [quoteData, setQuoteData] = useState<DirectPlanQuoteData | null>(null);
   const [isMobileVerified, setIsMobileVerified] = useState<boolean>(false);
+  const [isSendingOtp, setIsSendingOtp] = useState<boolean>(false);
+  const [isOtpSent, setIsOtpSent] = useState<boolean>(false);
+  const [otpValue, setOtpValue] = useState<string>('');
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState<boolean>(false);
+  const [purchaseToken, setPurchaseToken] = useState<string>('');
   const [paymentSuccess, setPaymentSuccess] = useState<boolean>(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState<boolean>(false);
   const [billingForm, setBillingForm] = useState({
@@ -85,85 +107,351 @@ export default function LandingPage() {
     gstNumber: '',
     phone: '',
     companyAddress: '',
+    pincode: '',
+    city: '',
+    state: '',
+    country: 'India',
   });
 
-  const planConfig = {
-    silver: {
-      id: 'silver' as const,
-      name: 'Silver',
-      usersRange: '0-20 users',
-      shortUsers: '0-20',
-      rate: 30,
-      min: 1,
-      max: 20,
-      defaultCount: 10,
-    },
-    gold: {
-      id: 'gold' as const,
-      name: 'Gold',
-      usersRange: '21-100 users',
-      shortUsers: '21-100',
-      rate: 25,
-      min: 21,
-      max: 100,
-      defaultCount: 21,
-    },
-    platinum: {
-      id: 'platinum' as const,
-      name: 'Platinum',
-      usersRange: '101+ users',
-      shortUsers: '101+',
-      rate: 20,
-      min: 101,
-      max: 500,
-      defaultCount: 101,
-    },
+  // Reusable quote loader that sends multipart/form-data to direct_plan_quote API
+  const loadQuote = async (
+    targetPolicies: number,
+    targetCycle: string,
+    couponToUse: string = '',
+    isCouponAction: boolean = false
+  ) => {
+    setIsFetchingQuote(true);
+    if (isCouponAction) {
+      setIsApplyingCoupon(true);
+    }
+    try {
+      const res = await fetchDirectPlanQuote({
+        policies: targetPolicies,
+        billing_cycle: targetCycle,
+        coupon_code: couponToUse,
+      });
+
+      if (res && (res.status === 200 || res.status === '200') && res.data && !Array.isArray(res.data)) {
+        setQuoteData(res.data);
+        if (res.data.tier) {
+          setSelectedPlanTier(res.data.tier.toLowerCase());
+        }
+        if (couponToUse) {
+          setAppliedCouponCode(couponToUse);
+          setIsCouponApplied(true);
+          if (isCouponAction) {
+            toast.success(res.message || 'Coupon applied successfully!');
+          }
+        } else {
+          setAppliedCouponCode('');
+          setIsCouponApplied(false);
+        }
+      } else {
+        if (isCouponAction) {
+          toast.error(res?.message || 'Invalid coupon code');
+        }
+      }
+    } catch (err: any) {
+      console.error('Error fetching plan quote:', err);
+      if (isCouponAction) {
+        toast.error('Failed to apply coupon');
+      }
+    } finally {
+      setIsFetchingQuote(false);
+      setIsApplyingCoupon(false);
+    }
   };
 
-  const currentPlan = planConfig[selectedPlanTier];
-  const monthsMultiplier = billingCycle === 'monthly' ? 1 : billingCycle === 'quarterly' ? 3 : 12;
-  const baseSubtotal = employeesCount * currentPlan.rate * monthsMultiplier;
+  // Automatically sync initial tier & policies count once dynamic API data loads
+  useEffect(() => {
+    if (planData?.tiers && planData.tiers.length > 0) {
+      const paidTiers = planData.tiers.filter(t => !t.name.toLowerCase().includes('free'));
+      const tiersToUse = paidTiers.length > 0 ? paidTiers : planData.tiers;
+      const tierMatches = tiersToUse.some(t => t.name.toLowerCase() === selectedPlanTier.toLowerCase());
+      if (!tierMatches) {
+        setSelectedPlanTier(tiersToUse[0].name.toLowerCase());
+        setPoliciesCount(tiersToUse[0].from || planData.min_policies || 100);
+      }
+    }
+  }, [planData, selectedPlanTier]);
+
+  const currentTier =
+    planData?.tiers?.find(
+      (t) =>
+        t.name.toLowerCase() ===
+        (quoteData?.tier?.toLowerCase() || selectedPlanTier.toLowerCase())
+    ) ||
+    planData?.tiers?.find((t) => t.name.toLowerCase() === selectedPlanTier.toLowerCase()) ||
+    planData?.tiers?.[0];
+
+  const currentCycle =
+    planData?.cycles?.find((c) => c.billing_cycle === billingCycle) ||
+    planData?.cycles?.[2] ||
+    planData?.cycles?.[0];
+
+  const monthsMultiplier = currentCycle?.multiplier || 1;
+  const currentRate = currentTier?.rate ?? 0;
+  const baseSubtotal = Math.round(policiesCount * currentRate * monthsMultiplier);
   const discountAmount = isCouponApplied ? Math.round(baseSubtotal * 0.05) : 0;
-  const discountedSubtotal = baseSubtotal - discountAmount;
-  const gstAmount = Math.round(discountedSubtotal * 0.18);
+  const discountedSubtotal = Math.max(0, baseSubtotal - discountAmount);
+  const gstRate = (planData?.gst_percentage ?? 18) / 100;
+  const gstAmount = Math.round(discountedSubtotal * gstRate);
   const totalAmount = discountedSubtotal + gstAmount;
 
   const toggleCardExpand = (planId: string) => {
     setExpandedCards((prev) => ({
       ...prev,
-      [planId]: !prev[planId],
+      [planId.toLowerCase()]: !prev[planId.toLowerCase()],
     }));
   };
 
-  const handleOpenPlanModal = (planTier: 'silver' | 'gold' | 'platinum' | 'free' | string) => {
-    const tier = String(planTier).toLowerCase();
-    if (tier.includes('gold')) {
-      setSelectedPlanTier('gold');
-      setEmployeesCount(21);
-    } else if (tier.includes('platinum')) {
-      setSelectedPlanTier('platinum');
-      setEmployeesCount(101);
-    } else {
-      setSelectedPlanTier('silver');
-      setEmployeesCount(10);
+  // Triggered when user clicks "Get Started" button on any pricing card
+  const handleOpenPlanModal = (planTier: string) => {
+    const tierLower = String(planTier).toLowerCase();
+    if (tierLower === 'free' || tierLower.includes('free')) {
+      router.push('/auth/register');
+      return;
+    }
+
+    const paidTiers = planData?.tiers?.filter((t) => !t.name.toLowerCase().includes('free'));
+    const foundTier = paidTiers?.find((t) => t.name.toLowerCase() === tierLower) || paidTiers?.[0] || planData?.tiers?.[0];
+    const initialPolicies = foundTier?.from || planData?.min_policies || 100;
+
+    if (foundTier) {
+      setSelectedPlanTier(foundTier.name.toLowerCase());
+      setPoliciesCount(initialPolicies);
     }
     setIsCouponApplied(false);
     setCouponCode('');
+    setAppliedCouponCode('');
     setIsMobileVerified(false);
+    setIsOtpSent(false);
+    setOtpValue('');
+    setPurchaseToken('');
     setPaymentSuccess(false);
     setPricingModalOpen(true);
+
+    // Immediately call direct_plan_quote API via FormData with initial policies & cycle
+    loadQuote(initialPolicies, billingCycle, '');
   };
 
-  const handleSelectTier = (tier: 'silver' | 'gold' | 'platinum') => {
-    setSelectedPlanTier(tier);
-    if (tier === 'silver') {
-      setEmployeesCount((prev) => (prev < 1 || prev > 20 ? 10 : prev));
-    } else if (tier === 'gold') {
-      setEmployeesCount((prev) => (prev < 21 || prev > 100 ? 21 : prev));
-    } else if (tier === 'platinum') {
-      setEmployeesCount((prev) => (prev < 101 ? 101 : prev));
+  const handleSelectTier = (tierName: string) => {
+    const tierLower = tierName.toLowerCase();
+    if (tierLower === 'free' || tierLower.includes('free')) {
+      setPricingModalOpen(false);
+      router.push('/auth/register');
+      return;
+    }
+    setSelectedPlanTier(tierLower);
+    const foundTier = planData?.tiers?.find((t) => t.name.toLowerCase() === tierLower);
+    if (foundTier) {
+      const min = foundTier.from || planData?.min_policies || 100;
+      const max = foundTier.to || planData?.max_policies || 1000000;
+      let nextCount = policiesCount;
+      if (nextCount < min) nextCount = min;
+      if (max && nextCount > max) nextCount = max;
+      setPoliciesCount(nextCount);
+      loadQuote(nextCount, billingCycle, isCouponApplied ? appliedCouponCode : '');
     }
   };
+
+  const handleSelectCycle = (cycle: string) => {
+    setBillingCycle(cycle);
+    loadQuote(policiesCount, cycle, isCouponApplied ? appliedCouponCode : '');
+  };
+
+  const handlePoliciesStep = (delta: number) => {
+    const min = planData?.min_policies || 100;
+    const max = planData?.max_policies || 1000000;
+    const nextVal = Math.min(max, Math.max(min, policiesCount + delta));
+    setPoliciesCount(nextVal);
+    const matchedTier = planData?.tiers?.find((t) => {
+      if (t.to !== null && t.to !== undefined) {
+        return nextVal >= t.from && nextVal <= t.to;
+      }
+      return nextVal >= t.from;
+    });
+    if (matchedTier) {
+      setSelectedPlanTier(matchedTier.name.toLowerCase());
+    }
+    loadQuote(nextVal, billingCycle, isCouponApplied ? appliedCouponCode : '');
+  };
+
+  const handleApplyCoupon = async (codeToApply?: string) => {
+    const code = (codeToApply !== undefined ? codeToApply : couponCode).trim();
+    if (!code) {
+      toast.error('Please enter a coupon code');
+      return;
+    }
+    setCouponCode(code);
+    await loadQuote(policiesCount, billingCycle, code, true);
+  };
+
+  const handleRemoveCoupon = async () => {
+    setIsCouponApplied(false);
+    setCouponCode('');
+    setAppliedCouponCode('');
+    await loadQuote(policiesCount, billingCycle, '');
+    toast.info('Coupon removed');
+  };
+
+  const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(billingForm.email.trim());
+  const isBillingFormValid =
+    billingForm.fullName.trim().length > 0 &&
+    isEmailValid &&
+    billingForm.companyName.trim().length > 0 &&
+    billingForm.companyAddress.trim().length > 0 &&
+    billingForm.pincode.trim().length >= 6 &&
+    billingForm.city.trim().length > 0 &&
+    billingForm.state.trim().length > 0 &&
+    isMobileVerified &&
+    Boolean(purchaseToken);
+
+  const handleSendOtp = async () => {
+    const cleanPhone = billingForm.phone.trim();
+    if (!/^[0-9]{10}$/.test(cleanPhone)) {
+      toast.error('Please enter a valid 10-digit mobile number');
+      return;
+    }
+    setIsSendingOtp(true);
+    try {
+      const res = await fetchSendSignUpOtp(cleanPhone);
+      if (res && (res.status === 200 || res.status === '200' || res.status === true)) {
+        toast.success(res.message || 'OTP sent successfully!');
+        setIsOtpSent(true);
+        if (res.data?.otp) {
+          setOtpValue(String(res.data.otp));
+        }
+      } else {
+        toast.error(res?.message || 'Failed to send OTP');
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || err?.message || 'Error sending OTP');
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    const cleanPhone = billingForm.phone.trim();
+    const cleanOtp = otpValue.trim();
+    if (!cleanOtp) {
+      toast.error('Please enter the OTP');
+      return;
+    }
+    setIsVerifyingOtp(true);
+    try {
+      const res = await fetchDirectVerifyOtp({ number: cleanPhone, otp: cleanOtp });
+      if (res && (res.status === 200 || res.status === '200' || res.status === true)) {
+        toast.success(res.message || 'Mobile number verified successfully!');
+        setIsMobileVerified(true);
+        if (res.data?.purchase_token) {
+          setPurchaseToken(res.data.purchase_token);
+        }
+      } else {
+        toast.error(res?.message || 'Invalid OTP');
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || err?.message || 'Error verifying OTP');
+    } finally {
+      setIsVerifyingOtp(false);
+    }
+  };
+
+  const handlePhoneChange = (val: string) => {
+    const numeric = val.replace(/\D/g, '').slice(0, 10);
+    setBillingForm((prev) => ({ ...prev, phone: numeric }));
+    if (isMobileVerified || isOtpSent || purchaseToken) {
+      setIsMobileVerified(false);
+      setIsOtpSent(false);
+      setOtpValue('');
+      setPurchaseToken('');
+    }
+  };
+
+  const handlePincodeChange = async (val: string) => {
+    const clean = val.replace(/\D/g, '').slice(0, 6);
+    setBillingForm((prev) => ({ ...prev, pincode: clean }));
+    if (clean.length === 6) {
+      try {
+        const formData = new FormData();
+        formData.append('pincode', clean);
+        const res = await api.post(endPointApi.CUSTOMER.GET_PINCODE_DETAILS, formData);
+        if (res?.data?.data) {
+          const pData = res.data.data;
+          setBillingForm((prev) => ({
+            ...prev,
+            pincode: clean,
+            city: pData.city || pData.district || prev.city,
+            state: pData.state || prev.state,
+          }));
+        }
+      } catch (err) {
+        // user can still type city/state manually
+      }
+    }
+  };
+
+  const handlePayNow = async () => {
+    if (!isBillingFormValid || !purchaseToken) {
+      if (!isMobileVerified || !purchaseToken) {
+        toast.error('Please verify your mobile number with OTP first');
+      } else {
+        toast.error('Please fill all required billing details');
+      }
+      return;
+    }
+
+    setIsProcessingPayment(true);
+    try {
+      const res = await fetchDirectPlanPurchase({
+        purchase_token: purchaseToken,
+        full_name: billingForm.fullName.trim(),
+        email: billingForm.email.trim(),
+        company_name: billingForm.companyName.trim(),
+        address: billingForm.companyAddress.trim(),
+        gst_number: billingForm.gstNumber.trim(),
+        pincode: billingForm.pincode.trim(),
+        state: billingForm.state.trim(),
+        city: billingForm.city.trim(),
+        country: billingForm.country.trim() || 'India',
+        policies: quoteData?.policies ?? policiesCount,
+        billing_cycle: billingCycle,
+        coupon_code: isCouponApplied ? appliedCouponCode : (couponCode.trim() || ''),
+      });
+
+      if (res && (res.status === 200 || res.status === '200' || res.status === true)) {
+        toast.success(res.message || 'Payment request processed successfully!');
+        const redirectUrl = res.data?.redirect_url || res.redirect_url || res.data?.url || res.url;
+        if (redirectUrl) {
+          window.location.href = redirectUrl;
+          return;
+        }
+        setPaymentSuccess(true);
+      } else {
+        toast.error(res?.message || 'Failed to complete plan purchase');
+      }
+    } catch (err: any) {
+      console.error('Error during direct_plan_purchase:', err);
+      toast.error(err?.response?.data?.message || err?.message || 'Error processing plan purchase');
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
+
+  // Fast debounce API quote call for manual numeric input (200ms for instant responsiveness)
+  useEffect(() => {
+    if (!pricingModalOpen) return;
+    const timer = setTimeout(() => {
+      if (
+        quoteData &&
+        (quoteData.policies !== policiesCount || quoteData.billing_cycle !== billingCycle)
+      ) {
+        loadQuote(policiesCount, billingCycle, isCouponApplied ? appliedCouponCode : '');
+      }
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [policiesCount, pricingModalOpen, billingCycle, isCouponApplied, appliedCouponCode, quoteData]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -1020,11 +1308,11 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* SUBSCRIPTION & PRICING PLANS (Exact PagarPe 4-Card Flow with + 3 More Expand & Static Modal) */}
+      {/* SUBSCRIPTION & PRICING PLANS (Direct Plan Info API with Dynamic Tiers & Features) */}
       <section id="pricing" className="py-20 bg-slate-50 border-t border-slate-200/80 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-          {/* Section Header with Wavy Curve like PagarPe */}
+          {/* Section Header with Wavy Curve */}
           <div className="text-center max-w-3xl mx-auto space-y-2 mb-14">
             <div className="inline-block">
               <span className="text-sm font-semibold text-slate-800 tracking-wide block">
@@ -1036,375 +1324,141 @@ export default function LandingPage() {
             </div>
 
             <h2 className="text-3xl sm:text-4xl font-semibold text-slate-900 tracking-tight pt-1">
-              Choose The Best Plan, <span className="text-[#2D3591]">For Your Business</span>
+              Choose The Best Plan, <span className="text-[#2D3591]">For Your Agency</span>
             </h2>
 
             <p className="text-slate-600 text-xs sm:text-sm font-normal pt-1">
-              Start your <span className="inline-block px-3 py-0.5 bg-indigo-50 border border-indigo-200/90 text-[#2D3591] rounded-lg font-medium text-xs sm:text-sm mx-1">30-day free trial</span> and experience all the features risk-free.
+              Start your{' '}
+              <span className="inline-block px-3 py-0.5 bg-indigo-50 border border-indigo-200/90 text-[#2D3591] rounded-lg font-medium text-xs sm:text-sm mx-1">
+                {planData?.free_trial_days || 7}-day free trial
+              </span>{' '}
+              and experience all the features risk-free.
             </p>
+
+            {planData?.first_purchase_free_ai_credits === 'equal_to_policies' && (
+              <div className="pt-2">
+                <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold shadow-2xs">
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                  First purchase bonus: Free AI Credits equal to your policy count
+                </span>
+              </div>
+            )}
           </div>
 
-          {/* 4 Cards Responsive Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 max-w-7xl mx-auto items-stretch">
-
-            {/* CARD 1: FREE */}
-            <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/90 shadow-xs flex flex-col justify-between hover:shadow-xl transition-all duration-300 relative group">
-              <div>
-                {/* Top Row: Plan Name & User Count */}
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-semibold text-slate-900">Free</h3>
-                  <span className="text-xs text-slate-500 font-normal">0-3 users</span>
-                </div>
-
-                {/* Price */}
-                <div className="mt-4 flex items-baseline gap-1">
-                  <span className="text-3xl sm:text-4xl font-semibold text-slate-900">₹0</span>
-                  <span className="text-xs text-slate-400 font-normal">/user/mo</span>
-                </div>
-
-                <div className="my-5 border-t border-slate-100" />
-
-                {/* Features List */}
-                <ul className="space-y-3 text-xs sm:text-[13px] text-slate-600 font-normal">
-                  <li className="flex items-center gap-2.5">
-                    <span className="w-5 h-5 rounded-full bg-indigo-50 text-[#2D3591] flex items-center justify-center shrink-0 text-xs font-semibold">✓</span>
-                    <span>Mobile + Web App</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <span className="w-5 h-5 rounded-full bg-indigo-50 text-[#2D3591] flex items-center justify-center shrink-0 text-xs font-semibold">✓</span>
-                    <span>AI Face + Biometric</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <span className="w-5 h-5 rounded-full bg-indigo-50 text-[#2D3591] flex items-center justify-center shrink-0 text-xs font-semibold">✓</span>
-                    <span>Attendance &amp; Payroll</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <span className="w-5 h-5 rounded-full bg-indigo-50 text-[#2D3591] flex items-center justify-center shrink-0 text-xs font-semibold">✓</span>
-                    <span>Daily &amp; Monthly Attendance</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <span className="w-5 h-5 rounded-full bg-indigo-50 text-[#2D3591] flex items-center justify-center shrink-0 text-xs font-semibold">✓</span>
-                    <span>Employee &amp; Shift Management</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <span className="w-5 h-5 rounded-full bg-indigo-50 text-[#2D3591] flex items-center justify-center shrink-0 text-xs font-semibold">✓</span>
-                    <span>Leave &amp; Holiday Tracking</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <span className="w-5 h-5 rounded-full bg-indigo-50 text-[#2D3591] flex items-center justify-center shrink-0 text-xs font-semibold">✓</span>
-                    <span>Salary Management</span>
-                  </li>
-
-                  {/* Expandable 3 Features */}
-                  {expandedCards['free'] && (
-                    <>
-                      <li className="flex items-center gap-2.5 animate-in fade-in duration-200">
-                        <span className="w-5 h-5 rounded-full bg-indigo-50 text-[#2D3591] flex items-center justify-center shrink-0 text-xs font-semibold">✓</span>
-                        <span>Role-based Access Control</span>
-                      </li>
-                      <li className="flex items-center gap-2.5 animate-in fade-in duration-200">
-                        <span className="w-5 h-5 rounded-full bg-indigo-50 text-[#2D3591] flex items-center justify-center shrink-0 text-xs font-semibold">✓</span>
-                        <span>Loan &amp; Document Management</span>
-                      </li>
-                      <li className="flex items-center gap-2.5 animate-in fade-in duration-200">
-                        <span className="w-5 h-5 rounded-full bg-indigo-50 text-[#2D3591] flex items-center justify-center shrink-0 text-xs font-semibold">✓</span>
-                        <span>Reports &amp; Compliance</span>
-                      </li>
-                    </>
-                  )}
-                </ul>
-
-                {/* + 3 More Button */}
-                <div className="text-right pt-2">
-                  <button
-                    onClick={() => toggleCardExpand('free')}
-                    className="text-xs font-medium text-[#2D3591] hover:underline cursor-pointer"
-                  >
-                    {expandedCards['free'] ? '- Show Less' : '+ 3 More'}
-                  </button>
-                </div>
-              </div>
-
-              {/* Get Started Button */}
-              <button
-                onClick={() => handleOpenPlanModal('silver')}
-                className="mt-6 w-full py-3 px-4 rounded-xl text-sm font-medium text-[#2D3591] bg-indigo-50/70 hover:bg-[#2D3591] hover:text-white border border-indigo-200/80 transition-all duration-300 shadow-2xs hover:shadow-md cursor-pointer"
-              >
-                Get Started
-              </button>
+          {/* Dynamic Cards Responsive Grid */}
+          {isLoadingPlans || !planData?.tiers ? (
+            <div className="flex flex-col items-center justify-center py-16 gap-3 text-slate-500">
+              <Loader2 className="w-8 h-8 animate-spin text-[#2D3591]" />
+              <span className="text-sm font-medium">Loading pricing plans...</span>
             </div>
+          ) : (
+            <div className={`grid grid-cols-1 ${planData.tiers.length === 3 ? 'md:grid-cols-3 max-w-6xl' : 'md:grid-cols-2 xl:grid-cols-4 max-w-7xl'} gap-6 mx-auto items-stretch`}>
+              {planData.tiers.map((tier) => {
+                const isHighlighted = tier.name.toLowerCase() === 'gold';
+                const isExpanded = !!expandedCards[tier.name.toLowerCase()];
+                const visibleFeatures = isExpanded ? tier.features : tier.features.slice(0, 7);
+                const remainingCount = tier.features.length - 7;
+                const policyRangeText = tier.to
+                  ? `${tier.from.toLocaleString()} - ${tier.to.toLocaleString()} policies`
+                  : `${tier.from.toLocaleString()}+ policies`;
 
-            {/* CARD 2: SILVER */}
-            <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/90 shadow-xs flex flex-col justify-between hover:shadow-xl transition-all duration-300 relative group">
-              <div>
-                {/* Top Row: Plan Name & User Count */}
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-semibold text-slate-900">Silver</h3>
-                  <span className="text-xs text-slate-500 font-normal">0-20 users</span>
-                </div>
-
-                {/* Price */}
-                <div className="mt-4 flex items-baseline gap-1">
-                  <span className="text-3xl sm:text-4xl font-semibold text-slate-900">₹30</span>
-                  <span className="text-xs text-slate-400 font-normal">/user/mo</span>
-                </div>
-
-                <div className="my-5 border-t border-slate-100" />
-
-                {/* Features List */}
-                <ul className="space-y-3 text-xs sm:text-[13px] text-slate-600 font-normal">
-                  <li className="flex items-center gap-2.5">
-                    <span className="w-5 h-5 rounded-full bg-indigo-50 text-[#2D3591] flex items-center justify-center shrink-0 text-xs font-semibold">✓</span>
-                    <span>Mobile + Web App</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <span className="w-5 h-5 rounded-full bg-indigo-50 text-[#2D3591] flex items-center justify-center shrink-0 text-xs font-semibold">✓</span>
-                    <span>AI Face + Biometric</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <span className="w-5 h-5 rounded-full bg-indigo-50 text-[#2D3591] flex items-center justify-center shrink-0 text-xs font-semibold">✓</span>
-                    <span>Attendance &amp; Payroll</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <span className="w-5 h-5 rounded-full bg-indigo-50 text-[#2D3591] flex items-center justify-center shrink-0 text-xs font-semibold">✓</span>
-                    <span>Daily &amp; Monthly Attendance</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <span className="w-5 h-5 rounded-full bg-indigo-50 text-[#2D3591] flex items-center justify-center shrink-0 text-xs font-semibold">✓</span>
-                    <span>Employee &amp; Shift Management</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <span className="w-5 h-5 rounded-full bg-indigo-50 text-[#2D3591] flex items-center justify-center shrink-0 text-xs font-semibold">✓</span>
-                    <span>Leave &amp; Holiday Tracking</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <span className="w-5 h-5 rounded-full bg-indigo-50 text-[#2D3591] flex items-center justify-center shrink-0 text-xs font-semibold">✓</span>
-                    <span>Salary Management</span>
-                  </li>
-
-                  {/* Expandable 3 Features */}
-                  {expandedCards['silver'] && (
-                    <>
-                      <li className="flex items-center gap-2.5 animate-in fade-in duration-200">
-                        <span className="w-5 h-5 rounded-full bg-indigo-50 text-[#2D3591] flex items-center justify-center shrink-0 text-xs font-semibold">✓</span>
-                        <span>Role-based Access Control</span>
-                      </li>
-                      <li className="flex items-center gap-2.5 animate-in fade-in duration-200">
-                        <span className="w-5 h-5 rounded-full bg-indigo-50 text-[#2D3591] flex items-center justify-center shrink-0 text-xs font-semibold">✓</span>
-                        <span>Loan &amp; Document Management</span>
-                      </li>
-                      <li className="flex items-center gap-2.5 animate-in fade-in duration-200">
-                        <span className="w-5 h-5 rounded-full bg-indigo-50 text-[#2D3591] flex items-center justify-center shrink-0 text-xs font-semibold">✓</span>
-                        <span>Reports &amp; Compliance</span>
-                      </li>
-                    </>
-                  )}
-                </ul>
-
-                {/* + 3 More Button */}
-                <div className="text-right pt-2">
-                  <button
-                    onClick={() => toggleCardExpand('silver')}
-                    className="text-xs font-medium text-[#2D3591] hover:underline cursor-pointer"
+                return (
+                  <div
+                    key={tier.name}
+                    className={
+                      isHighlighted
+                        ? 'bg-gradient-to-b from-[#1C2366] via-[#1E2568] to-[#141A4C] text-white rounded-3xl p-6 sm:p-7 shadow-2xl flex flex-col justify-between relative ring-4 ring-indigo-500/20 hover:scale-[1.02] transition-all duration-300'
+                        : 'bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/90 shadow-xs flex flex-col justify-between hover:shadow-xl transition-all duration-300 relative group'
+                    }
                   >
-                    {expandedCards['silver'] ? '- Show Less' : '+ 3 More'}
-                  </button>
-                </div>
-              </div>
+                    {/* Floating BEST MATCH Badge for Gold */}
+                    {isHighlighted && (
+                      <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-white text-[#1E2568] text-[11px] font-semibold px-4 py-1 rounded-full uppercase tracking-wider shadow-md flex items-center gap-1.5 border border-indigo-100">
+                        <span className="w-2 h-2 rounded-full bg-[#2BBF8C] animate-ping" />
+                        <span>BEST MATCH</span>
+                      </span>
+                    )}
 
-              {/* Get Started Button */}
-              <button
-                onClick={() => handleOpenPlanModal('silver')}
-                className="mt-6 w-full py-3 px-4 rounded-xl text-sm font-medium text-[#2D3591] bg-indigo-50/70 hover:bg-[#2D3591] hover:text-white border border-indigo-200/80 transition-all duration-300 shadow-2xs hover:shadow-md cursor-pointer"
-              >
-                Get Started
-              </button>
+                    <div>
+                      {/* Top Row: Plan Name & Policy Range */}
+                      <div className="flex items-center justify-between">
+                        <h3 className={`text-xl font-semibold ${isHighlighted ? 'text-white' : 'text-slate-900'}`}>
+                          {tier.name}
+                        </h3>
+                        <span
+                          className={
+                            isHighlighted
+                              ? 'text-xs text-white/90 bg-white/15 px-3 py-1 rounded-full font-normal border border-white/10'
+                              : 'text-xs text-slate-500 font-normal bg-slate-100 px-2.5 py-0.5 rounded-full'
+                          }
+                        >
+                          {policyRangeText}
+                        </span>
+                      </div>
+
+                      {/* Price */}
+                      <div className="mt-4 flex items-baseline gap-1">
+                        <span className={`text-3xl sm:text-4xl font-semibold ${isHighlighted ? 'text-white' : 'text-slate-900'}`}>
+                          ₹{tier.rate}
+                        </span>
+                        <span className={`text-xs ${isHighlighted ? 'text-white/70' : 'text-slate-400'} font-normal`}>
+                          /policy/mo
+                        </span>
+                      </div>
+
+                      <div className={`text-[11px] mt-1 ${isHighlighted ? 'text-indigo-200' : 'text-slate-400'}`}>
+                        {tier.to
+                          ? `₹${Math.round(tier.from * tier.rate)} - ₹${Math.round(tier.to * tier.rate)}/mo based on policies`
+                          : `Starts at ₹${Math.round(tier.from * tier.rate)}/mo for ${tier.from}+ policies`}
+                      </div>
+
+                      <div className={`my-5 border-t ${isHighlighted ? 'border-white/15' : 'border-slate-100'}`} />
+
+                      {/* Features List */}
+                      <ul className={`space-y-3 text-xs sm:text-[13px] ${isHighlighted ? 'text-white/90' : 'text-slate-600'} font-normal`}>
+                        {visibleFeatures.map((feat, featIdx) => (
+                          <li key={featIdx} className="flex items-center gap-2.5">
+                            <span
+                              className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-xs font-semibold ${isHighlighted ? 'bg-white/20 text-white' : 'bg-indigo-50 text-[#2D3591]'
+                                }`}
+                            >
+                              ✓
+                            </span>
+                            <span>{feat}</span>
+                          </li>
+                        ))}
+                      </ul>
+
+                      {/* + More / Show Less Button */}
+                      {tier.features.length > 7 && (
+                        <div className="text-right pt-3">
+                          <button
+                            onClick={() => toggleCardExpand(tier.name)}
+                            className={`text-xs font-medium cursor-pointer ${isHighlighted ? 'text-emerald-300 hover:text-white hover:underline' : 'text-[#2D3591] hover:underline'
+                              }`}
+                          >
+                            {isExpanded ? '- Show Less' : `+ ${remainingCount} More`}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Get Started Button */}
+                    <button
+                      id={`get-started-${tier.name.toLowerCase()}-btn`}
+                      onClick={() => handleOpenPlanModal(tier.name)}
+                      className={`mt-6 w-full py-3 px-4 rounded-xl text-sm font-semibold transition-all duration-300 shadow-2xs hover:shadow-md cursor-pointer ${isHighlighted
+                        ? 'text-[#1E2568] bg-white hover:bg-slate-100 shadow-lg hover:shadow-xl'
+                        : 'text-[#2D3591] bg-indigo-50/70 hover:bg-[#2D3591] hover:text-white border border-indigo-200/80'
+                        }`}
+                    >
+                      Get Started
+                    </button>
+                  </div>
+                );
+              })}
             </div>
-
-            {/* CARD 3: GOLD (HIGHLIGHTED / BEST MATCH) */}
-            <div className="bg-gradient-to-b from-[#1C2366] via-[#1E2568] to-[#141A4C] text-white rounded-3xl p-6 sm:p-7 shadow-2xl flex flex-col justify-between relative ring-4 ring-indigo-500/20 hover:scale-[1.02] transition-all duration-300">
-
-              {/* Floating BEST MATCH Badge */}
-              <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-white text-[#1E2568] text-[11px] font-semibold px-4 py-1 rounded-full uppercase tracking-wider shadow-md flex items-center gap-1.5 border border-indigo-100">
-                <span className="w-2 h-2 rounded-full bg-[#2BBF8C] animate-ping" />
-                <span>BEST MATCH</span>
-              </span>
-
-              <div>
-                {/* Top Row: Plan Name & User Count Pill */}
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-semibold text-white">Gold</h3>
-                  <span className="text-xs text-white/90 bg-white/15 px-3 py-1 rounded-full font-normal border border-white/10">
-                    21-100 users
-                  </span>
-                </div>
-
-                {/* Price */}
-                <div className="mt-4 flex items-baseline gap-1">
-                  <span className="text-3xl sm:text-4xl font-semibold text-white">₹25</span>
-                  <span className="text-xs text-white/70 font-normal">/user/mo</span>
-                </div>
-
-                <div className="my-5 border-t border-white/15" />
-
-                {/* Features List */}
-                <ul className="space-y-3 text-xs sm:text-[13px] text-white/90 font-normal">
-                  <li className="flex items-center gap-2.5">
-                    <span className="w-5 h-5 rounded-full bg-white/20 text-white flex items-center justify-center shrink-0 text-xs font-semibold">✓</span>
-                    <span>Mobile + Web App</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <span className="w-5 h-5 rounded-full bg-white/20 text-white flex items-center justify-center shrink-0 text-xs font-semibold">✓</span>
-                    <span>AI Face + Biometric</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <span className="w-5 h-5 rounded-full bg-white/20 text-white flex items-center justify-center shrink-0 text-xs font-semibold">✓</span>
-                    <span>Attendance &amp; Payroll</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <span className="w-5 h-5 rounded-full bg-white/20 text-white flex items-center justify-center shrink-0 text-xs font-semibold">✓</span>
-                    <span>Daily &amp; Monthly Attendance</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <span className="w-5 h-5 rounded-full bg-white/20 text-white flex items-center justify-center shrink-0 text-xs font-semibold">✓</span>
-                    <span>Employee &amp; Shift Management</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <span className="w-5 h-5 rounded-full bg-white/20 text-white flex items-center justify-center shrink-0 text-xs font-semibold">✓</span>
-                    <span>Leave &amp; Holiday Tracking</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <span className="w-5 h-5 rounded-full bg-white/20 text-white flex items-center justify-center shrink-0 text-xs font-semibold">✓</span>
-                    <span>Salary Management</span>
-                  </li>
-
-                  {/* Expandable 3 Features */}
-                  {expandedCards['gold'] && (
-                    <>
-                      <li className="flex items-center gap-2.5 animate-in fade-in duration-200">
-                        <span className="w-5 h-5 rounded-full bg-white/20 text-white flex items-center justify-center shrink-0 text-xs font-semibold">✓</span>
-                        <span>Role-based Access Control</span>
-                      </li>
-                      <li className="flex items-center gap-2.5 animate-in fade-in duration-200">
-                        <span className="w-5 h-5 rounded-full bg-white/20 text-white flex items-center justify-center shrink-0 text-xs font-semibold">✓</span>
-                        <span>Loan &amp; Document Management</span>
-                      </li>
-                      <li className="flex items-center gap-2.5 animate-in fade-in duration-200">
-                        <span className="w-5 h-5 rounded-full bg-white/20 text-white flex items-center justify-center shrink-0 text-xs font-semibold">✓</span>
-                        <span>Reports &amp; Compliance</span>
-                      </li>
-                    </>
-                  )}
-                </ul>
-
-                {/* + 3 More Button */}
-                <div className="text-right pt-2">
-                  <button
-                    onClick={() => toggleCardExpand('gold')}
-                    className="text-xs font-medium text-emerald-300 hover:text-white hover:underline cursor-pointer"
-                  >
-                    {expandedCards['gold'] ? '- Show Less' : '+ 3 More'}
-                  </button>
-                </div>
-              </div>
-
-              {/* Get Started Button */}
-              <button
-                onClick={() => handleOpenPlanModal('gold')}
-                className="mt-6 w-full py-3 px-4 rounded-xl text-sm font-semibold text-[#1E2568] bg-white hover:bg-slate-100 shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer"
-              >
-                Get Started
-              </button>
-            </div>
-
-            {/* CARD 4: PLATINUM */}
-            <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/90 shadow-xs flex flex-col justify-between hover:shadow-xl transition-all duration-300 relative group">
-              <div>
-                {/* Top Row: Plan Name & User Count */}
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-semibold text-slate-900">Platinum</h3>
-                  <span className="text-xs text-slate-500 font-normal">101+ users</span>
-                </div>
-
-                {/* Price */}
-                <div className="mt-4 flex items-baseline gap-1">
-                  <span className="text-3xl sm:text-4xl font-semibold text-slate-900">₹20</span>
-                  <span className="text-xs text-slate-400 font-normal">/user/mo</span>
-                </div>
-
-                <div className="my-5 border-t border-slate-100" />
-
-                {/* Features List */}
-                <ul className="space-y-3 text-xs sm:text-[13px] text-slate-600 font-normal">
-                  <li className="flex items-center gap-2.5">
-                    <span className="w-5 h-5 rounded-full bg-indigo-50 text-[#2D3591] flex items-center justify-center shrink-0 text-xs font-semibold">✓</span>
-                    <span>Mobile + Web App</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <span className="w-5 h-5 rounded-full bg-indigo-50 text-[#2D3591] flex items-center justify-center shrink-0 text-xs font-semibold">✓</span>
-                    <span>AI Face + Biometric</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <span className="w-5 h-5 rounded-full bg-indigo-50 text-[#2D3591] flex items-center justify-center shrink-0 text-xs font-semibold">✓</span>
-                    <span>Attendance &amp; Payroll</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <span className="w-5 h-5 rounded-full bg-indigo-50 text-[#2D3591] flex items-center justify-center shrink-0 text-xs font-semibold">✓</span>
-                    <span>Daily &amp; Monthly Attendance</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <span className="w-5 h-5 rounded-full bg-indigo-50 text-[#2D3591] flex items-center justify-center shrink-0 text-xs font-semibold">✓</span>
-                    <span>Employee &amp; Shift Management</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <span className="w-5 h-5 rounded-full bg-indigo-50 text-[#2D3591] flex items-center justify-center shrink-0 text-xs font-semibold">✓</span>
-                    <span>Leave &amp; Holiday Tracking</span>
-                  </li>
-                  <li className="flex items-center gap-2.5">
-                    <span className="w-5 h-5 rounded-full bg-indigo-50 text-[#2D3591] flex items-center justify-center shrink-0 text-xs font-semibold">✓</span>
-                    <span>Salary Management</span>
-                  </li>
-
-                  {/* Expandable 3 Features */}
-                  {expandedCards['platinum'] && (
-                    <>
-                      <li className="flex items-center gap-2.5 animate-in fade-in duration-200">
-                        <span className="w-5 h-5 rounded-full bg-indigo-50 text-[#2D3591] flex items-center justify-center shrink-0 text-xs font-semibold">✓</span>
-                        <span>Role-based Access Control</span>
-                      </li>
-                      <li className="flex items-center gap-2.5 animate-in fade-in duration-200">
-                        <span className="w-5 h-5 rounded-full bg-indigo-50 text-[#2D3591] flex items-center justify-center shrink-0 text-xs font-semibold">✓</span>
-                        <span>Loan &amp; Document Management</span>
-                      </li>
-                      <li className="flex items-center gap-2.5 animate-in fade-in duration-200">
-                        <span className="w-5 h-5 rounded-full bg-indigo-50 text-[#2D3591] flex items-center justify-center shrink-0 text-xs font-semibold">✓</span>
-                        <span>Reports &amp; Compliance</span>
-                      </li>
-                    </>
-                  )}
-                </ul>
-
-                {/* + 3 More Button */}
-                <div className="text-right pt-2">
-                  <button
-                    onClick={() => toggleCardExpand('platinum')}
-                    className="text-xs font-medium text-[#2D3591] hover:underline cursor-pointer"
-                  >
-                    {expandedCards['platinum'] ? '- Show Less' : '+ 3 More'}
-                  </button>
-                </div>
-              </div>
-
-              {/* Get Started Button */}
-              <button
-                onClick={() => handleOpenPlanModal('platinum')}
-                className="mt-6 w-full py-3 px-4 rounded-xl text-sm font-medium text-[#2D3591] bg-indigo-50/70 hover:bg-[#2D3591] hover:text-white border border-indigo-200/80 transition-all duration-300 shadow-2xs hover:shadow-md cursor-pointer"
-              >
-                Get Started
-              </button>
-            </div>
-
-          </div>
+          )}
         </div>
       </section>
 
@@ -1768,6 +1822,7 @@ export default function LandingPage() {
           >
             {/* Close Button */}
             <button
+              id="pricing-modal-close-btn"
               onClick={() => {
                 setPricingModalOpen(false);
                 setPaymentSuccess(false);
@@ -1789,22 +1844,22 @@ export default function LandingPage() {
                     Payment Successful!
                   </h3>
                   <p className="text-xs sm:text-sm text-slate-600 mt-1 font-normal">
-                    Your subscription for <strong className="text-[#2D3591]">{currentPlan.name} Plan</strong> ({billingCycle.toUpperCase()}) has been activated.
+                    Your subscription for <strong className="text-[#2D3591]">{currentTier?.name || ''} Plan</strong> ({currentCycle?.label?.toUpperCase() || ''}) has been activated.
                   </p>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-2 text-left">
                   <div className="flex justify-between">
                     <span className="text-slate-500 font-normal">Plan Selected:</span>
-                    <span className="font-semibold text-slate-900">{currentPlan.name} Plan ({currentPlan.usersRange})</span>
+                    <span className="font-semibold text-slate-900">{currentTier?.name || ''} Plan ({currentTier?.to ? `${currentTier.from.toLocaleString()}-${currentTier.to.toLocaleString()}` : `${currentTier?.from ? currentTier.from.toLocaleString() + '+' : ''}`} Policies)</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-500 font-normal">Users Limit:</span>
-                    <span className="font-semibold text-slate-900">{employeesCount} Users</span>
+                    <span className="text-slate-500 font-normal">Policies Limit:</span>
+                    <span className="font-semibold text-slate-900">{policiesCount.toLocaleString()} Policies</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500 font-normal">Amount Paid:</span>
-                    <span className="font-semibold text-[#2D3591]">Rs.{totalAmount.toLocaleString('en-IN')}</span>
+                    <span className="font-semibold text-[#2D3591]">Rs.{(quoteData ? quoteData.final_amount : totalAmount).toLocaleString('en-IN')}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500 font-normal">Transaction ID:</span>
@@ -1855,59 +1910,66 @@ export default function LandingPage() {
                         </h3>
                       </div>
 
-                      {/* 3 Selectable Plan Cards Row */}
+                      {/* Selectable Plan Cards Row */}
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        {[
-                          { id: 'silver' as const, name: 'Silver', users: '0-20' },
-                          { id: 'gold' as const, name: 'Gold', users: '21-100' },
-                          { id: 'platinum' as const, name: 'Platinum', users: '101+' },
-                        ].map((plan) => {
-                          const isSelected = selectedPlanTier === plan.id;
-                          return (
-                            <div
-                              key={plan.id}
-                              onClick={() => handleSelectTier(plan.id)}
-                              className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${isSelected
-                                ? 'border-2 border-[#2D3591] bg-indigo-50/50 shadow-xs ring-1 ring-[#2D3591]/20'
-                                : 'border-slate-200 hover:border-slate-300 bg-white'
-                                }`}
-                            >
-                              <div className="flex items-center gap-2.5">
-                                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${isSelected ? 'bg-indigo-100 text-[#2D3591]' : 'bg-slate-100 text-slate-600'
-                                  }`}>
-                                  <Users className="w-4 h-4" />
-                                </div>
-                                <div>
-                                  <div className="text-sm font-semibold text-slate-900">{plan.name}</div>
-                                  <div className="text-xs text-slate-500 font-normal">{plan.users}</div>
-                                </div>
-                              </div>
+                        {planData?.tiers
+                          ?.filter((p) => !p.name.toLowerCase().includes('free'))
+                          ?.map((plan) => {
+                            const activeTierName = quoteData?.tier || selectedPlanTier;
+                            const isSelected = activeTierName.toLowerCase() === plan.name.toLowerCase();
+                            const rangeLabel = plan.to
+                              ? `${plan.from.toLocaleString()} - ${plan.to.toLocaleString()}`
+                              : `${plan.from.toLocaleString()}+`;
+                            return (
                               <div
-                                className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${isSelected
-                                  ? 'bg-[#2D3591] text-white'
-                                  : 'border-2 border-slate-300'
+                                key={plan.name}
+                                onClick={() => handleSelectTier(plan.name)}
+                                className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${isSelected
+                                  ? 'border-2 border-[#2D3591] bg-indigo-50/50 shadow-xs ring-1 ring-[#2D3591]/20'
+                                  : 'border-slate-200 hover:border-slate-300 bg-white'
                                   }`}
                               >
-                                {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                                <div className="flex items-center gap-2.5">
+                                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${isSelected ? 'bg-indigo-100 text-[#2D3591]' : 'bg-slate-100 text-slate-600'
+                                    }`}>
+                                    <Shield className="w-4 h-4" />
+                                  </div>
+                                  <div>
+                                    <div className="text-sm font-semibold text-slate-900">{plan.name}</div>
+                                    <div className="text-xs text-slate-500 font-normal">{rangeLabel} policies</div>
+                                  </div>
+                                </div>
+                                <div
+                                  className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${isSelected
+                                    ? 'bg-[#2D3591] text-white'
+                                    : 'border-2 border-slate-300'
+                                    }`}
+                                >
+                                  {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                                </div>
                               </div>
-                            </div>
-                          );
-                        })}
+                            );
+                          })}
                       </div>
 
-                      {/* Number of Employees & Billing Cycle */}
+                      {/* Number of Policies & Billing Cycle */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-                        {/* Number of Employees */}
+                        {/* Number of Policies */}
                         <div>
-                          <label className="block text-xs font-medium text-slate-700 mb-1.5">
-                            Number of Employees
-                          </label>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <label className="block text-xs font-medium text-slate-700">
+                              Number of Policies
+                            </label>
+                            <span className="text-[11px] text-slate-500 font-medium">
+                              ₹{quoteData?.rate_per_policy ?? currentRate}/policy/mo
+                            </span>
+                          </div>
                           <div className="flex items-center gap-2">
                             <button
                               type="button"
                               onClick={() => {
-                                const min = currentPlan.min;
-                                setEmployeesCount((prev) => Math.max(min, prev - 1));
+                                const step = policiesCount > 1000 ? 100 : 50;
+                                handlePoliciesStep(-step);
                               }}
                               className="w-10 h-10 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 flex items-center justify-center font-bold text-base transition-colors cursor-pointer"
                             >
@@ -1916,12 +1978,23 @@ export default function LandingPage() {
                             <div className="flex-1">
                               <input
                                 type="number"
-                                min={currentPlan.min}
-                                max={currentPlan.max}
-                                value={employeesCount}
+                                min={planData?.min_policies || 100}
+                                max={planData?.max_policies || 1000000}
+                                value={policiesCount}
                                 onChange={(e) => {
                                   const val = parseInt(e.target.value, 10);
-                                  if (!isNaN(val)) setEmployeesCount(val);
+                                  if (!isNaN(val)) {
+                                    setPoliciesCount(val);
+                                    const matchedTier = planData?.tiers?.find((t) => {
+                                      if (t.to !== null && t.to !== undefined) {
+                                        return val >= t.from && val <= t.to;
+                                      }
+                                      return val >= t.from;
+                                    });
+                                    if (matchedTier) {
+                                      setSelectedPlanTier(matchedTier.name.toLowerCase());
+                                    }
+                                  }
                                 }}
                                 className="w-full h-10 px-3 text-center rounded-xl border border-slate-200 bg-slate-50/60 font-semibold text-sm text-slate-900 focus:outline-hidden focus:border-[#2D3591] focus:bg-white"
                               />
@@ -1929,14 +2002,19 @@ export default function LandingPage() {
                             <button
                               type="button"
                               onClick={() => {
-                                const max = currentPlan.max;
-                                setEmployeesCount((prev) => Math.min(max, prev + 1));
+                                const step = policiesCount >= 1000 ? 100 : 50;
+                                handlePoliciesStep(step);
                               }}
                               className="w-10 h-10 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 flex items-center justify-center font-bold text-base transition-colors cursor-pointer"
                             >
                               <Plus className="w-4 h-4" />
                             </button>
                           </div>
+                          {planData?.first_purchase_free_ai_credits === 'equal_to_policies' && (
+                            <div className="text-[11px] text-emerald-600 font-medium mt-1 flex items-center gap-1">
+                              <Sparkles className="w-3 h-3 text-emerald-500" /> Includes {(quoteData ? quoteData.free_ai_credits : policiesCount).toLocaleString()} free AI OCR credits
+                            </div>
+                          )}
                         </div>
 
                         {/* Billing Cycle */}
@@ -1945,23 +2023,19 @@ export default function LandingPage() {
                             Billing Cycle
                           </label>
                           <div className="grid grid-cols-3 gap-1 bg-slate-100 p-1 rounded-xl">
-                            {[
-                              { id: 'monthly' as const, label: 'Monthly', icon: Calendar },
-                              { id: 'quarterly' as const, label: 'Quarterly', icon: Calendar },
-                              { id: 'yearly' as const, label: 'Yearly', icon: Sparkles },
-                            ].map((cycle) => {
-                              const isCycleActive = billingCycle === cycle.id;
+                            {planData?.cycles?.map((cycle) => {
+                              const isCycleActive = billingCycle === cycle.billing_cycle;
                               return (
                                 <button
-                                  key={cycle.id}
+                                  key={cycle.billing_cycle}
                                   type="button"
-                                  onClick={() => setBillingCycle(cycle.id)}
+                                  onClick={() => handleSelectCycle(cycle.billing_cycle)}
                                   className={`py-2 px-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1 transition-all cursor-pointer ${isCycleActive
                                     ? 'bg-[#2D3591] text-white shadow-xs font-semibold'
                                     : 'text-slate-600 hover:text-slate-900'
                                     }`}
                                 >
-                                  <cycle.icon className="w-3.5 h-3.5 shrink-0" />
+                              
                                   <span>{cycle.label}</span>
                                 </button>
                               );
@@ -2051,14 +2125,16 @@ export default function LandingPage() {
                           </div>
                         </div>
 
-                        {/* Phone Number with Verify */}
-                        <div className="sm:col-span-2">
+                        {/* Phone Number with SMS OTP Verification */}
+                        <div className="sm:col-span-2 space-y-2">
                           <div className="flex items-center justify-between mb-1">
                             <label className="text-slate-700 font-medium">
                               Phone Number <span className="text-rose-500">*</span>
                             </label>
                             <span className="text-[11px] text-[#2D3591] font-medium">
-                              Verify Your Mobile Number Through SMS
+                              {isMobileVerified
+                                ? 'Mobile Number Verified'
+                                : 'Verify Your Mobile Number Through SMS'}
                             </span>
                           </div>
                           <div className="flex gap-2">
@@ -2070,20 +2146,84 @@ export default function LandingPage() {
                               maxLength={10}
                               placeholder="9876543210"
                               value={billingForm.phone}
-                              onChange={(e) => setBillingForm({ ...billingForm, phone: e.target.value })}
-                              className="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-hidden focus:border-[#2D3591] focus:ring-2 focus:ring-indigo-100 text-xs sm:text-sm transition-all"
+                              disabled={isMobileVerified}
+                              onChange={(e) => handlePhoneChange(e.target.value)}
+                              className="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-hidden focus:border-[#2D3591] focus:ring-2 focus:ring-indigo-100 text-xs sm:text-sm transition-all disabled:bg-slate-50 disabled:text-slate-500"
                             />
-                            <button
-                              type="button"
-                              onClick={() => setIsMobileVerified(true)}
-                              className={`px-4 py-2.5 rounded-xl font-medium text-xs transition-colors shrink-0 cursor-pointer ${isMobileVerified
-                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                : 'bg-indigo-50 text-[#2D3591] hover:bg-indigo-100'
-                                }`}
-                            >
-                              {isMobileVerified ? '✓ Verified' : 'Verify'}
-                            </button>
+                            {isMobileVerified ? (
+                              <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold shrink-0">
+                                <BadgeCheck className="w-4 h-4 text-emerald-600" />
+                                <span>Verified</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setIsMobileVerified(false);
+                                    setIsOtpSent(false);
+                                    setOtpValue('');
+                                    setPurchaseToken('');
+                                  }}
+                                  className="text-[10px] text-slate-400 hover:text-slate-600 underline ml-1 cursor-pointer"
+                                >
+                                  Change
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={handleSendOtp}
+                                disabled={isSendingOtp || billingForm.phone.length !== 10}
+                                className="px-4 py-2.5 rounded-xl font-medium text-xs transition-colors shrink-0 cursor-pointer bg-indigo-50 text-[#2D3591] hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+                              >
+                                {isSendingOtp ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : isOtpSent ? (
+                                  'Resend OTP'
+                                ) : (
+                                  'Verify'
+                                )}
+                              </button>
+                            )}
                           </div>
+
+                          {/* OTP Input Row when OTP has been sent */}
+                          {isOtpSent && !isMobileVerified && (
+                            <div className="p-3 bg-indigo-50/60 border border-indigo-100 rounded-xl space-y-2 animate-in fade-in duration-200">
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="text-slate-700 font-medium flex items-center gap-1">
+                                  <Lock className="w-3 h-3 text-[#2D3591]" />
+                                  Enter OTP sent to +91 {billingForm.phone}
+                                </span>
+                              </div>
+                              <div className="flex gap-2">
+                                <input
+                                  type="text"
+                                  maxLength={6}
+                                  placeholder="Enter 4-6 digit OTP"
+                                  value={otpValue}
+                                  onChange={(e) => setOtpValue(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault();
+                                      handleVerifyOtp();
+                                    }
+                                  }}
+                                  className="flex-1 px-3 py-2 rounded-lg border border-slate-200 bg-white text-xs sm:text-sm font-medium tracking-widest text-center focus:outline-hidden focus:border-[#2D3591] focus:ring-2 focus:ring-indigo-100"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={handleVerifyOtp}
+                                  disabled={isVerifyingOtp || !otpValue.trim()}
+                                  className="px-4 py-2 rounded-lg bg-[#2D3591] hover:bg-[#222870] text-white text-xs font-semibold transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                                >
+                                  {isVerifyingOtp ? (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  ) : (
+                                    'Submit OTP'
+                                  )}
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </div>
 
                         {/* Company Address */}
@@ -2098,6 +2238,75 @@ export default function LandingPage() {
                               placeholder="Enter Company Address"
                               value={billingForm.companyAddress}
                               onChange={(e) => setBillingForm({ ...billingForm, companyAddress: e.target.value })}
+                              className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 focus:outline-hidden focus:border-[#2D3591] focus:ring-2 focus:ring-indigo-100 text-xs sm:text-sm transition-all"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Pincode */}
+                        <div>
+                          <label className="block text-slate-700 font-medium mb-1">
+                            Pincode <span className="text-rose-500">*</span>
+                          </label>
+                          <div className="relative">
+                            <Compass className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                            <input
+                              type="text"
+                              maxLength={6}
+                              placeholder="e.g. 395006"
+                              value={billingForm.pincode}
+                              onChange={(e) => handlePincodeChange(e.target.value)}
+                              className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 focus:outline-hidden focus:border-[#2D3591] focus:ring-2 focus:ring-indigo-100 text-xs sm:text-sm transition-all"
+                            />
+                          </div>
+                        </div>
+
+                        {/* City */}
+                        <div>
+                          <label className="block text-slate-700 font-medium mb-1">
+                            City <span className="text-rose-500">*</span>
+                          </label>
+                          <div className="relative">
+                            <Building2 className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                            <input
+                              type="text"
+                              placeholder="e.g. Surat"
+                              value={billingForm.city}
+                              onChange={(e) => setBillingForm({ ...billingForm, city: e.target.value })}
+                              className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 focus:outline-hidden focus:border-[#2D3591] focus:ring-2 focus:ring-indigo-100 text-xs sm:text-sm transition-all"
+                            />
+                          </div>
+                        </div>
+
+                        {/* State */}
+                        <div>
+                          <label className="block text-slate-700 font-medium mb-1">
+                            State <span className="text-rose-500">*</span>
+                          </label>
+                          <div className="relative">
+                            <Globe2 className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                            <input
+                              type="text"
+                              placeholder="e.g. Gujarat"
+                              value={billingForm.state}
+                              onChange={(e) => setBillingForm({ ...billingForm, state: e.target.value })}
+                              className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 focus:outline-hidden focus:border-[#2D3591] focus:ring-2 focus:ring-indigo-100 text-xs sm:text-sm transition-all"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Country */}
+                        <div>
+                          <label className="block text-slate-700 font-medium mb-1">
+                            Country <span className="text-rose-500">*</span>
+                          </label>
+                          <div className="relative">
+                            <Globe2 className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                            <input
+                              type="text"
+                              placeholder="India"
+                              value={billingForm.country}
+                              onChange={(e) => setBillingForm({ ...billingForm, country: e.target.value })}
                               className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 focus:outline-hidden focus:border-[#2D3591] focus:ring-2 focus:ring-indigo-100 text-xs sm:text-sm transition-all"
                             />
                           </div>
@@ -2119,52 +2328,70 @@ export default function LandingPage() {
                           <h3 className="text-base font-semibold text-slate-900">
                             Price Details
                           </h3>
+                          {isFetchingQuote && (
+                            <Loader2 className="w-4 h-4 text-[#2D3591] animate-spin ml-auto" />
+                          )}
                         </div>
 
                         {/* Selected Plan Pill */}
                         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-50 border border-indigo-200/80 text-[#2D3591] text-xs font-semibold">
                           <Crown className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                          <span>{currentPlan.name} Plan • {currentPlan.usersRange}</span>
+                          <span>
+                            {quoteData?.plan_name
+                              ? quoteData.plan_name
+                              : `${currentTier?.name || ''} Plan • ${currentTier?.to ? `${currentTier.from.toLocaleString()}-${currentTier.to.toLocaleString()}` : `${currentTier?.from ? currentTier.from.toLocaleString() + '+' : ''}`} Policies`}
+                          </span>
                         </div>
 
                         {/* Calculation Breakdown Lines */}
                         <div className="space-y-2.5 text-xs text-slate-600 pt-1">
                           <div className="flex items-center justify-between">
                             <span className="text-slate-500 font-normal">
-                              {employeesCount} users × Rs.{currentPlan.rate} × {monthsMultiplier} mo
+                              {quoteData
+                                ? `${quoteData.policies.toLocaleString()} policies × ₹${quoteData.rate_per_policy} × ${quoteData.months} mo`
+                                : `${policiesCount.toLocaleString()} policies × ₹${currentRate} × ${monthsMultiplier} mo`}
                             </span>
                             <span className="font-semibold text-slate-900">
-                              Rs.{baseSubtotal.toLocaleString('en-IN')}
+                              Rs.{(quoteData ? quoteData.total_price : baseSubtotal).toLocaleString('en-IN')}
                             </span>
                           </div>
 
-                          {isCouponApplied && (
+                          {quoteData && quoteData.coupon_amount > 0 ? (
                             <div className="flex items-center justify-between text-emerald-600 font-medium">
                               <span className="flex items-center gap-1">
-                                <Percent className="w-3 h-3" /> Coupon (WELCOME 5%)
+                                <Percent className="w-3 h-3" /> Coupon ({quoteData.coupon_code} {quoteData.coupon_per}%)
+                              </span>
+                              <span>-Rs.{quoteData.coupon_amount.toLocaleString('en-IN')}</span>
+                            </div>
+                          ) : isCouponApplied && discountAmount > 0 ? (
+                            <div className="flex items-center justify-between text-emerald-600 font-medium">
+                              <span className="flex items-center gap-1">
+                                <Percent className="w-3 h-3" /> Coupon ({couponCode})
                               </span>
                               <span>-Rs.{discountAmount.toLocaleString('en-IN')}</span>
                             </div>
-                          )}
+                          ) : null}
 
                           <div className="flex items-center justify-between">
-                            <span className="text-slate-500 font-normal">GST (18%)</span>
+                            <span className="text-slate-500 font-normal">
+                              GST ({quoteData ? quoteData.gst_percentage : (planData?.gst_percentage ?? 18)}%)
+                            </span>
                             <span className="font-semibold text-slate-900">
-                              Rs.{gstAmount.toLocaleString('en-IN')}
+                              Rs.{(quoteData ? quoteData.gst_amount : gstAmount).toLocaleString('en-IN')}
                             </span>
                           </div>
 
                           <div className="flex items-center justify-between pt-1">
                             <span className="text-slate-500 font-normal">Subtotal</span>
                             <span className="font-semibold text-slate-900">
-                              Rs.{discountedSubtotal.toLocaleString('en-IN')}
+                              Rs.{(quoteData ? quoteData.price_after_discount : discountedSubtotal).toLocaleString('en-IN')}
                             </span>
                           </div>
 
                           <div className="border-t border-slate-100 pt-3 flex items-baseline justify-between">
                             <span className="text-sm font-bold text-slate-900">Total</span>
                             <span className="text-2xl font-bold text-[#2D3591]">
-                              Rs.{totalAmount.toLocaleString('en-IN')}
+                              Rs.{(quoteData ? quoteData.final_amount : totalAmount).toLocaleString('en-IN')}
                             </span>
                           </div>
                         </div>
@@ -2178,48 +2405,82 @@ export default function LandingPage() {
 
                           <div className="flex gap-2">
                             <input
+                              id="coupon-code-input"
                               type="text"
-                              placeholder="Enter coupon code"
+                              placeholder="Enter coupon code (e.g. WELCOME10)"
                               value={couponCode}
                               onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  handleApplyCoupon();
+                                }
+                              }}
                               className="flex-1 px-3 py-2 bg-white rounded-lg border border-slate-200 text-xs focus:outline-hidden focus:border-[#2D3591]"
                             />
                             <button
+                              id="apply-coupon-btn"
                               type="button"
+                              disabled={isApplyingCoupon || isFetchingQuote}
                               onClick={() => {
-                                if (couponCode.trim()) {
-                                  setIsCouponApplied(true);
+                                if (isCouponApplied && couponCode.trim().toUpperCase() === appliedCouponCode.toUpperCase()) {
+                                  handleRemoveCoupon();
+                                } else {
+                                  handleApplyCoupon();
                                 }
                               }}
-                              className="px-3.5 py-2 bg-[#2D3591] hover:bg-[#222870] text-white rounded-lg text-xs font-medium transition-colors cursor-pointer"
+                              className="px-3.5 py-2 bg-[#2D3591] hover:bg-[#222870] text-white rounded-lg text-xs font-medium transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-1.5 shrink-0"
                             >
-                              {isCouponApplied ? 'Applied' : 'Apply'}
+                              {isApplyingCoupon ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : isCouponApplied && couponCode.trim().toUpperCase() === appliedCouponCode.toUpperCase() ? (
+                                'Applied'
+                              ) : (
+                                'Apply'
+                              )}
                             </button>
                           </div>
+
+                          {/* Applied Coupon Info Badge */}
+                          {isCouponApplied && appliedCouponCode && (
+                            <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-700">
+                              <span className="font-medium flex items-center gap-1">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                Coupon <strong>{appliedCouponCode}</strong> applied ({quoteData?.coupon_per ?? 0}% off)
+                              </span>
+                              <button
+                                type="button"
+                                onClick={handleRemoveCoupon}
+                                className="text-[11px] font-semibold text-emerald-800 hover:underline cursor-pointer"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          )}
 
                           {/* Preset Welcome Coupon Banner */}
                           <div className="flex items-center justify-between pt-1 text-xs">
                             <div className="flex items-center gap-2">
                               <Tag className="w-3.5 h-3.5 text-[#2D3591]" />
                               <div>
-                                <div className="font-bold text-[#2D3591]">WELCOME</div>
-                                <div className="text-[11px] text-slate-500">5% off on any plan. No minimum.</div>
+                                <div className="font-bold text-[#2D3591]">WELCOME10</div>
+                                <div className="text-[11px] text-slate-500">10% off on your plan quote.</div>
                               </div>
                             </div>
                             <button
+                              id="preset-coupon-btn"
                               type="button"
+                              disabled={isApplyingCoupon || isFetchingQuote}
                               onClick={() => {
-                                if (isCouponApplied) {
-                                  setIsCouponApplied(false);
-                                  setCouponCode('');
+                                if (isCouponApplied && appliedCouponCode.toUpperCase() === 'WELCOME10') {
+                                  handleRemoveCoupon();
                                 } else {
-                                  setCouponCode('WELCOME');
-                                  setIsCouponApplied(true);
+                                  handleApplyCoupon('WELCOME10');
                                 }
                               }}
-                              className="text-xs font-bold text-[#2D3591] hover:underline cursor-pointer"
+                              className="text-xs font-bold text-[#2D3591] hover:underline cursor-pointer disabled:opacity-50"
                             >
-                              {isCouponApplied ? 'Remove' : 'Apply'}
+                              {isCouponApplied && appliedCouponCode.toUpperCase() === 'WELCOME10' ? 'Remove' : 'Apply'}
                             </button>
                           </div>
                         </div>
@@ -2237,20 +2498,37 @@ export default function LandingPage() {
                       {/* Pay Now Button */}
                       <div className="pt-2 space-y-2">
                         <button
+                          id="pay-now-btn"
                           type="button"
-                          onClick={() => {
-                            setIsProcessingPayment(true);
-                            setTimeout(() => {
-                              setIsProcessingPayment(false);
-                              setPaymentSuccess(true);
-                            }, 500);
-                          }}
-                          disabled={isProcessingPayment}
-                          className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold text-white bg-[#2D3591] hover:bg-[#222870] shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                          onClick={handlePayNow}
+                          disabled={!isBillingFormValid || isProcessingPayment || isFetchingQuote}
+                          className={`w-full py-3.5 px-4 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
+                            !isBillingFormValid || isProcessingPayment || isFetchingQuote
+                              ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none border border-slate-300/60'
+                              : 'text-white bg-[#2D3591] hover:bg-[#222870] shadow-md hover:shadow-lg cursor-pointer active:scale-[0.99]'
+                          }`}
                         >
-                          <Lock className="w-4 h-4" />
-                          <span>{isProcessingPayment ? 'Processing...' : `Pay Now — Rs.${totalAmount.toLocaleString('en-IN')}`}</span>
+                          {isProcessingPayment ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin text-white" />
+                              <span>Processing Purchase...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Lock className="w-4 h-4" />
+                              <span>
+                                Pay Now — Rs.{(quoteData ? quoteData.final_amount : totalAmount).toLocaleString('en-IN')}
+                              </span>
+                            </>
+                          )}
                         </button>
+                        {!isBillingFormValid && (
+                          <p className="text-center text-[11px] text-amber-600 font-medium animate-in fade-in duration-200">
+                            {!isMobileVerified
+                              ? '⚠️ Please verify your phone number with SMS OTP to enable payment'
+                              : '⚠️ Please fill all required billing details (*) to enable payment'}
+                          </p>
+                        )}
                         <p className="text-center text-[11px] text-slate-400 font-medium flex items-center justify-center gap-1">
                           <CheckCircle2 className="w-3 h-3 text-[#2BBF8C]" /> Secured by SSL • Razorpay
                         </p>
@@ -2298,7 +2576,7 @@ export default function LandingPage() {
                     </div>
                     <div>
                       <div className="text-xs font-semibold text-slate-800">Money Back Guarantee</div>
-                      <div className="text-[11px] text-slate-500">7-day money back guarantee</div>
+                      <div className="text-[11px] text-slate-500">{planData?.free_trial_days || 7}-day money back guarantee</div>
                     </div>
                   </div>
                 </div>
