@@ -68,10 +68,12 @@ import {
   fetchSendSignUpOtp,
   fetchDirectVerifyOtp,
   fetchDirectPlanPurchase,
+  fetchGstVerify,
 } from '@/hooks/usePricingApi';
 import { api } from '@/utils/axiosInstance';
 import endPointApi from '@/utils/endPointApi';
 import { toast } from 'react-toastify';
+import OtpBoxInput from '@/components/OtpBoxInput';
 
 export default function LandingPage() {
   const router = useRouter();
@@ -95,8 +97,11 @@ export default function LandingPage() {
   const [isMobileVerified, setIsMobileVerified] = useState<boolean>(false);
   const [isSendingOtp, setIsSendingOtp] = useState<boolean>(false);
   const [isOtpSent, setIsOtpSent] = useState<boolean>(false);
+  const [otpLength, setOtpLength] = useState<number>(4);
   const [otpValue, setOtpValue] = useState<string>('');
   const [isVerifyingOtp, setIsVerifyingOtp] = useState<boolean>(false);
+  const [isVerifyingGst, setIsVerifyingGst] = useState<boolean>(false);
+  const [isGstVerified, setIsGstVerified] = useState<boolean>(false);
   const [purchaseToken, setPurchaseToken] = useState<string>('');
   const [paymentSuccess, setPaymentSuccess] = useState<boolean>(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState<boolean>(false);
@@ -319,8 +324,9 @@ export default function LandingPage() {
       if (res && (res.status === 200 || res.status === '200' || res.status === true)) {
         toast.success(res.message || 'OTP sent successfully!');
         setIsOtpSent(true);
+        setOtpValue(''); // Keep empty - user types manually into OTP boxes
         if (res.data?.otp) {
-          setOtpValue(String(res.data.otp));
+          setOtpLength(String(res.data.otp).length || 4);
         }
       } else {
         toast.error(res?.message || 'Failed to send OTP');
@@ -334,9 +340,13 @@ export default function LandingPage() {
 
   const handleVerifyOtp = async () => {
     const cleanPhone = billingForm.phone.trim();
-    const cleanOtp = otpValue.trim();
+    const cleanOtp = otpValue.replace(/\s+/g, '').trim();
     if (!cleanOtp) {
       toast.error('Please enter the OTP');
+      return;
+    }
+    if (cleanOtp.length < otpLength) {
+      toast.error(`Please enter the complete ${otpLength}-digit OTP`);
       return;
     }
     setIsVerifyingOtp(true);
@@ -366,6 +376,79 @@ export default function LandingPage() {
       setIsOtpSent(false);
       setOtpValue('');
       setPurchaseToken('');
+    }
+  };
+
+  const handleVerifyGst = async (gstToVerify?: string) => {
+    const rawGst = (gstToVerify || billingForm.gstNumber).trim().toUpperCase();
+    if (!rawGst) return;
+    if (rawGst.length !== 15) {
+      toast.error('GST Number must be 15 characters');
+      return;
+    }
+    setIsVerifyingGst(true);
+    try {
+      const res = await fetchGstVerify(rawGst);
+      if (res && (res.status === 200 || res.status === '200' || res.status === true)) {
+        toast.success(res.message || 'GST verified successfully!');
+        setIsGstVerified(true);
+        const info = res.data?.taxpayerInfo;
+        if (info) {
+          const compName = info.tradeNam?.trim() || info.lgnm?.trim() || '';
+          const legalName = info.lgnm?.trim() || '';
+          const addr = info.pradr?.addr;
+          let addressString = '';
+          let city = '';
+          let state = '';
+          let pincode = '';
+
+          if (addr) {
+            const parts = [
+              addr.flno,
+              addr.bno,
+              addr.bnm,
+              addr.st,
+              addr.loc,
+              addr.locality,
+              addr.landMark,
+            ]
+              .map((p) => p?.trim())
+              .filter(Boolean);
+            addressString = parts.join(', ');
+            city = addr.dst?.trim() || addr.loc?.trim() || '';
+            state = addr.stcd?.trim() || '';
+            pincode = addr.pncd?.trim() || '';
+          }
+
+          setBillingForm((prev) => ({
+            ...prev,
+            gstNumber: rawGst,
+            companyName: compName || prev.companyName,
+            fullName: prev.fullName || legalName,
+            companyAddress: addressString || prev.companyAddress,
+            city: city || prev.city,
+            state: state || prev.state,
+            pincode: pincode || prev.pincode,
+          }));
+        }
+      } else {
+        setIsGstVerified(false);
+        toast.error(res?.message || 'Invalid GST number');
+      }
+    } catch (err: any) {
+      setIsGstVerified(false);
+      toast.error(err?.response?.data?.message || err?.message || 'Error verifying GST number');
+    } finally {
+      setIsVerifyingGst(false);
+    }
+  };
+
+  const handleGstChange = (val: string) => {
+    const clean = val.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 15);
+    setBillingForm((prev) => ({ ...prev, gstNumber: clean }));
+    setIsGstVerified(false);
+    if (clean.length === 15) {
+      handleVerifyGst(clean);
     }
   };
 
@@ -1817,7 +1900,7 @@ export default function LandingPage() {
       {pricingModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 md:p-6 overflow-y-auto animate-in fade-in duration-200">
           <div
-            className="bg-[#F8FAFC] rounded-3xl max-w-5xl w-full p-4 sm:p-6 md:p-8 shadow-2xl relative border border-slate-200/90 my-auto text-slate-800 max-h-[95vh] overflow-y-auto"
+            className="bg-[#F8FAFC] rounded-3xl max-w-5xl w-full p-4 sm:p-5 md:p-6 shadow-2xl relative border border-slate-200/90 my-auto text-slate-800 max-h-[96vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close Button */}
@@ -1827,7 +1910,7 @@ export default function LandingPage() {
                 setPricingModalOpen(false);
                 setPaymentSuccess(false);
               }}
-              className="absolute top-4 right-4 sm:top-6 sm:right-6 w-9 h-9 rounded-full bg-slate-200/80 hover:bg-slate-300 text-slate-600 hover:text-slate-900 flex items-center justify-center transition-colors cursor-pointer z-10"
+              className="absolute top-4 right-4 sm:top-5 sm:right-5 w-8 h-8 rounded-full bg-slate-200/80 hover:bg-slate-300 text-slate-600 hover:text-slate-900 flex items-center justify-center transition-colors cursor-pointer z-10"
               aria-label="Close modal"
             >
               <X className="w-4 h-4" />
@@ -1893,25 +1976,25 @@ export default function LandingPage() {
               </div>
             ) : (
               /* Two-Column Checkout View */
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
 
                   {/* LEFT COLUMN: Step 1 & Step 2 (7 Cols) */}
-                  <div className="lg:col-span-7 space-y-6">
+                  <div className="lg:col-span-7 space-y-3.5">
 
                     {/* STEP 1: Select Your Plan */}
-                    <div className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-xs space-y-5">
-                      <div className="flex items-center gap-2.5 pb-1">
-                        <span className="w-6 h-6 rounded-md bg-[#2D3591] text-white flex items-center justify-center text-xs font-bold">
+                    <div className="bg-white rounded-2xl border border-slate-200/90 p-3.5 sm:p-4 shadow-xs space-y-3">
+                      <div className="flex items-center gap-2 pb-0.5">
+                        <span className="w-5 h-5 rounded-md bg-[#2D3591] text-white flex items-center justify-center text-xs font-bold">
                           1
                         </span>
-                        <h3 className="text-base font-semibold text-slate-900">
+                        <h3 className="text-sm sm:text-base font-semibold text-slate-900">
                           Select Your Plan
                         </h3>
                       </div>
 
-                      {/* Selectable Plan Cards Row */}
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {/* Selectable Plan Cards Row (No Icons, Compact Size) */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                         {planData?.tiers
                           ?.filter((p) => !p.name.toLowerCase().includes('free'))
                           ?.map((plan) => {
@@ -1924,28 +2007,24 @@ export default function LandingPage() {
                               <div
                                 key={plan.name}
                                 onClick={() => handleSelectTier(plan.name)}
-                                className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${isSelected
-                                  ? 'border-2 border-[#2D3591] bg-indigo-50/50 shadow-xs ring-1 ring-[#2D3591]/20'
-                                  : 'border-slate-200 hover:border-slate-300 bg-white'
-                                  }`}
+                                className={`px-3 py-2 rounded-xl border-2 transition-all cursor-pointer flex items-center justify-between ${
+                                  isSelected
+                                    ? 'border-[#2D3591] bg-indigo-50/50 shadow-xs ring-1 ring-[#2D3591]/20'
+                                    : 'border-slate-200 hover:border-slate-300 bg-white'
+                                }`}
                               >
-                                <div className="flex items-center gap-2.5">
-                                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${isSelected ? 'bg-indigo-100 text-[#2D3591]' : 'bg-slate-100 text-slate-600'
-                                    }`}>
-                                    <Shield className="w-4 h-4" />
-                                  </div>
-                                  <div>
-                                    <div className="text-sm font-semibold text-slate-900">{plan.name}</div>
-                                    <div className="text-xs text-slate-500 font-normal">{rangeLabel} policies</div>
-                                  </div>
+                                <div className="min-w-0">
+                                  <div className="text-xs sm:text-sm font-bold text-slate-900 leading-tight">{plan.name}</div>
+                                  <div className="text-[11px] text-slate-500 font-normal leading-tight mt-0.5">{rangeLabel} policies</div>
                                 </div>
                                 <div
-                                  className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${isSelected
-                                    ? 'bg-[#2D3591] text-white'
-                                    : 'border-2 border-slate-300'
-                                    }`}
+                                  className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ml-1.5 transition-all ${
+                                    isSelected
+                                      ? 'bg-[#2D3591] text-white'
+                                      : 'border-2 border-slate-300'
+                                  }`}
                                 >
-                                  {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                                  {isSelected && <Check className="w-2.5 h-2.5 stroke-[3]" />}
                                 </div>
                               </div>
                             );
@@ -2046,30 +2125,30 @@ export default function LandingPage() {
                     </div>
 
                     {/* STEP 2: Billing Details */}
-                    <div className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-xs space-y-4">
-                      <div className="flex items-center gap-2.5 pb-1">
-                        <span className="w-6 h-6 rounded-md bg-[#2D3591] text-white flex items-center justify-center text-xs font-bold">
+                    <div className="bg-white rounded-2xl border border-slate-200/90 p-3.5 sm:p-4 shadow-xs space-y-2.5">
+                      <div className="flex items-center gap-2 pb-0.5">
+                        <span className="w-5 h-5 rounded-md bg-[#2D3591] text-white flex items-center justify-center text-xs font-bold">
                           2
                         </span>
-                        <h3 className="text-base font-semibold text-slate-900">
+                        <h3 className="text-sm sm:text-base font-semibold text-slate-900">
                           Billing Details
                         </h3>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 text-xs">
                         {/* Full Name */}
                         <div>
                           <label className="block text-slate-700 font-medium mb-1">
                             Full Name <span className="text-rose-500">*</span>
                           </label>
                           <div className="relative">
-                            <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                            <User className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                             <input
                               type="text"
                               placeholder="Enter Full Name"
                               value={billingForm.fullName}
                               onChange={(e) => setBillingForm({ ...billingForm, fullName: e.target.value })}
-                              className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 focus:outline-hidden focus:border-[#2D3591] focus:ring-2 focus:ring-indigo-100 text-xs sm:text-sm transition-all"
+                              className="w-full pl-8 pr-3 py-2 rounded-lg border border-slate-200 focus:outline-hidden focus:border-[#2D3591] focus:ring-2 focus:ring-indigo-100 text-xs sm:text-sm transition-all"
                             />
                           </div>
                         </div>
@@ -2080,13 +2159,13 @@ export default function LandingPage() {
                             Email <span className="text-rose-500">*</span>
                           </label>
                           <div className="relative">
-                            <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                            <Mail className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                             <input
                               type="email"
                               placeholder="Enter Email"
                               value={billingForm.email}
                               onChange={(e) => setBillingForm({ ...billingForm, email: e.target.value })}
-                              className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 focus:outline-hidden focus:border-[#2D3591] focus:ring-2 focus:ring-indigo-100 text-xs sm:text-sm transition-all"
+                              className="w-full pl-8 pr-3 py-2 rounded-lg border border-slate-200 focus:outline-hidden focus:border-[#2D3591] focus:ring-2 focus:ring-indigo-100 text-xs sm:text-sm transition-all"
                             />
                           </div>
                         </div>
@@ -2097,37 +2176,68 @@ export default function LandingPage() {
                             Company Name <span className="text-rose-500">*</span>
                           </label>
                           <div className="relative">
-                            <Building2 className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                            <Building2 className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                             <input
                               type="text"
                               placeholder="Enter Company Name"
                               value={billingForm.companyName}
                               onChange={(e) => setBillingForm({ ...billingForm, companyName: e.target.value })}
-                              className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 focus:outline-hidden focus:border-[#2D3591] focus:ring-2 focus:ring-indigo-100 text-xs sm:text-sm transition-all"
+                              className="w-full pl-8 pr-3 py-2 rounded-lg border border-slate-200 focus:outline-hidden focus:border-[#2D3591] focus:ring-2 focus:ring-indigo-100 text-xs sm:text-sm transition-all"
                             />
                           </div>
                         </div>
 
                         {/* GST Number */}
                         <div>
-                          <label className="block text-slate-700 font-medium mb-1">
-                            GST Number <span className="text-slate-400 font-normal">(Optional)</span>
-                          </label>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="block text-slate-700 font-medium">
+                              GST Number <span className="text-slate-400 font-normal">(Optional)</span>
+                            </label>
+                            {isGstVerified && (
+                              <span className="text-[10px] text-emerald-600 font-semibold flex items-center gap-0.5">
+                                <BadgeCheck className="w-3 h-3 text-emerald-600" /> Verified
+                              </span>
+                            )}
+                          </div>
                           <div className="relative">
-                            <Tag className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                            <Tag className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                             <input
                               type="text"
-                              placeholder="e.g. 29AAACK7411M1Z3"
+                              maxLength={15}
+                              placeholder="e.g. 24BAGPV9685P2ZG"
                               value={billingForm.gstNumber}
-                              onChange={(e) => setBillingForm({ ...billingForm, gstNumber: e.target.value })}
-                              className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 focus:outline-hidden focus:border-[#2D3591] focus:ring-2 focus:ring-indigo-100 text-xs sm:text-sm transition-all"
+                              onChange={(e) => handleGstChange(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  handleVerifyGst();
+                                }
+                              }}
+                              className={`w-full pl-8 pr-16 py-2 rounded-lg border text-xs sm:text-sm uppercase transition-all focus:outline-hidden focus:border-[#2D3591] focus:ring-2 focus:ring-indigo-100 ${
+                                isGstVerified
+                                  ? 'border-emerald-300 bg-emerald-50/20'
+                                  : 'border-slate-200'
+                              }`}
                             />
+                            {billingForm.gstNumber.trim().length === 15 && !isGstVerified && (
+                              <button
+                                type="button"
+                                onClick={() => handleVerifyGst()}
+                                disabled={isVerifyingGst}
+                                className="absolute right-1.5 top-1/2 -translate-y-1/2 px-2 py-1 text-[11px] font-semibold text-[#2D3591] bg-indigo-50 hover:bg-indigo-100 rounded-md transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-1"
+                              >
+                                {isVerifyingGst ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Verify'}
+                              </button>
+                            )}
+                            {isVerifyingGst && billingForm.gstNumber.trim().length !== 15 && (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin text-[#2D3591] absolute right-3 top-1/2 -translate-y-1/2" />
+                            )}
                           </div>
                         </div>
 
                         {/* Phone Number with SMS OTP Verification */}
-                        <div className="sm:col-span-2 space-y-2">
-                          <div className="flex items-center justify-between mb-1">
+                        <div className="sm:col-span-2 space-y-1.5">
+                          <div className="flex items-center justify-between mb-0.5">
                             <label className="text-slate-700 font-medium">
                               Phone Number <span className="text-rose-500">*</span>
                             </label>
@@ -2138,7 +2248,7 @@ export default function LandingPage() {
                             </span>
                           </div>
                           <div className="flex gap-2">
-                            <span className="px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-600 font-medium text-xs sm:text-sm flex items-center shrink-0">
+                            <span className="px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-600 font-medium text-xs sm:text-sm flex items-center shrink-0">
                               +91
                             </span>
                             <input
@@ -2148,10 +2258,10 @@ export default function LandingPage() {
                               value={billingForm.phone}
                               disabled={isMobileVerified}
                               onChange={(e) => handlePhoneChange(e.target.value)}
-                              className="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-hidden focus:border-[#2D3591] focus:ring-2 focus:ring-indigo-100 text-xs sm:text-sm transition-all disabled:bg-slate-50 disabled:text-slate-500"
+                              className="flex-1 px-3 py-2 rounded-lg border border-slate-200 focus:outline-hidden focus:border-[#2D3591] focus:ring-2 focus:ring-indigo-100 text-xs sm:text-sm transition-all disabled:bg-slate-50 disabled:text-slate-500"
                             />
                             {isMobileVerified ? (
-                              <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold shrink-0">
+                              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold shrink-0">
                                 <BadgeCheck className="w-4 h-4 text-emerald-600" />
                                 <span>Verified</span>
                                 <button
@@ -2172,7 +2282,7 @@ export default function LandingPage() {
                                 type="button"
                                 onClick={handleSendOtp}
                                 disabled={isSendingOtp || billingForm.phone.length !== 10}
-                                className="px-4 py-2.5 rounded-xl font-medium text-xs transition-colors shrink-0 cursor-pointer bg-indigo-50 text-[#2D3591] hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+                                className="px-3.5 py-2 rounded-lg font-medium text-xs transition-colors shrink-0 cursor-pointer bg-indigo-50 text-[#2D3591] hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
                               >
                                 {isSendingOtp ? (
                                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -2185,43 +2295,31 @@ export default function LandingPage() {
                             )}
                           </div>
 
-                          {/* OTP Input Row when OTP has been sent */}
+                          {/* OTP Input Row when OTP has been sent (Compact & No Extra Text) */}
                           {isOtpSent && !isMobileVerified && (
-                            <div className="p-3 bg-indigo-50/60 border border-indigo-100 rounded-xl space-y-2 animate-in fade-in duration-200">
-                              <div className="flex items-center justify-between text-xs">
-                                <span className="text-slate-700 font-medium flex items-center gap-1">
-                                  <Lock className="w-3 h-3 text-[#2D3591]" />
-                                  Enter OTP sent to +91 {billingForm.phone}
-                                </span>
-                              </div>
-                              <div className="flex gap-2">
-                                <input
-                                  type="text"
-                                  maxLength={6}
-                                  placeholder="Enter 4-6 digit OTP"
+                            <div className="p-2.5 bg-indigo-50/60 border border-indigo-100 rounded-xl flex items-center justify-between gap-3 animate-in fade-in duration-200">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <OtpBoxInput
+                                  length={otpLength}
                                   value={otpValue}
-                                  onChange={(e) => setOtpValue(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                      e.preventDefault();
-                                      handleVerifyOtp();
-                                    }
-                                  }}
-                                  className="flex-1 px-3 py-2 rounded-lg border border-slate-200 bg-white text-xs sm:text-sm font-medium tracking-widest text-center focus:outline-hidden focus:border-[#2D3591] focus:ring-2 focus:ring-indigo-100"
+                                  onChange={(val) => setOtpValue(val)}
+                                  onEnter={handleVerifyOtp}
+                                  boxClassName="w-8 h-8 sm:w-9 sm:h-9 text-sm sm:text-base font-bold rounded-lg"
+                                  className="my-0 gap-1.5"
                                 />
-                                <button
-                                  type="button"
-                                  onClick={handleVerifyOtp}
-                                  disabled={isVerifyingOtp || !otpValue.trim()}
-                                  className="px-4 py-2 rounded-lg bg-[#2D3591] hover:bg-[#222870] text-white text-xs font-semibold transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
-                                >
-                                  {isVerifyingOtp ? (
-                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                  ) : (
-                                    'Submit OTP'
-                                  )}
-                                </button>
                               </div>
+                              <button
+                                type="button"
+                                onClick={handleVerifyOtp}
+                                disabled={isVerifyingOtp || otpValue.trim().length !== otpLength}
+                                className="px-3.5 py-2 rounded-lg bg-[#2D3591] hover:bg-[#222870] text-white text-xs font-semibold transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5 shrink-0 shadow-xs"
+                              >
+                                {isVerifyingOtp ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  'Submit OTP'
+                                )}
+                              </button>
                             </div>
                           )}
                         </div>
@@ -2232,13 +2330,13 @@ export default function LandingPage() {
                             Company Address <span className="text-rose-500">*</span>
                           </label>
                           <div className="relative">
-                            <MapPin className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                            <MapPin className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
                             <input
                               type="text"
                               placeholder="Enter Company Address"
                               value={billingForm.companyAddress}
                               onChange={(e) => setBillingForm({ ...billingForm, companyAddress: e.target.value })}
-                              className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 focus:outline-hidden focus:border-[#2D3591] focus:ring-2 focus:ring-indigo-100 text-xs sm:text-sm transition-all"
+                              className="w-full pl-8 pr-3 py-2 rounded-lg border border-slate-200 focus:outline-hidden focus:border-[#2D3591] focus:ring-2 focus:ring-indigo-100 text-xs sm:text-sm transition-all"
                             />
                           </div>
                         </div>
@@ -2249,14 +2347,14 @@ export default function LandingPage() {
                             Pincode <span className="text-rose-500">*</span>
                           </label>
                           <div className="relative">
-                            <Compass className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                            <Compass className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                             <input
                               type="text"
                               maxLength={6}
                               placeholder="e.g. 395006"
                               value={billingForm.pincode}
                               onChange={(e) => handlePincodeChange(e.target.value)}
-                              className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 focus:outline-hidden focus:border-[#2D3591] focus:ring-2 focus:ring-indigo-100 text-xs sm:text-sm transition-all"
+                              className="w-full pl-8 pr-3 py-2 rounded-lg border border-slate-200 focus:outline-hidden focus:border-[#2D3591] focus:ring-2 focus:ring-indigo-100 text-xs sm:text-sm transition-all"
                             />
                           </div>
                         </div>
@@ -2267,13 +2365,13 @@ export default function LandingPage() {
                             City <span className="text-rose-500">*</span>
                           </label>
                           <div className="relative">
-                            <Building2 className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                            <Building2 className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                             <input
                               type="text"
                               placeholder="e.g. Surat"
                               value={billingForm.city}
                               onChange={(e) => setBillingForm({ ...billingForm, city: e.target.value })}
-                              className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 focus:outline-hidden focus:border-[#2D3591] focus:ring-2 focus:ring-indigo-100 text-xs sm:text-sm transition-all"
+                              className="w-full pl-8 pr-3 py-2 rounded-lg border border-slate-200 focus:outline-hidden focus:border-[#2D3591] focus:ring-2 focus:ring-indigo-100 text-xs sm:text-sm transition-all"
                             />
                           </div>
                         </div>
@@ -2284,13 +2382,13 @@ export default function LandingPage() {
                             State <span className="text-rose-500">*</span>
                           </label>
                           <div className="relative">
-                            <Globe2 className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                            <Globe2 className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                             <input
                               type="text"
                               placeholder="e.g. Gujarat"
                               value={billingForm.state}
                               onChange={(e) => setBillingForm({ ...billingForm, state: e.target.value })}
-                              className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 focus:outline-hidden focus:border-[#2D3591] focus:ring-2 focus:ring-indigo-100 text-xs sm:text-sm transition-all"
+                              className="w-full pl-8 pr-3 py-2 rounded-lg border border-slate-200 focus:outline-hidden focus:border-[#2D3591] focus:ring-2 focus:ring-indigo-100 text-xs sm:text-sm transition-all"
                             />
                           </div>
                         </div>
@@ -2301,13 +2399,13 @@ export default function LandingPage() {
                             Country <span className="text-rose-500">*</span>
                           </label>
                           <div className="relative">
-                            <Globe2 className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                            <Globe2 className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                             <input
                               type="text"
                               placeholder="India"
                               value={billingForm.country}
                               onChange={(e) => setBillingForm({ ...billingForm, country: e.target.value })}
-                              className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 focus:outline-hidden focus:border-[#2D3591] focus:ring-2 focus:ring-indigo-100 text-xs sm:text-sm transition-all"
+                              className="w-full pl-8 pr-3 py-2 rounded-lg border border-slate-200 focus:outline-hidden focus:border-[#2D3591] focus:ring-2 focus:ring-indigo-100 text-xs sm:text-sm transition-all"
                             />
                           </div>
                         </div>
@@ -2317,25 +2415,25 @@ export default function LandingPage() {
                   </div>
 
                   {/* RIGHT COLUMN: Price Details (5 Cols) */}
-                  <div className="lg:col-span-5 space-y-4">
-                    <div className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-xs flex flex-col justify-between space-y-5">
-                      <div className="space-y-4">
+                  <div className="lg:col-span-5 space-y-3">
+                    <div className="bg-white rounded-2xl border border-slate-200/90 p-3.5 sm:p-4 shadow-xs flex flex-col justify-between space-y-3">
+                      <div className="space-y-3">
                         {/* Header */}
                         <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-lg bg-indigo-50 text-[#2D3591] flex items-center justify-center">
-                            <Wallet className="w-4 h-4" />
+                          <div className="w-7 h-7 rounded-lg bg-indigo-50 text-[#2D3591] flex items-center justify-center">
+                            <Wallet className="w-3.5 h-3.5" />
                           </div>
-                          <h3 className="text-base font-semibold text-slate-900">
+                          <h3 className="text-sm sm:text-base font-semibold text-slate-900">
                             Price Details
                           </h3>
                           {isFetchingQuote && (
-                            <Loader2 className="w-4 h-4 text-[#2D3591] animate-spin ml-auto" />
+                            <Loader2 className="w-3.5 h-3.5 text-[#2D3591] animate-spin ml-auto" />
                           )}
                         </div>
 
                         {/* Selected Plan Pill */}
-                        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-50 border border-indigo-200/80 text-[#2D3591] text-xs font-semibold">
-                          <Crown className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200/80 text-[#2D3591] text-xs font-semibold">
+                          <Crown className="w-3 h-3 text-amber-500 shrink-0" />
                           <span>
                             {quoteData?.plan_name
                               ? quoteData.plan_name
@@ -2344,7 +2442,7 @@ export default function LandingPage() {
                         </div>
 
                         {/* Calculation Breakdown Lines */}
-                        <div className="space-y-2.5 text-xs text-slate-600 pt-1">
+                        <div className="space-y-1.5 text-xs text-slate-600 pt-0.5">
                           <div className="flex items-center justify-between">
                             <span className="text-slate-500 font-normal">
                               {quoteData
@@ -2381,23 +2479,23 @@ export default function LandingPage() {
                             </span>
                           </div>
 
-                          <div className="flex items-center justify-between pt-1">
+                          <div className="flex items-center justify-between pt-0.5">
                             <span className="text-slate-500 font-normal">Subtotal</span>
                             <span className="font-semibold text-slate-900">
                               Rs.{(quoteData ? quoteData.price_after_discount : discountedSubtotal).toLocaleString('en-IN')}
                             </span>
                           </div>
 
-                          <div className="border-t border-slate-100 pt-3 flex items-baseline justify-between">
+                          <div className="border-t border-slate-100 pt-2 flex items-baseline justify-between">
                             <span className="text-sm font-bold text-slate-900">Total</span>
-                            <span className="text-2xl font-bold text-[#2D3591]">
+                            <span className="text-xl sm:text-2xl font-bold text-[#2D3591]">
                               Rs.{(quoteData ? quoteData.final_amount : totalAmount).toLocaleString('en-IN')}
                             </span>
                           </div>
                         </div>
 
                         {/* Coupon Code Box */}
-                        <div className="p-3.5 rounded-xl bg-indigo-50/40 border border-indigo-100/80 space-y-2.5">
+                        <div className="p-2.5 sm:p-3 rounded-xl bg-indigo-50/40 border border-indigo-100/80 space-y-2">
                           <div className="flex items-center gap-1.5 text-xs font-medium text-slate-800">
                             <Percent className="w-3.5 h-3.5 text-[#2D3591]" />
                             <span>Have a coupon code?</span>
@@ -2416,7 +2514,7 @@ export default function LandingPage() {
                                   handleApplyCoupon();
                                 }
                               }}
-                              className="flex-1 px-3 py-2 bg-white rounded-lg border border-slate-200 text-xs focus:outline-hidden focus:border-[#2D3591]"
+                              className="flex-1 px-3 py-1.5 bg-white rounded-lg border border-slate-200 text-xs focus:outline-hidden focus:border-[#2D3591]"
                             />
                             <button
                               id="apply-coupon-btn"
@@ -2429,7 +2527,7 @@ export default function LandingPage() {
                                   handleApplyCoupon();
                                 }
                               }}
-                              className="px-3.5 py-2 bg-[#2D3591] hover:bg-[#222870] text-white rounded-lg text-xs font-medium transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-1.5 shrink-0"
+                              className="px-3.5 py-1.5 bg-[#2D3591] hover:bg-[#222870] text-white rounded-lg text-xs font-medium transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-1.5 shrink-0"
                             >
                               {isApplyingCoupon ? (
                                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -2441,52 +2539,56 @@ export default function LandingPage() {
                             </button>
                           </div>
 
-                          {/* Applied Coupon Info Badge */}
-                          {isCouponApplied && appliedCouponCode && (
-                            <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-700">
-                              <span className="font-medium flex items-center gap-1">
-                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                                Coupon <strong>{appliedCouponCode}</strong> applied ({quoteData?.coupon_per ?? 0}% off)
-                              </span>
+                          {/* Applied Coupon Info Badge OR Preset Welcome Coupon Banner */}
+                          {isCouponApplied && appliedCouponCode ? (
+                            <div className="flex items-center justify-between p-2 rounded-lg bg-emerald-50/80 border border-emerald-200 text-xs animate-in fade-in duration-200">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <div className="w-5 h-5 rounded-md bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                                  <CheckCircle2 className="w-3 h-3" />
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="font-bold text-emerald-900 truncate">
+                                    Coupon <span className="text-[#2D3591]">{appliedCouponCode}</span> applied!
+                                  </div>
+                                  <div className="text-[11px] text-emerald-700">
+                                    {quoteData?.coupon_per ?? 10}% discount applied to your quote
+                                  </div>
+                                </div>
+                              </div>
                               <button
                                 type="button"
                                 onClick={handleRemoveCoupon}
-                                className="text-[11px] font-semibold text-emerald-800 hover:underline cursor-pointer"
+                                className="text-xs font-semibold text-rose-600 hover:text-rose-700 hover:underline px-2 py-0.5 shrink-0 cursor-pointer"
                               >
                                 Remove
                               </button>
                             </div>
-                          )}
-
-                          {/* Preset Welcome Coupon Banner */}
-                          <div className="flex items-center justify-between pt-1 text-xs">
-                            <div className="flex items-center gap-2">
-                              <Tag className="w-3.5 h-3.5 text-[#2D3591]" />
-                              <div>
-                                <div className="font-bold text-[#2D3591]">WELCOME10</div>
-                                <div className="text-[11px] text-slate-500">10% off on your plan quote.</div>
+                          ) : (
+                            <div className="flex items-center justify-between p-2 rounded-lg bg-white border border-dashed border-indigo-200 text-xs">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <div className="w-5 h-5 rounded-md bg-indigo-50 text-[#2D3591] flex items-center justify-center shrink-0">
+                                  <Tag className="w-3 h-3" />
+                                </div>
+                                <div>
+                                  <div className="font-bold text-[#2D3591]">WELCOME10</div>
+                                  <div className="text-[11px] text-slate-500">10% off on your plan quote</div>
+                                </div>
                               </div>
+                              <button
+                                id="preset-coupon-btn"
+                                type="button"
+                                disabled={isApplyingCoupon || isFetchingQuote}
+                                onClick={() => handleApplyCoupon('WELCOME10')}
+                                className="text-xs font-bold text-[#2D3591] hover:underline cursor-pointer disabled:opacity-50 px-2 py-0.5 shrink-0"
+                              >
+                                Apply
+                              </button>
                             </div>
-                            <button
-                              id="preset-coupon-btn"
-                              type="button"
-                              disabled={isApplyingCoupon || isFetchingQuote}
-                              onClick={() => {
-                                if (isCouponApplied && appliedCouponCode.toUpperCase() === 'WELCOME10') {
-                                  handleRemoveCoupon();
-                                } else {
-                                  handleApplyCoupon('WELCOME10');
-                                }
-                              }}
-                              className="text-xs font-bold text-[#2D3591] hover:underline cursor-pointer disabled:opacity-50"
-                            >
-                              {isCouponApplied && appliedCouponCode.toUpperCase() === 'WELCOME10' ? 'Remove' : 'Apply'}
-                            </button>
-                          </div>
+                          )}
                         </div>
 
                         {/* 100% Secure Payment Guarantee */}
-                        <div className="p-3 rounded-xl bg-emerald-50/70 border border-emerald-200/60 flex items-center gap-2.5 text-xs">
+                        <div className="p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-200/60 flex items-center gap-2 text-xs">
                           <ShieldCheck className="w-4 h-4 text-[#2BBF8C] shrink-0" />
                           <div>
                             <div className="font-semibold text-emerald-900">100% Secure Payment</div>
@@ -2496,13 +2598,13 @@ export default function LandingPage() {
                       </div>
 
                       {/* Pay Now Button */}
-                      <div className="pt-2 space-y-2">
+                      <div className="pt-1.5 space-y-1.5">
                         <button
                           id="pay-now-btn"
                           type="button"
                           onClick={handlePayNow}
                           disabled={!isBillingFormValid || isProcessingPayment || isFetchingQuote}
-                          className={`w-full py-3.5 px-4 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
+                          className={`w-full py-2.5 sm:py-3 px-4 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
                             !isBillingFormValid || isProcessingPayment || isFetchingQuote
                               ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none border border-slate-300/60'
                               : 'text-white bg-[#2D3591] hover:bg-[#222870] shadow-md hover:shadow-lg cursor-pointer active:scale-[0.99]'

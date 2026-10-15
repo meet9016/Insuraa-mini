@@ -227,3 +227,51 @@ export const fetchDirectPlanPurchase = async (payload: DirectPlanPurchaseParams)
     return err?.response?.data || null;
   }
 };
+
+export interface GstTaxpayerAddress {
+  bnm?: string;
+  loc?: string;
+  st?: string;
+  bno?: string;
+  dst?: string;
+  locality?: string;
+  pncd?: string;
+  landMark?: string;
+  stcd?: string;
+  flno?: string;
+}
+
+export interface GstTaxpayerInfo {
+  lgnm?: string;
+  tradeNam?: string;
+  gstin?: string;
+  panNo?: string;
+  pradr?: {
+    addr?: GstTaxpayerAddress;
+    ntr?: string;
+  };
+}
+
+export interface GstVerifyResponse {
+  status: number | string | boolean;
+  message?: string;
+  data?: {
+    taxpayerInfo?: GstTaxpayerInfo;
+  };
+}
+
+/**
+ * Verify GST number and obtain taxpayer info
+ */
+export const fetchGstVerify = async (gstNumber: string): Promise<GstVerifyResponse | null> => {
+  try {
+    const formData = new FormData();
+    formData.append('gst_number', gstNumber.trim().toUpperCase());
+
+    const response = await api.post(endPointApi.PRICING.GST_VERIFY, formData);
+    return response?.data || null;
+  } catch (err: any) {
+    console.error('Error in fetchGstVerify:', err);
+    return err?.response?.data || null;
+  }
+};

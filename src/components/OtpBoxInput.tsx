@@ -5,6 +5,9 @@ interface OtpBoxInputProps {
   value: string;
   onChange: (otp: string) => void;
   error?: boolean;
+  onEnter?: () => void;
+  className?: string;
+  boxClassName?: string;
 }
 
 export default function OtpBoxInput({
@@ -12,6 +15,9 @@ export default function OtpBoxInput({
   value,
   onChange,
   error = false,
+  onEnter,
+  className = '',
+  boxClassName,
 }: OtpBoxInputProps) {
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -59,6 +65,9 @@ export default function OtpBoxInput({
         currentOtpArray[index] = ' ';
         onChange(currentOtpArray.join('').trimEnd());
       }
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      onEnter?.();
     }
   };
 
@@ -78,7 +87,7 @@ export default function OtpBoxInput({
   const otpDigits = Array.from({ length }, (_, i) => value[i] || '');
 
   return (
-    <div className="flex items-center justify-start gap-3 sm:gap-4 my-3">
+    <div className={`flex items-center justify-start gap-2.5 sm:gap-3 my-2 ${className}`}>
       {Array.from({ length }).map((_, index) => (
         <input
           key={index}
@@ -93,13 +102,22 @@ export default function OtpBoxInput({
           onChange={(e) => handleChange(e, index)}
           onKeyDown={(e) => handleKeyDown(e, index)}
           onPaste={handlePaste}
-          className={`w-14 h-14 sm:w-10 sm:h-10 text-center text-2xl font-semibold rounded-2xl border-2 outline-none transition-all duration-200 shadow-sm bg-gray-50/60 hover:bg-gray-50 focus:bg-white
+          className={
+            boxClassName
+              ? `${boxClassName} text-center font-bold border-2 outline-none transition-all duration-200 shadow-xs ${error
+                ? '!border-red-500 text-red-600 bg-red-50/30 focus:!border-red-500 focus:ring-4 focus:ring-red-500/20'
+                : otpDigits[index]
+                  ? 'border-[#2D3591] text-[#2D3591] bg-indigo-50/40 ring-2 ring-[#2D3591]/15'
+                  : 'border-slate-200 text-slate-900 bg-slate-50/60 hover:bg-slate-50 focus:bg-white focus:border-[#2D3591] focus:ring-2 focus:ring-[#2D3591]/15'
+              }`
+              : `w-14 h-14 sm:w-10 sm:h-10 text-center text-2xl font-semibold rounded-2xl border-2 outline-none transition-all duration-200 shadow-sm bg-gray-50/60 hover:bg-gray-50 focus:bg-white
             ${error
-              ? '!border-red-500 text-red-600 bg-red-50/30 focus:!border-red-500 focus:ring-4 focus:ring-red-500/20'
-              : otpDigits[index]
-                ? 'border-[#2E3192] text-[#2E3192] bg-blue-50/30 ring-4 ring-[#2E3192]/10'
-                : 'border-gray-200 text-gray-900 focus:border-[#2E3192] focus:ring-4 focus:ring-[#2E3192]/15'
-            }`}
+                ? '!border-red-500 text-red-600 bg-red-50/30 focus:!border-red-500 focus:ring-4 focus:ring-red-500/20'
+                : otpDigits[index]
+                  ? 'border-[#2E3192] text-[#2E3192] bg-blue-50/30 ring-4 ring-[#2E3192]/10'
+                  : 'border-gray-200 text-gray-900 focus:border-[#2E3192] focus:ring-4 focus:ring-[#2E3192]/15'
+              }`
+          }
         />
       ))}
     </div>
