@@ -26,11 +26,13 @@ import {
   Crown,
   Sparkles,
   Receipt,
-  UserCheck
+  UserCheck,
+  Mail
 } from 'lucide-react';
 
 import { useAppSelector } from '@/redux/hooks';
 import { useFetchAiCredits, useGetAiCreditQuote, usePurchaseAiCredit } from '@/hooks/useAiCreditApi';
+import { useFetchProfile } from '@/hooks/useProfileApi';
 import HeaderSearch from '@/components/HeaderSearch';
 import { toast } from 'react-toastify';
 
@@ -69,11 +71,12 @@ export default function Header({ onOpenSubscription, onOpenSubscriptionHistory }
   const { data: aiCreditsData } = useFetchAiCredits();
   const { mutate: getCreditQuote, isPending: isGettingQuote } = useGetAiCreditQuote();
   const { mutate: purchaseCredit, isPending: isPurchasing } = usePurchaseAiCredit();
-  
+
   const [isCreditQuoteOpen, setIsCreditQuoteOpen] = useState(false);
   const [creditInput, setCreditInput] = useState<number | ''>('');
   const [quoteResult, setQuoteResult] = useState<any>(null);
 
+  const { data: profileData } = useFetchProfile();
   const user = useAppSelector((state) => state.auth.user);
 
   useEffect(() => {
@@ -85,13 +88,26 @@ export default function Header({ onOpenSubscription, onOpenSubscriptionHistory }
   }, []);
 
   const currentUser = mounted ? user : null;
-  const displayName = currentUser?.full_name || currentUser?.name || 'Insuraa Admin';
-  const displaySubText = currentUser?.email || (currentUser?.number ? `+91-${currentUser.number}` : '+91-01234567890');
+  const displayName = profileData?.full_name || currentUser?.full_name || currentUser?.name || 'Insuraa Admin';
+  
+  const rawNumber = profileData?.number || currentUser?.number || (typeof window !== 'undefined' ? (() => {
+    try {
+      const u = localStorage.getItem('auth_user');
+      return u ? JSON.parse(u)?.number : null;
+    } catch {
+      return null;
+    }
+  })() : null);
+
+  const displayPhone = rawNumber ? (String(rawNumber).startsWith('+') ? String(rawNumber) : `+91 ${String(rawNumber).replace(/^(\+91|91)/, '').trim()}`) : '';
+  const displayEmail = profileData?.email || currentUser?.email || '';
+  const displaySubText = displayEmail || displayPhone || '+91-01234567890';
 
   // Determine effective login_type:
   // - from Redux user.login_type
   // - or from localStorage ('login_type' / 'auth_login_type')
   const effectiveLoginType = (
+    profileData?.login_type ||
     currentUser?.login_type ||
     storedLoginType ||
     (typeof window !== 'undefined' ? localStorage.getItem('login_type') || localStorage.getItem('auth_login_type') : null)
@@ -101,7 +117,7 @@ export default function Header({ onOpenSubscription, onOpenSubscriptionHistory }
   // If login_type is 'admin' (or default), show Staff in the header.
   const isStaff = effectiveLoginType === 'staff';
 
-  const displayTag = currentUser?.company_name || (isStaff ? 'Staff Account' : 'Admin Account');
+  const displayTag = profileData?.company_name || currentUser?.company_name || (isStaff ? 'Staff Account' : 'Admin Account');
   const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=2F439D&color=fff&bold=true`;
 
   const navLinks = useMemo(() => {
@@ -196,8 +212,8 @@ export default function Header({ onOpenSubscription, onOpenSubscriptionHistory }
       onSuccess: (res) => {
         // Handle custom application errors returned with 200 HTTP status (e.g. status: 400 in response body)
         if (res && (res.status === 400 || res.status === 500 || res.status === 'error')) {
-           toast.error(res?.message || 'Failed to fetch quote');
-           return;
+          toast.error(res?.message || 'Failed to fetch quote');
+          return;
         }
 
         // If the API wraps data in `data.data`, extract it. Some APIs might just return it in `data`.
@@ -206,12 +222,12 @@ export default function Header({ onOpenSubscription, onOpenSubscriptionHistory }
         } else if (res && res.credits) {
           setQuoteResult(res);
         } else {
-           // If it returns an error or just a message
-           toast.error(res?.message || 'Invalid quote response');
+          // If it returns an error or just a message
+          toast.error(res?.message || 'Invalid quote response');
         }
       },
       onError: (err: any) => {
-         toast.error(err?.response?.data?.message || err?.message || 'Failed to fetch quote');
+        toast.error(err?.response?.data?.message || err?.message || 'Failed to fetch quote');
       }
     });
   };
@@ -221,8 +237,8 @@ export default function Header({ onOpenSubscription, onOpenSubscriptionHistory }
     purchaseCredit({ credits: quoteResult.credits }, {
       onSuccess: (res) => {
         if (res && (res.status === 400 || res.status === 500 || res.status === 'error')) {
-           toast.error(res?.message || 'Failed to initiate payment');
-           return;
+          toast.error(res?.message || 'Failed to initiate payment');
+          return;
         }
 
         if (res && res.data && res.data.redirect_url) {
@@ -266,7 +282,7 @@ export default function Header({ onOpenSubscription, onOpenSubscriptionHistory }
         {/* Right side actions */}
         <div className="flex items-center gap-5">
           <div className="relative" ref={creditQuoteRef}>
-            <Link 
+            <Link
               href="/subscription?tab=ai"
               className="hidden md:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-gray-50 to-gray-100 rounded-full border border-gray-200/60 shadow-sm relative group hover:shadow-md transition-all cursor-pointer"
             >
@@ -296,20 +312,20 @@ export default function Header({ onOpenSubscription, onOpenSubscriptionHistory }
                     <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                       <Calculator size={16} className="text-[#2F439D]/50 group-focus-within:text-[#2F439D] transition-colors" />
                     </div>
-                    <input 
-                      type="number" 
-                      value={creditInput} 
+                    <input
+                      type="number"
+                      value={creditInput}
                       onChange={(e) => {
                         setCreditInput(e.target.value ? Number(e.target.value) : '');
                         setQuoteResult(null); // Reset quote when input changes
-                      }} 
+                      }}
                       className="w-full pl-10 pr-4 py-3 bg-gray-50/50 border border-gray-200/80 rounded-xl text-sm font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#2F439D]/20 focus:border-[#2F439D] focus:bg-white transition-all shadow-inner"
                       placeholder="Enter credits (e.g. 500)"
                     />
                   </div>
 
                   {/* Get Quote Button */}
-                  <button 
+                  <button
                     onClick={handleGetQuote}
                     disabled={isGettingQuote || !creditInput}
                     className="w-full py-2.5 bg-[#2F439D]/5 text-[#2F439D] font-bold rounded-xl text-sm border border-[#2F439D]/10 hover:bg-[#2F439D]/10 hover:border-[#2F439D]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
@@ -327,7 +343,7 @@ export default function Header({ onOpenSubscription, onOpenSubscriptionHistory }
                       <div className="p-4 bg-gradient-to-br from-blue-50/50 to-indigo-50/50 rounded-2xl border border-blue-100/50 relative overflow-hidden">
                         {/* Decorative background element */}
                         <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-[#2F439D]/5 rounded-full blur-xl pointer-events-none"></div>
-                        
+
                         <div className="space-y-2 relative z-10">
                           <div className="flex justify-between items-center text-xs">
                             <span className="text-gray-500 font-medium">Credits Requested</span>
@@ -345,9 +361,9 @@ export default function Header({ onOpenSubscription, onOpenSubscriptionHistory }
                             <span className="text-gray-500 font-medium">GST ({quoteResult.gst_percentage}%)</span>
                             <span className="font-bold text-gray-700">₹{quoteResult.gst_amount}</span>
                           </div>
-                          
+
                           <div className="h-px bg-gradient-to-r from-transparent via-blue-200/50 to-transparent my-3"></div>
-                          
+
                           <div className="flex justify-between items-end">
                             <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Final Amount</span>
                             <span className="text-xl font-black text-[#2F439D] leading-none">₹{quoteResult.final_amount}</span>
@@ -356,7 +372,7 @@ export default function Header({ onOpenSubscription, onOpenSubscriptionHistory }
                       </div>
 
                       {/* Pay Button */}
-                      <button 
+                      <button
                         onClick={handlePay}
                         disabled={isPurchasing}
                         className="relative w-full py-3.5 mt-3 group overflow-hidden rounded-xl text-white font-bold text-sm shadow-[0_8px_20px_-6px_rgba(46,49,146,0.4)] hover:shadow-[0_12px_25px_-6px_rgba(46,49,146,0.5)] transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed disabled:active:scale-100"
@@ -402,7 +418,11 @@ export default function Header({ onOpenSubscription, onOpenSubscriptionHistory }
                   {displayName}
                   <ChevronDown size={14} className={`text-gray-400 transition-transform duration-200 ${isProfileOpen ? 'rotate-180 text-[#2F439D]' : 'group-hover:text-[#2F439D]'}`} />
                 </p>
-                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">{displayTag}</p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+              
+             
+                  <p className="text-[10px] text-gray-6 00 font-bold">{displayTag}</p>
+                </div>
               </div>
               <div className="relative">
                 <div className="w-10 h-10 rounded-full border-2 border-white shadow-[0_0_0_2px_#2F439D20] flex items-center justify-center overflow-hidden transition-transform group-hover:scale-105 bg-[#2F439D]/10">
@@ -433,7 +453,18 @@ export default function Header({ onOpenSubscription, onOpenSubscriptionHistory }
 
                   <div className="overflow-hidden">
                     <h4 className="font-bold text-gray-900 text-base truncate tracking-tight">{displayName}</h4>
-                    <p className="text-xs font-semibold text-gray-500 truncate mt-0.5">{displaySubText}</p>
+                    {displayEmail && (
+                      <p className="text-xs font-semibold text-gray-500 truncate mt-0.5 flex items-center gap-1.5">
+                        <Mail size={12} className="text-gray-400 shrink-0" />
+                        <span className="truncate">{displayEmail}</span>
+                      </p>
+                    )}
+                    {displayPhone && (
+                      <p className="text-xs font-semibold text-gray-700 truncate mt-0.5 flex items-center gap-1.5">
+                        <PhoneCall size={12} className="text-[#2F439D] shrink-0" />
+                        <span>{displayPhone}</span>
+                      </p>
+                    )}
                     <span className="inline-flex items-center gap-1 mt-1.5 px-2.5 py-0.5 rounded-full bg-[#2E3192]/10 text-[#2E3192] text-[10px] font-bold uppercase tracking-wider">
                       {displayTag}
                     </span>

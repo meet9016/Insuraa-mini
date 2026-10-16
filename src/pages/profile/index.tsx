@@ -103,6 +103,10 @@ export default function ProfilePage() {
                   <span className="text-gray-500 font-medium">User Code</span>
                   <span className="font-bold text-gray-800">{profileData?.user_code || '-'}</span>
                 </div>
+                 <div className="flex justify-between items-center text-sm border-b border-gray-50 pb-2">
+                  <span className="text-gray-500 font-medium">Number</span>
+                  <span className="font-bold text-gray-800">{profileData?.number || '-'}</span>
+                </div>
                 <div className="flex justify-between items-center text-sm border-b border-gray-50 pb-2">
                   <span className="text-gray-500 font-medium">Login Type</span>
                   <span className="font-bold text-gray-800 capitalize flex items-center gap-1">

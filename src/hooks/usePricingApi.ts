@@ -243,19 +243,30 @@ export interface GstTaxpayerAddress {
 
 export interface GstTaxpayerInfo {
   lgnm?: string;
+  legalName?: string;
+  legal_name?: string;
   tradeNam?: string;
+  tradeName?: string;
+  trade_name?: string;
+  company_name?: string;
+  companyName?: string;
+  email?: string;
   gstin?: string;
   panNo?: string;
   pradr?: {
     addr?: GstTaxpayerAddress;
     ntr?: string;
   };
+  addr?: GstTaxpayerAddress;
 }
 
 export interface GstVerifyResponse {
   status: number | string | boolean;
   message?: string;
   data?: {
+    error?: boolean;
+    message?: string;
+    email?: string;
     taxpayerInfo?: GstTaxpayerInfo;
   };
 }

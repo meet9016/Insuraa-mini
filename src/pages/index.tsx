@@ -234,6 +234,25 @@ export default function LandingPage() {
     setOtpValue('');
     setPurchaseToken('');
     setPaymentSuccess(false);
+
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('auth_user');
+        if (stored) {
+          const u = JSON.parse(stored);
+          setBillingForm((prev) => ({
+            ...prev,
+            fullName: prev.fullName || u.full_name || u.name || '',
+            email: prev.email || u.email || '',
+            companyName: prev.companyName || u.company_name || '',
+            phone: prev.phone || (u.number ? String(u.number).replace(/\D/g, '').slice(-10) : ''),
+          }));
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+
     setPricingModalOpen(true);
 
     // Immediately call direct_plan_quote API via FormData with initial policies & cycle
@@ -389,14 +408,73 @@ export default function LandingPage() {
     setIsVerifyingGst(true);
     try {
       const res = await fetchGstVerify(rawGst);
-      if (res && (res.status === 200 || res.status === '200' || res.status === true)) {
+      const isSuccess =
+        res &&
+        (res.status === 200 || res.status === '200' || res.status === true) &&
+        !res.data?.error;
+
+      if (isSuccess) {
         toast.success(res.message || 'GST verified successfully!');
         setIsGstVerified(true);
-        const info = res.data?.taxpayerInfo;
+        const info = (res.data?.taxpayerInfo || (res as any)?.taxpayerInfo || (res.data as any)?.data?.taxpayerInfo || res.data) as any;
         if (info) {
-          const compName = info.tradeNam?.trim() || info.lgnm?.trim() || '';
-          const legalName = info.lgnm?.trim() || '';
-          const addr = info.pradr?.addr;
+          // Trade name (business/company name, e.g. "SHOPNO")
+          const tradeName = (
+            info.tradeNam ||
+            info.tradeName ||
+            info.trade_name ||
+            info.company_name ||
+            info.companyName ||
+            ''
+          )?.trim();
+
+          // Legal name (taxpayer individual or entity legal name, e.g. "VALA BHAVIK ISHVARBHAI")
+          const legalName = (
+            info.lgnm ||
+            info.legalName ||
+            info.legal_name ||
+            info.name ||
+            ''
+          )?.trim();
+
+          // Company Name prefers tradeName, fallback to legalName
+          const compName = tradeName || legalName;
+          // Full Name prefers legalName, fallback to tradeName
+          const personName = legalName || tradeName;
+
+          // Email from GST response or auth_user / localStorage fallback
+          let emailFromGst = (
+            info.email ||
+            info.emailId ||
+            info.email_id ||
+            info.contact_email ||
+            info.pradr?.addr?.email ||
+            (res.data as any)?.email ||
+            (res as any)?.email ||
+            ''
+          )?.trim();
+
+          if (!emailFromGst && typeof window !== 'undefined') {
+            try {
+              const stored = localStorage.getItem('auth_user');
+              if (stored) {
+                const parsed = JSON.parse(stored);
+                if (parsed?.email) {
+                  emailFromGst = parsed.email.trim();
+                }
+              }
+              if (!emailFromGst) {
+                const directEmail = localStorage.getItem('user_email') || localStorage.getItem('email');
+                if (directEmail) {
+                  emailFromGst = directEmail.trim();
+                }
+              }
+            } catch (e) {
+              // ignore
+            }
+          }
+
+          const addr = info.pradr?.addr || info.addr;
           let addressString = '';
           let city = '';
           let state = '';
@@ -412,7 +490,7 @@ export default function LandingPage() {
               addr.locality,
               addr.landMark,
             ]
-              .map((p) => p?.trim())
+              .map((p: any) => (typeof p === 'string' ? p.trim() : ''))
               .filter(Boolean);
             addressString = parts.join(', ');
             city = addr.dst?.trim() || addr.loc?.trim() || '';
@@ -424,7 +502,8 @@ export default function LandingPage() {
             ...prev,
             gstNumber: rawGst,
             companyName: compName || prev.companyName,
-            fullName: prev.fullName || legalName,
+            fullName: personName || prev.fullName,
+            email: emailFromGst || prev.email,
             companyAddress: addressString || prev.companyAddress,
             city: city || prev.city,
             state: state || prev.state,
@@ -433,7 +512,7 @@ export default function LandingPage() {
         }
       } else {
         setIsGstVerified(false);
-        toast.error(res?.message || 'Invalid GST number');
+        toast.error(res?.data?.message || res?.message || 'Invalid GST number');
       }
     } catch (err: any) {
       setIsGstVerified(false);
@@ -1778,7 +1857,7 @@ export default function LandingPage() {
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#2BBF8C] hover:bg-[#239f74] text-white px-8 py-4 rounded-xl font-medium text-base shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer"
             >
               <Sparkles className="w-4 h-4 text-emerald-100" />
-              <span>Start 14-Day Free Trial</span>
+              <span>Start 7-Day Free Trial</span>
             </button>
           </div>
 
@@ -2007,22 +2086,20 @@ export default function LandingPage() {
                               <div
                                 key={plan.name}
                                 onClick={() => handleSelectTier(plan.name)}
-                                className={`px-3 py-2 rounded-xl border-2 transition-all cursor-pointer flex items-center justify-between ${
-                                  isSelected
+                                className={`px-3 py-2 rounded-xl border-2 transition-all cursor-pointer flex items-center justify-between ${isSelected
                                     ? 'border-[#2D3591] bg-indigo-50/50 shadow-xs ring-1 ring-[#2D3591]/20'
                                     : 'border-slate-200 hover:border-slate-300 bg-white'
-                                }`}
+                                  }`}
                               >
                                 <div className="min-w-0">
                                   <div className="text-xs sm:text-sm font-bold text-slate-900 leading-tight">{plan.name}</div>
                                   <div className="text-[11px] text-slate-500 font-normal leading-tight mt-0.5">{rangeLabel} policies</div>
                                 </div>
                                 <div
-                                  className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ml-1.5 transition-all ${
-                                    isSelected
+                                  className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ml-1.5 transition-all ${isSelected
                                       ? 'bg-[#2D3591] text-white'
                                       : 'border-2 border-slate-300'
-                                  }`}
+                                    }`}
                                 >
                                   {isSelected && <Check className="w-2.5 h-2.5 stroke-[3]" />}
                                 </div>
@@ -2114,7 +2191,7 @@ export default function LandingPage() {
                                     : 'text-slate-600 hover:text-slate-900'
                                     }`}
                                 >
-                              
+
                                   <span>{cycle.label}</span>
                                 </button>
                               );
@@ -2213,11 +2290,10 @@ export default function LandingPage() {
                                   handleVerifyGst();
                                 }
                               }}
-                              className={`w-full pl-8 pr-16 py-2 rounded-lg border text-xs sm:text-sm uppercase transition-all focus:outline-hidden focus:border-[#2D3591] focus:ring-2 focus:ring-indigo-100 ${
-                                isGstVerified
+                              className={`w-full pl-8 pr-16 py-2 rounded-lg border text-xs sm:text-sm uppercase transition-all focus:outline-hidden focus:border-[#2D3591] focus:ring-2 focus:ring-indigo-100 ${isGstVerified
                                   ? 'border-emerald-300 bg-emerald-50/20'
                                   : 'border-slate-200'
-                              }`}
+                                }`}
                             />
                             {billingForm.gstNumber.trim().length === 15 && !isGstVerified && (
                               <button
@@ -2604,11 +2680,10 @@ export default function LandingPage() {
                           type="button"
                           onClick={handlePayNow}
                           disabled={!isBillingFormValid || isProcessingPayment || isFetchingQuote}
-                          className={`w-full py-2.5 sm:py-3 px-4 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
-                            !isBillingFormValid || isProcessingPayment || isFetchingQuote
+                          className={`w-full py-2.5 sm:py-3 px-4 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${!isBillingFormValid || isProcessingPayment || isFetchingQuote
                               ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none border border-slate-300/60'
                               : 'text-white bg-[#2D3591] hover:bg-[#222870] shadow-md hover:shadow-lg cursor-pointer active:scale-[0.99]'
-                          }`}
+                            }`}
                         >
                           {isProcessingPayment ? (
                             <>
