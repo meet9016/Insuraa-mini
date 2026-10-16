@@ -286,3 +286,89 @@ export const fetchGstVerify = async (gstNumber: string): Promise<GstVerifyRespon
     return err?.response?.data || null;
   }
 };
+
+export interface PolicyPlanInfoData {
+  min_policies: number;
+  max_policies: number;
+  gst_percentage: number;
+  tiers: PlanTier[];
+  cycles: BillingCycle[];
+  is_first_purchase?: boolean;
+  first_purchase_free_ai_credits?: string;
+  min_policies_for_renew?: number;
+  can_purchase?: number | boolean;
+}
+
+/**
+ * Hook to fetch authenticated policy plan info for subscription upgrade/renew
+ */
+export const usePolicyPlanInfo = (enabled: boolean = true) => {
+  return useQuery<PolicyPlanInfoData | null>({
+    queryKey: ['policyPlanInfo'],
+    queryFn: async () => {
+      try {
+        const response = await api.post(endPointApi.PRICING.POLICY_PLAN_INFO);
+        const resData = response?.data;
+        if (resData && (resData.status === 200 || resData.status === '200' || resData.status === true)) {
+          return resData?.data || null;
+        }
+        return resData?.data || null;
+      } catch (err: any) {
+        console.error('Error fetching policy plan info:', err);
+        return null;
+      }
+    },
+    enabled,
+    staleTime: 1000 * 60 * 5,
+  });
+};
+
+export interface PolicyPlanQuoteParams {
+  policies: number;
+  billing_cycle: string;
+  coupon_code?: string;
+}
+
+/**
+ * Fetch authenticated policy plan quote with FormData (policies, billing_cycle, coupon_code)
+ */
+export const fetchPolicyPlanQuote = async (payload: PolicyPlanQuoteParams): Promise<DirectPlanQuoteResponse | null> => {
+  try {
+    const formData = new FormData();
+    formData.append('policies', String(payload.policies));
+    formData.append('billing_cycle', payload.billing_cycle);
+    formData.append('coupon_code', payload.coupon_code ? payload.coupon_code.trim() : '');
+
+    const response = await api.post(endPointApi.PRICING.POLICY_PLAN_QUOTE, formData);
+    return response?.data || null;
+  } catch (err: any) {
+    console.error('Error in fetchPolicyPlanQuote:', err);
+    return err?.response?.data || null;
+  }
+};
+
+export interface PolicyPlanPurchaseParams {
+  policies: number;
+  billing_cycle: string;
+  coupon_code?: string;
+}
+
+/**
+ * Fetch authenticated policy plan purchase with FormData (policies, billing_cycle, coupon_code)
+ * Returns redirect_url on success
+ */
+export const fetchPolicyPlanPurchase = async (payload: PolicyPlanPurchaseParams) => {
+  try {
+    const formData = new FormData();
+    formData.append('policies', String(payload.policies));
+    formData.append('billing_cycle', payload.billing_cycle);
+    formData.append('coupon_code', payload.coupon_code ? payload.coupon_code.trim() : '');
+
+    const response = await api.post(endPointApi.PRICING.POLICY_PLAN_PURCHASE, formData);
+    return response?.data || null;
+  } catch (err: any) {
+    console.error('Error in fetchPolicyPlanPurchase:', err);
+    return err?.response?.data || null;
+  }
+};
+

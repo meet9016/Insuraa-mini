@@ -196,6 +196,9 @@ export interface EndPointApi {
     DIRECT_VERIFY_OTP: string;
     DIRECT_PLAN_PURCHASE: string;
     GST_VERIFY: string;
+    POLICY_PLAN_INFO: string;
+    POLICY_PLAN_QUOTE: string;
+    POLICY_PLAN_PURCHASE: string;
   };
 }
 
@@ -398,6 +401,9 @@ const endPointApi: EndPointApi = {
     DIRECT_VERIFY_OTP: 'direct_verify_otp',
     DIRECT_PLAN_PURCHASE: 'direct_plan_purchase',
     GST_VERIFY: 'gst_verify',
+    POLICY_PLAN_INFO: 'policy_plan_info',
+    POLICY_PLAN_QUOTE: 'policy_plan_quote',
+    POLICY_PLAN_PURCHASE: 'policy_plan_purchase',
   },
 };
 

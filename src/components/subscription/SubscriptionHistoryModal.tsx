@@ -34,6 +34,12 @@ export interface SubscriptionItem {
   plan_id?: number | string;
   plan_name: string;
   ai_limit?: number | string;
+  policy_limit?: number | string;
+  addon_policies?: number | string;
+  total_policy_limit?: number | string;
+  tier_name?: string;
+  billing_cycle?: string;
+  rate_per_policy?: number | string;
   starting_date?: string;
   ending_date?: string;
   days_left?: number;
@@ -288,6 +294,21 @@ export default function SubscriptionHistoryModal({
                             {item.status_name || (isActive ? 'Active' : 'Expired')}
                           </span>
 
+                          {/* Tier Name */}
+                          {item.tier_name && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-[#2E3192] border border-indigo-200">
+                              <Shield size={10} />
+                              {item.tier_name}
+                            </span>
+                          )}
+
+                          {/* Billing Cycle */}
+                          {item.billing_cycle && (
+                            <span className="capitalize text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                              {item.billing_cycle}
+                            </span>
+                          )}
+
                           {item.invoice_no && (
                             <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200">
                               #{item.invoice_no}
@@ -296,7 +317,20 @@ export default function SubscriptionHistoryModal({
                         </div>
 
                         {/* Dates & Limits */}
-                        <div className="flex items-center gap-4 text-xs text-slate-500 flex-wrap font-medium pt-1">
+                        <div className="flex items-center gap-3 text-xs text-slate-500 flex-wrap font-medium pt-1">
+                          {/* Policy Limit */}
+                          {(item.total_policy_limit !== undefined || item.policy_limit !== undefined) && (
+                            <span className="flex items-center gap-1.5 text-blue-800 font-bold bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200/60">
+                              <FileCheck size={13} className="text-blue-600" />
+                              Policies: {Number(item.total_policy_limit ?? item.policy_limit ?? 0).toLocaleString()}
+                              {item.addon_policies !== undefined && Number(item.addon_policies) > 0 && (
+                                <span className="text-[10px] font-normal text-blue-600">
+                                  (+{item.addon_policies})
+                                </span>
+                              )}
+                            </span>
+                          )}
+
                           {item.starting_date && item.ending_date && (
                             <span className="flex items-center gap-1.5 bg-slate-100/80 px-2.5 py-1 rounded-lg border border-slate-200/60">
                               <Calendar size={13} className="text-indigo-600" />

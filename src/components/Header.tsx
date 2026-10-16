@@ -89,7 +89,7 @@ export default function Header({ onOpenSubscription, onOpenSubscriptionHistory }
 
   const currentUser = mounted ? user : null;
   const displayName = profileData?.full_name || currentUser?.full_name || currentUser?.name || 'Insuraa Admin';
-  
+
   const rawNumber = profileData?.number || currentUser?.number || (typeof window !== 'undefined' ? (() => {
     try {
       const u = localStorage.getItem('auth_user');
@@ -419,9 +419,9 @@ export default function Header({ onOpenSubscription, onOpenSubscriptionHistory }
                   <ChevronDown size={14} className={`text-gray-400 transition-transform duration-200 ${isProfileOpen ? 'rotate-180 text-[#2F439D]' : 'group-hover:text-[#2F439D]'}`} />
                 </p>
                 <div className="flex items-center gap-1.5 mt-0.5">
-              
-             
-                  <p className="text-[10px] text-gray-6 00 font-bold">{displayTag}</p>
+
+
+                  <p className="text-[11.5px] text-gray-6 00 font-bold">{displayTag}</p>
                 </div>
               </div>
               <div className="relative">

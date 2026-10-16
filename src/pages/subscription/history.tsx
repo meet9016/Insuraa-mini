@@ -327,6 +327,12 @@ export interface SubscriptionItem {
   plan_id?: number | string;
   plan_name: string;
   ai_limit?: number | string;
+  policy_limit?: number | string;
+  addon_policies?: number | string;
+  total_policy_limit?: number | string;
+  tier_name?: string;
+  billing_cycle?: string;
+  rate_per_policy?: number | string;
   starting_date?: string;
   ending_date?: string;
   days_left?: number;
@@ -632,6 +638,21 @@ export default function SubscriptionHistoryPage() {
                                   )}
                                 </span>
 
+                                {/* Tier Name Badge */}
+                                {item.tier_name && (
+                                  <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-indigo-50 text-[#2E3192] border border-indigo-200">
+                                    <Shield size={12} />
+                                    {item.tier_name}
+                                  </span>
+                                )}
+
+                                {/* Billing Cycle Badge */}
+                                {item.billing_cycle && (
+                                  <span className="capitalize text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                                    {item.billing_cycle}
+                                  </span>
+                                )}
+
                                 {item.invoice_no && (
                                   <span className="text-xs font-mono font-semibold px-3 py-1 rounded-lg bg-indigo-50 text-[#2E3192] border border-indigo-100">
                                     Invoice: {item.invoice_no}
@@ -669,52 +690,92 @@ export default function SubscriptionHistoryPage() {
                         </div>
 
                         {/* Detailed API Data Attributes Grid */}
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 pl-3 text-xs">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3.5 pl-3 text-xs">
+                          {/* Policy Limit */}
+                          <div className="bg-blue-50/70 p-3 rounded-2xl border border-blue-100 flex flex-col justify-between">
+                            <div>
+                              <span className="text-blue-900/80 font-medium block text-[11px] mb-1">Policy Limit</span>
+                              <span className="font-bold text-blue-950 flex items-center gap-1.5">
+                                <FileCheck size={14} className="text-blue-600 shrink-0" />
+                                <span>{Number(item.total_policy_limit ?? item.policy_limit ?? 0).toLocaleString()} Policies</span>
+                              </span>
+                            </div>
+                            {item.addon_policies !== undefined && Number(item.addon_policies) > 0 ? (
+                              <span className="text-[10px] text-blue-700/80 font-medium block mt-1 truncate" title={`Base: ${item.policy_limit ?? 0} + Addon: ${item.addon_policies}`}>
+                                Base: {item.policy_limit ?? 0} + Addon: {item.addon_policies}
+                              </span>
+                            ) : null}
+                          </div>
+
+                          {/* AI OCR Limit */}
+                          <div className="bg-emerald-50/70 p-3 rounded-2xl border border-emerald-100 flex flex-col justify-between">
+                            <div>
+                              <span className="text-emerald-900/80 font-medium block text-[11px] mb-1">AI OCR Credits</span>
+                              <span className="font-bold text-emerald-950 flex items-center gap-1.5">
+                                <Sparkles size={14} className="text-emerald-600 shrink-0" />
+                                <span>{Number(item.ai_limit ?? 0).toLocaleString()} Credits</span>
+                              </span>
+                            </div>
+                            {item.rate_per_policy !== undefined && Number(item.rate_per_policy) > 0 ? (
+                              <span className="text-[10px] text-emerald-700/80 font-medium block mt-1">
+                                ₹{item.rate_per_policy}/policy
+                              </span>
+                            ) : null}
+                          </div>
+
                           {/* Start Date */}
-                          <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                            <span className="text-slate-700 font-medium block text-[11px] mb-1">Start Date</span>
-                            <span className="font-semibold text-slate-900 flex items-center gap-1">
-                              <Calendar size={13} className="text-indigo-600" />
-                              {item.starting_date || 'N/A'}
-                            </span>
+                          <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 flex flex-col justify-between">
+                            <div>
+                              <span className="text-slate-700 font-medium block text-[11px] mb-1">Start Date</span>
+                              <span className="font-semibold text-slate-900 flex items-center gap-1.5">
+                                <Calendar size={14} className="text-indigo-600 shrink-0" />
+                                {item.starting_date || 'N/A'}
+                              </span>
+                            </div>
                           </div>
 
                           {/* End Date */}
-                          <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                            <span className="text-slate-700 font-medium block text-[11px] mb-1">End Date</span>
-                            <span className="font-semibold text-slate-900 flex items-center gap-1">
-                              <CalendarDays size={13} className="text-indigo-600" />
-                              {item.ending_date || 'N/A'}
-                            </span>
+                          <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 flex flex-col justify-between">
+                            <div>
+                              <span className="text-slate-700 font-medium block text-[11px] mb-1">End Date</span>
+                              <span className="font-semibold text-slate-900 flex items-center gap-1.5">
+                                <CalendarDays size={14} className="text-indigo-600 shrink-0" />
+                                {item.ending_date || 'N/A'}
+                              </span>
+                            </div>
                           </div>
 
                           {/* Days Left */}
-                          <div className="bg-amber-50/60 p-3 rounded-2xl border border-amber-100">
-                            <span className="text-amber-900/80 font-medium block text-[11px] mb-1">Days Left</span>
-                            <span className="font-semibold text-amber-950 flex items-center gap-1">
-                              <Clock size={13} className="text-amber-600" />
-                              {item.days_left ?? 0} Days
-                            </span>
+                          <div className="bg-amber-50/60 p-3 rounded-2xl border border-amber-100 flex flex-col justify-between">
+                            <div>
+                              <span className="text-amber-900/80 font-medium block text-[11px] mb-1">Days Left</span>
+                              <span className="font-semibold text-amber-950 flex items-center gap-1.5">
+                                <Clock size={14} className="text-amber-600 shrink-0" />
+                                {item.days_left ?? 0} Days
+                              </span>
+                            </div>
                           </div>
 
-
-
                           {/* Coupon / Discount */}
-                          <div className="bg-purple-50/60 p-3 rounded-2xl border border-purple-100">
-                            <span className="text-purple-900/80 font-medium block text-[11px] mb-1">Coupon Discount</span>
-                            <span className="font-semibold text-purple-950 flex items-center gap-1 truncate">
-                              <Tag size={13} className="text-purple-600" />
-                              {item.coupon_code ? `${item.coupon_code} (${item.coupon_per}% off)` : `₹${item.discount_amount ?? 0}`}
-                            </span>
+                          <div className="bg-purple-50/60 p-3 rounded-2xl border border-purple-100 flex flex-col justify-between">
+                            <div>
+                              <span className="text-purple-900/80 font-medium block text-[11px] mb-1">Coupon Discount</span>
+                              <span className="font-semibold text-purple-950 flex items-center gap-1.5 truncate">
+                                <Tag size={14} className="text-purple-600 shrink-0" />
+                                {item.coupon_code ? `${item.coupon_code} (${item.coupon_per}% off)` : `₹${item.discount_amount ?? 0}`}
+                              </span>
+                            </div>
                           </div>
 
                           {/* GST Amount */}
-                          <div className="bg-blue-50/60 p-3 rounded-2xl border border-blue-100">
-                            <span className="text-blue-900/80 font-medium block text-[11px] mb-1">GST ({item.gst_percentage ?? 0}%)</span>
-                            <span className="font-semibold text-blue-950 flex items-center gap-1">
-                              <Percent size={13} className="text-blue-600" />
-                              ₹{item.gst_amount ?? 0}
-                            </span>
+                          <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 flex flex-col justify-between">
+                            <div>
+                              <span className="text-slate-700 font-medium block text-[11px] mb-1">GST ({item.gst_percentage ?? 0}%)</span>
+                              <span className="font-semibold text-slate-950 flex items-center gap-1.5">
+                                <Percent size={14} className="text-blue-600 shrink-0" />
+                                ₹{item.gst_amount ?? 0}
+                              </span>
+                            </div>
                           </div>
                         </div>
 
