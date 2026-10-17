@@ -57,7 +57,8 @@ export default function SubscriptionModal({
   const { data: planData, isLoading: isLoadingPlans, refetch: refetchPlanInfo } = usePolicyPlanInfo(isOpen);
 
   const [selectedPlanTier, setSelectedPlanTier] = useState<string>('silver');
-  const [policiesCount, setPoliciesCount] = useState<number>(100);
+  const [policiesCount, setPoliciesCount] = useState<number>(50);
+  const policiesCountRef = React.useRef<number>(50);
   const [billingCycle, setBillingCycle] = useState<string>('yearly');
   const [couponCode, setCouponCode] = useState<string>('');
   const [appliedCouponCode, setAppliedCouponCode] = useState<string>('');
@@ -67,7 +68,34 @@ export default function SubscriptionModal({
   const [quoteData, setQuoteData] = useState<DirectPlanQuoteData | null>(null);
   const [isProcessingPayment, setIsProcessingPayment] = useState<boolean>(false);
 
-  // Quote loader via policy_plan_quote API
+  // Sync ref with policiesCount
+  useEffect(() => {
+    policiesCountRef.current = policiesCount;
+  }, [policiesCount]);
+
+  // Minimum and maximum policies determined dynamically from policy_plan_info API
+  // Uses min_policies_for_renew when > 0 (for renewal), otherwise min_policies
+  const minAllowedPolicies = useMemo(() => {
+    if (planData?.min_policies_for_renew && planData.min_policies_for_renew > 0) {
+      return planData.min_policies_for_renew;
+    }
+    return planData?.min_policies || 50;
+  }, [planData]);
+
+  const maxAllowedPolicies = useMemo(() => {
+    return planData?.max_policies || 1000000;
+  }, [planData]);
+
+  // Dynamic currency/number formatter for exact API responses (no client-side recalculations)
+  const formatAmount = (val: any) => {
+    if (val === null || val === undefined) return '—';
+    if (typeof val === 'number') return val.toLocaleString('en-IN');
+    const num = Number(val);
+    if (!isNaN(num)) return num.toLocaleString('en-IN');
+    return String(val);
+  };
+
+  // Quote loader via policy_plan_quote API with dynamic error handling
   const loadQuote = useCallback(
     async (
       targetPolicies: number,
@@ -86,32 +114,45 @@ export default function SubscriptionModal({
           coupon_code: couponToUse,
         });
 
-        if (res && (res.status === 200 || res.status === '200') && res.data && !Array.isArray(res.data)) {
+        if (
+          res &&
+          (res.status === 200 || res.status === '200' || res.status === true) &&
+          res.data &&
+          !Array.isArray(res.data)
+        ) {
           setQuoteData(res.data);
           if (isCouponAction) {
-            if (res.data.coupon_amount > 0 || res.data.coupon_per > 0) {
+            if (Number(res.data.coupon_amount) > 0 || Number(res.data.coupon_per) > 0) {
               setIsCouponApplied(true);
               setAppliedCouponCode(couponToUse);
-              toast.success('Coupon applied successfully!');
+              if (res.message) toast.success(res.message);
             } else {
               setIsCouponApplied(false);
               setAppliedCouponCode('');
-              toast.error(res.message || 'Invalid or ineligible coupon code');
+              const dynamicMsg = res.message || res.data?.message;
+              if (dynamicMsg) toast.error(dynamicMsg);
             }
           }
         } else {
+          // Dynamic error toast directly from API response
+          const dynamicMsg = res?.message || res?.data?.message;
+          if (dynamicMsg) {
+            toast.error(dynamicMsg);
+          }
           if (isCouponAction) {
             setIsCouponApplied(false);
             setAppliedCouponCode('');
-            toast.error(res?.message || 'Invalid coupon code');
           }
         }
       } catch (err: any) {
         console.error('Error fetching policy plan quote:', err);
+        const dynamicMsg = err?.response?.data?.message || err?.data?.message || err?.message;
+        if (dynamicMsg) {
+          toast.error(dynamicMsg);
+        }
         if (isCouponAction) {
           setIsCouponApplied(false);
           setAppliedCouponCode('');
-          toast.error(err?.response?.data?.message || err?.message || 'Error applying coupon');
         }
       } finally {
         setIsFetchingQuote(false);
@@ -136,27 +177,42 @@ export default function SubscriptionModal({
     };
   }, [isOpen, refetchPlanInfo]);
 
-  // When planData loads, initialize selection and load quote
+  // When planData loads, initialize selection strictly with API values (min_policies_for_renew if > 0, else min_policies)
   useEffect(() => {
-    if (isOpen && planData && planData.tiers && planData.tiers.length > 0) {
-      const paidTiers = planData.tiers.filter((t) => !t.name.toLowerCase().includes('free'));
-      const initialTier = paidTiers[0] || planData.tiers[0];
-      const initialTierName = initialTier.name.toLowerCase();
-      const minPolicies = initialTier.from || planData.min_policies || 100;
-      const initialCycle = planData.cycles?.[2]?.billing_cycle || planData.cycles?.[0]?.billing_cycle || 'yearly';
+    if (isOpen && planData) {
+      const startingPolicies =
+        planData.min_policies_for_renew && planData.min_policies_for_renew > 0
+          ? planData.min_policies_for_renew
+          : planData.min_policies || 50;
+
+      let initialTierName = 'silver';
+      if (planData.tiers && planData.tiers.length > 0) {
+        const matchedTier = planData.tiers.find((t) => {
+          if (t.to !== null && t.to !== undefined) {
+            return startingPolicies >= t.from && startingPolicies <= t.to;
+          }
+          return startingPolicies >= t.from;
+        });
+        const paidTiers = planData.tiers.filter((t) => !t.name.toLowerCase().includes('free'));
+        initialTierName = (matchedTier || paidTiers[0] || planData.tiers[0]).name.toLowerCase();
+      }
+
+      const yearlyCycle = planData.cycles?.find((c) => c.billing_cycle === 'yearly');
+      const initialCycle = yearlyCycle?.billing_cycle || planData.cycles?.[0]?.billing_cycle || 'yearly';
 
       setSelectedPlanTier(initialTierName);
-      setPoliciesCount(minPolicies);
+      setPoliciesCount(startingPolicies);
+      policiesCountRef.current = startingPolicies;
       setBillingCycle(initialCycle);
       setIsCouponApplied(false);
       setCouponCode('');
       setAppliedCouponCode('');
 
-      loadQuote(minPolicies, initialCycle, '');
+      loadQuote(startingPolicies, initialCycle, '');
     }
   }, [isOpen, planData, loadQuote]);
 
-  // Debounced auto-quote update on policies count changes
+  // Debounced auto-quote update on policies count changes when manually typed
   useEffect(() => {
     if (!isOpen || !planData) return;
     const timer = setTimeout(() => {
@@ -166,7 +222,7 @@ export default function SubscriptionModal({
       ) {
         loadQuote(policiesCount, billingCycle, isCouponApplied ? appliedCouponCode : '');
       }
-    }, 250);
+    }, 400);
     return () => clearTimeout(timer);
   }, [policiesCount, billingCycle, isCouponApplied, appliedCouponCode, isOpen, planData, quoteData, loadQuote]);
 
@@ -190,12 +246,13 @@ export default function SubscriptionModal({
     setSelectedPlanTier(tierLower);
     const foundTier = planData?.tiers?.find((t) => t.name.toLowerCase() === tierLower);
     if (foundTier) {
-      const min = foundTier.from || planData?.min_policies || 100;
-      const max = foundTier.to || planData?.max_policies || 1000000;
+      const min = Math.max(foundTier.from || 0, minAllowedPolicies);
+      const max = foundTier.to || maxAllowedPolicies;
       let nextCount = policiesCount;
       if (nextCount < min) nextCount = min;
       if (max && nextCount > max) nextCount = max;
       setPoliciesCount(nextCount);
+      policiesCountRef.current = nextCount;
       loadQuote(nextCount, billingCycle, isCouponApplied ? appliedCouponCode : '');
     }
   };
@@ -206,12 +263,13 @@ export default function SubscriptionModal({
   };
 
   const handlePoliciesStep = (step: number) => {
-    const min = planData?.min_policies || 100;
-    const max = planData?.max_policies || 1000000;
-    let nextVal = policiesCount + step;
+    const min = minAllowedPolicies;
+    const max = maxAllowedPolicies;
+    let nextVal = (policiesCountRef.current || policiesCount) + step;
     if (nextVal < min) nextVal = min;
     if (nextVal > max) nextVal = max;
 
+    policiesCountRef.current = nextVal;
     setPoliciesCount(nextVal);
 
     // Sync selected tier with policy count
@@ -224,6 +282,41 @@ export default function SubscriptionModal({
     if (matchedTier) {
       setSelectedPlanTier(matchedTier.name.toLowerCase());
     }
+
+    // Call quote API immediately on step button click
+    loadQuote(nextVal, billingCycle, isCouponApplied ? appliedCouponCode : '');
+  };
+
+  const handleManualPoliciesChange = (valStr: string) => {
+    const val = parseInt(valStr, 10);
+    if (isNaN(val)) {
+      setPoliciesCount(0);
+      policiesCountRef.current = 0;
+      return;
+    }
+    setPoliciesCount(val);
+    policiesCountRef.current = val;
+
+    const matchedTier = planData?.tiers?.find((t) => {
+      if (t.to !== null && t.to !== undefined) {
+        return val >= t.from && val <= t.to;
+      }
+      return val >= t.from;
+    });
+    if (matchedTier) {
+      setSelectedPlanTier(matchedTier.name.toLowerCase());
+    }
+  };
+
+  const handlePoliciesBlur = () => {
+    const min = minAllowedPolicies;
+    const max = maxAllowedPolicies;
+    let nextVal = policiesCount;
+    if (nextVal < min) nextVal = min;
+    if (nextVal > max) nextVal = max;
+    setPoliciesCount(nextVal);
+    policiesCountRef.current = nextVal;
+    loadQuote(nextVal, billingCycle, isCouponApplied ? appliedCouponCode : '');
   };
 
   const handleApplyCoupon = (e: React.FormEvent) => {
@@ -432,24 +525,11 @@ export default function SubscriptionModal({
                         <div className="flex-1">
                           <input
                             type="number"
-                            min={planData?.min_policies || 100}
-                            max={planData?.max_policies || 1000000}
-                            value={policiesCount}
-                            onChange={(e) => {
-                              const val = parseInt(e.target.value, 10);
-                              if (!isNaN(val)) {
-                                setPoliciesCount(val);
-                                const matchedTier = planData?.tiers?.find((t) => {
-                                  if (t.to !== null && t.to !== undefined) {
-                                    return val >= t.from && val <= t.to;
-                                  }
-                                  return val >= t.from;
-                                });
-                                if (matchedTier) {
-                                  setSelectedPlanTier(matchedTier.name.toLowerCase());
-                                }
-                              }
-                            }}
+                            min={minAllowedPolicies}
+                            max={maxAllowedPolicies}
+                            value={policiesCount || ''}
+                            onChange={(e) => handleManualPoliciesChange(e.target.value)}
+                            onBlur={handlePoliciesBlur}
                             className="w-full h-10 px-3 text-center rounded-xl border border-slate-200 bg-slate-50/60 font-semibold text-sm text-slate-900 focus:outline-hidden focus:border-[#2D3591] focus:bg-white"
                           />
                         </div>
@@ -469,7 +549,7 @@ export default function SubscriptionModal({
                       {planData?.first_purchase_free_ai_credits === 'equal_to_policies' && (
                         <div className="text-[11px] text-emerald-600 font-medium mt-1.5 flex items-center gap-1">
                           <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
-                          <span>Includes {(quoteData ? quoteData.free_ai_credits : policiesCount).toLocaleString()} free AI OCR credits</span>
+                          <span>Includes {(quoteData?.free_ai_credits ?? quoteData?.policies ?? policiesCount).toLocaleString()} free AI OCR credits</span>
                         </div>
                       )}
                     </div>
@@ -561,35 +641,35 @@ export default function SubscriptionModal({
                   <div className="space-y-2 text-xs">
                     <div className="flex justify-between items-center text-slate-600">
                       <span>
-                        {policiesCount} policies × ₹{quoteData?.rate_per_policy ?? currentTier?.rate ?? 0} ×{' '}
-                        {currentCycle?.multiplier || 1} mo
+                        {quoteData?.policies ?? policiesCount} policies × ₹{quoteData?.rate_per_policy ?? currentTier?.rate ?? 0} ×{' '}
+                        {quoteData?.months ?? currentCycle?.multiplier ?? 1} mo
                       </span>
                       <span className="font-semibold text-slate-900">
-                        ₹{(quoteData ? quoteData.total_price : Math.round(policiesCount * (currentTier?.rate ?? 0) * (currentCycle?.multiplier || 1))).toLocaleString('en-IN')}
+                        {quoteData ? `₹${formatAmount(quoteData.total_price)}` : '—'}
                       </span>
                     </div>
 
                     {/* Coupon Discount Row if applied */}
-                    {isCouponApplied && quoteData && quoteData.coupon_amount > 0 && (
+                    {isCouponApplied && quoteData && Number(quoteData.coupon_amount) > 0 && (
                       <div className="flex justify-between items-center text-emerald-600 font-medium">
                         <span className="flex items-center gap-1">
                           <Tag className="w-3 h-3" /> Coupon Discount ({quoteData.coupon_per}%)
                         </span>
-                        <span>-₹{quoteData.coupon_amount.toLocaleString('en-IN')}</span>
+                        <span>-₹{formatAmount(quoteData.coupon_amount)}</span>
                       </div>
                     )}
 
                     <div className="flex justify-between items-center text-slate-600">
                       <span>GST ({quoteData?.gst_percentage ?? planData?.gst_percentage ?? 18}%)</span>
                       <span className="font-semibold text-slate-900">
-                        ₹{(quoteData ? quoteData.gst_amount : Math.round((policiesCount * (currentTier?.rate ?? 0) * (currentCycle?.multiplier || 1)) * 0.18)).toLocaleString('en-IN')}
+                        {quoteData ? `₹${formatAmount(quoteData.gst_amount)}` : '—'}
                       </span>
                     </div>
 
                     <div className="pt-2 border-t border-slate-100 flex justify-between items-baseline">
                       <span className="text-sm font-bold text-slate-900">Total Payable</span>
                       <span className="text-2xl font-black text-[#2D3591]">
-                        ₹{(quoteData ? quoteData.final_amount : Math.round((policiesCount * (currentTier?.rate ?? 0) * (currentCycle?.multiplier || 1)) * 1.18)).toLocaleString('en-IN')}
+                        {quoteData ? `₹${formatAmount(quoteData.final_amount)}` : '—'}
                       </span>
                     </div>
                   </div>
@@ -648,7 +728,7 @@ export default function SubscriptionModal({
                   <button
                     type="button"
                     onClick={handleProceedPayment}
-                    disabled={isProcessingPayment || isFetchingQuote}
+                    disabled={isProcessingPayment || isFetchingQuote || !quoteData}
                     className="w-full py-3.5 px-5 rounded-xl font-bold text-sm text-white bg-[#2D3591] hover:bg-[#222870] shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {isProcessingPayment ? (
@@ -660,7 +740,7 @@ export default function SubscriptionModal({
                       <>
                         <Lock className="w-4 h-4" />
                         <span>
-                          Pay Now — ₹{(quoteData ? quoteData.final_amount : Math.round((policiesCount * (currentTier?.rate ?? 0) * (currentCycle?.multiplier || 1)) * 1.18)).toLocaleString('en-IN')}
+                          Pay Now {quoteData ? `— ₹${formatAmount(quoteData.final_amount)}` : ''}
                         </span>
                         <ArrowRight className="w-4 h-4 ml-0.5" />
                       </>

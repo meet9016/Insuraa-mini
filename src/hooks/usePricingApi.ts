@@ -343,7 +343,7 @@ export const fetchPolicyPlanQuote = async (payload: PolicyPlanQuoteParams): Prom
     return response?.data || null;
   } catch (err: any) {
     console.error('Error in fetchPolicyPlanQuote:', err);
-    return err?.response?.data || null;
+    return err?.response?.data || (err?.message ? { status: false, message: err.message } : null);
   }
 };
 
@@ -368,7 +368,7 @@ export const fetchPolicyPlanPurchase = async (payload: PolicyPlanPurchaseParams)
     return response?.data || null;
   } catch (err: any) {
     console.error('Error in fetchPolicyPlanPurchase:', err);
-    return err?.response?.data || null;
+    return err?.response?.data || (err?.message ? { status: false, message: err.message } : null);
   }
 };
 

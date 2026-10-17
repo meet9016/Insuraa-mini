@@ -144,7 +144,7 @@ export default function LoginPage() {
               sessionStorage.setItem('insuraa_just_logged_in', 'true');
               sessionStorage.removeItem('insuraa_subscription_shown');
             }
-            router.push('/');
+            router.push('/dashboard');
           },
           onError: (err: any) => {
             if (err?.response?.data?.message || err?.message) {
@@ -407,7 +407,6 @@ export default function LoginPage() {
               </p>
             </div>
           </div>
-
         </div>
       </div>
     </div>
