@@ -8,6 +8,9 @@ export interface EndPointApi {
     DIRECT_PLAN_INFO: string;
     SUBSCRIPTION_POPUP: string;
     SUBSCRIPTION_LIST: string;
+    INVOICE_LIST: string;
+    POLICY_ADDON_PURCHASE: string;
+    POLICY_ADDON_HISTORY: string;
   };
   CUSTOMER: {
     CUSTOMER_LIST_DROP_DOWN: string;
@@ -199,6 +202,8 @@ export interface EndPointApi {
     POLICY_PLAN_INFO: string;
     POLICY_PLAN_QUOTE: string;
     POLICY_PLAN_PURCHASE: string;
+    POLICY_ADDON_PURCHASE: string;
+    POLICY_ADDON_HISTORY: string;
   };
 }
 
@@ -225,6 +230,9 @@ const endPointApi: EndPointApi = {
     DIRECT_PLAN_INFO: 'direct_plan_info',
     SUBSCRIPTION_POPUP: 'subscription_popup',
     SUBSCRIPTION_LIST: 'subscription_list',
+    INVOICE_LIST: 'invoice_list',
+    POLICY_ADDON_PURCHASE: 'policy_addon_purchase',
+    POLICY_ADDON_HISTORY: 'policy_addon_history',
   },
   CUSTOMER: {
     CUSTOMER_LIST_DROP_DOWN: 'customer_list_drop_down',
@@ -404,6 +412,8 @@ const endPointApi: EndPointApi = {
     POLICY_PLAN_INFO: 'policy_plan_info',
     POLICY_PLAN_QUOTE: 'policy_plan_quote',
     POLICY_PLAN_PURCHASE: 'policy_plan_purchase',
+    POLICY_ADDON_PURCHASE: 'policy_addon_purchase',
+    POLICY_ADDON_HISTORY: 'policy_addon_history',
   },
 };
 

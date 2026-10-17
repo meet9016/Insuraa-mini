@@ -372,3 +372,179 @@ export const fetchPolicyPlanPurchase = async (payload: PolicyPlanPurchaseParams)
   }
 };
 
+export interface InvoiceItem {
+  invoice_no: string;
+  type: string;
+  type_name: string;
+  amount: number | string;
+  created_at: string;
+  pdf_link?: string;
+  invoice_url?: string;
+  download_url?: string;
+  [key: string]: any;
+}
+
+export interface InvoiceListResponse {
+  status: number | string | boolean;
+  message?: string;
+  data: InvoiceItem[];
+  pagination_arr?: {
+    page: number;
+    limit: number;
+    total_records: number;
+  };
+}
+
+/**
+ * Hook to fetch invoice list (All History)
+ */
+export const useFetchInvoiceList = (page: number = 1, limit: number = 10, search: string = '') => {
+  return useQuery<InvoiceListResponse | null>({
+    queryKey: ['invoiceList', page, limit, search],
+    queryFn: async () => {
+      try {
+        const formData = new FormData();
+        formData.append('page', page.toString());
+        formData.append('limit', limit.toString());
+        if (search) {
+          formData.append('search', search);
+        }
+
+        const response = await api.post(endPointApi.AUTH.INVOICE_LIST, formData);
+        const resData = response.data;
+        if (resData && (resData.status === 200 || resData.status === '200' || resData.status === true || resData.status === 'success')) {
+          return {
+            status: resData.status,
+            message: resData.message,
+            data: Array.isArray(resData.data) ? resData.data : [],
+            pagination_arr: resData.pagination_arr || {
+              page: page,
+              limit: limit,
+              total_records: Array.isArray(resData.data) ? resData.data.length : 0,
+            },
+          };
+        } else {
+          return {
+            status: resData?.status || 400,
+            message: resData?.message || 'Failed to fetch invoices',
+            data: [],
+            pagination_arr: { page: 1, limit: limit, total_records: 0 },
+          };
+        }
+      } catch (err: any) {
+        console.error('Error fetching invoice list:', err);
+        return null;
+      }
+    },
+  });
+};
+
+export interface PolicyAddonItem {
+  addon_id: number;
+  invoice_no: string;
+  addon_policies: number;
+  tier_name: string;
+  rate_per_policy: number;
+  starting_date: string;
+  ending_date: string;
+  days_remaining: number;
+  amount: number;
+  gst_amount: number;
+  final_amount: number;
+  status: number;
+  status_name: string;
+  created_at: string;
+  [key: string]: any;
+}
+
+export interface PolicyAddonHistoryResponse {
+  status: number | string | boolean;
+  message?: string;
+  data: PolicyAddonItem[];
+  pagination_arr?: {
+    page: number;
+    limit: number;
+    total_records: number;
+  };
+}
+
+export interface PolicyAddonPurchaseData {
+  addon_policies: number;
+  new_total_limit: number;
+  tier: string;
+  valid_till: string;
+  days_remaining: number;
+  total_price: number;
+  gst_amount: number;
+  final_amount: number;
+  redirect_url: string;
+  [key: string]: any;
+}
+
+export interface PolicyAddonPurchaseResponse {
+  status: number | string | boolean;
+  message?: string;
+  data: PolicyAddonPurchaseData;
+}
+
+/**
+ * Hook to fetch policy addon history
+ */
+export const useFetchPolicyAddonHistory = (page: number = 1, limit: number = 10, search: string = '') => {
+  return useQuery<PolicyAddonHistoryResponse | null>({
+    queryKey: ['policyAddonHistory', page, limit, search],
+    queryFn: async () => {
+      try {
+        const formData = new FormData();
+        formData.append('page', page.toString());
+        formData.append('limit', limit.toString());
+        if (search) {
+          formData.append('search', search);
+        }
+
+        const response = await api.post(endPointApi.AUTH.POLICY_ADDON_HISTORY, formData);
+        const resData = response.data;
+        if (resData && (resData.status === 200 || resData.status === '200' || resData.status === true || resData.status === 'success')) {
+          return {
+            status: resData.status,
+            message: resData.message,
+            data: Array.isArray(resData.data) ? resData.data : [],
+            pagination_arr: resData.pagination_arr || {
+              page: page,
+              limit: limit,
+              total_records: Array.isArray(resData.data) ? resData.data.length : 0,
+            },
+          };
+        } else {
+          return {
+            status: resData?.status || 400,
+            message: resData?.message || 'Failed to fetch policy addon history',
+            data: [],
+            pagination_arr: { page: 1, limit: limit, total_records: 0 },
+          };
+        }
+      } catch (err: any) {
+        console.error('Error fetching policy addon history:', err);
+        return null;
+      }
+    },
+  });
+};
+
+/**
+ * Hook to purchase policy addon with addon_policies via FormData
+ */
+export const usePurchasePolicyAddon = () => {
+  return useMutation<PolicyAddonPurchaseResponse | null, any, { addon_policies: number }>({
+    mutationFn: async (payload: { addon_policies: number }) => {
+      const formData = new FormData();
+      formData.append('addon_policies', payload.addon_policies.toString());
+
+      const response = await api.post(endPointApi.AUTH.POLICY_ADDON_PURCHASE, formData);
+      return response.data;
+    },
+  });
+};
+
+
+
