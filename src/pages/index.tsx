@@ -70,6 +70,7 @@ import {
   fetchDirectPlanPurchase,
   fetchGstVerify,
 } from '@/hooks/usePricingApi';
+import { useFetchAppSettings } from '@/hooks/useSettingsApi';
 import { api } from '@/utils/axiosInstance';
 import endPointApi from '@/utils/endPointApi';
 import { toast } from 'react-toastify';
@@ -80,6 +81,16 @@ export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // App settings for dynamic contact/whatsapp information
+  const { data: appSettings } = useFetchAppSettings();
+
+  // Contact Form state (redirects to WhatsApp with pre-filled details)
+  const [contactForm, setContactForm] = useState({
+    fullName: '',
+    mobileNumber: '',
+    message: '',
+  });
 
   // Pricing & Payment Flow States (Powered purely by dynamic useDirectPlanInfo hook)
   const { data: planData, isLoading: isLoadingPlans } = useDirectPlanInfo();
@@ -636,6 +647,42 @@ export default function LandingPage() {
     router.push('/dashboard');
   };
 
+  const handleContactSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const name = contactForm.fullName.trim();
+    const phone = contactForm.mobileNumber.trim();
+    const msg = contactForm.message.trim();
+
+    if (!name) {
+      toast.error('Please enter your full name');
+      return;
+    }
+    if (!phone) {
+      toast.error('Please enter your mobile number');
+      return;
+    }
+    const cleanDigits = phone.replace(/\D/g, '');
+    if (cleanDigits.length < 10) {
+      toast.error('Please enter a valid 10-digit mobile number');
+      return;
+    }
+    if (!msg) {
+      toast.error('Please enter your message');
+      return;
+    }
+
+    const rawTargetPhone = (appSettings?.whatsapp_number || appSettings?.mobile_number || '8866779008').toString().trim();
+    const targetDigits = rawTargetPhone.replace(/\D/g, '');
+    const targetWhatsApp = targetDigits.length === 10 ? `91${targetDigits}` : targetDigits;
+
+    const waText = `*New Inquiry via Website*\n\n*Full Name:* ${name}\n*Mobile Number:* ${phone}\n*Message:* ${msg}`;
+    const whatsappUrl = `https://api.whatsapp.com/send?phone=${targetWhatsApp}&text=${encodeURIComponent(waText)}`;
+
+    toast.success('Redirecting to WhatsApp...');
+    window.open(whatsappUrl, '_blank');
+    setContactForm({ fullName: '', mobileNumber: '', message: '' });
+  };
+
   return (
     <div className="min-h-screen bg-[#F8FAFD] text-slate-800 font-sans antialiased selection:bg-[#2D3591] selection:text-white">
       <Head>
@@ -681,7 +728,7 @@ export default function LandingPage() {
               Pricing
             </a>
             <a href="#contact" className="hover:text-[#2D3591] transition-colors">
-              Contact &amp; Map
+              Contact Us
             </a>
             <a href="#faq" className="hover:text-[#2D3591] transition-colors">
               FAQ
@@ -777,7 +824,7 @@ export default function LandingPage() {
               onClick={() => setMobileMenuOpen(false)}
               className="block px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 rounded-lg"
             >
-              Contact &amp; Location Map
+              Contact Us
             </a>
             <a
               href="#faq"
@@ -995,7 +1042,7 @@ export default function LandingPage() {
                   <div className="flex items-start gap-3 p-2.5 sm:p-3 rounded-xl bg-rose-50/40 hover:bg-rose-50/70 transition-colors">
                     <XCircle className="w-4.5 h-4.5 text-rose-500 shrink-0 mt-0.5" />
                     <div>
-                      <span className="font-medium text-slate-900">Zero Data Protection:</span> Staff can export full client lists and sensitive commission payouts.
+                      <span className="font-medium text-slate-900">Zero Data Protection:</span> Staff can export full client lists and sensitive  payouts.
                     </div>
                   </div>
                 </div>
@@ -1129,7 +1176,7 @@ export default function LandingPage() {
                 </h3>
 
                 <p className="text-slate-600 text-sm leading-relaxed font-normal">
-                  Insuraa was founded by <span className="font-medium text-slate-900">Shopno Ecommerce Pvt Ltd</span> in Surat, Gujarat. Indian insurance agents routinely lose 40% of their business day manually entering PDF schedules, tracking renewal dates on paper diaries, and juggling scattered WhatsApp chats.
+                  Insuraa was founded by <span className="font-medium text-slate-900">Shopno Ecommerce Pvt Ltd</span> in Surat, Gujarat. Indian insurance  routinely lose 40% of their business day manually entering PDF schedules, tracking renewal dates on paper diaries, and juggling scattered WhatsApp chats.
                 </p>
 
                 <p className="text-slate-600 text-sm leading-relaxed font-normal">
@@ -1625,16 +1672,16 @@ export default function LandingPage() {
       </section>
 
 
-      {/* CONTACT US & INTERACTIVE GOOGLE MAP LOCATION (Embedded SHOPNO ECOMMERCE PVT LTD) */}
+      {/* CONTACT US & GET IN TOUCH */}
       <section id="contact" className="py-20 bg-white border-t border-slate-200/80 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
           <div className="text-center max-w-3xl mx-auto space-y-3 mb-14">
             <span className="text-xs font-medium uppercase tracking-wider text-[#2D3591] bg-indigo-50 border border-indigo-200 px-3.5 py-1.5 rounded-full inline-flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5 text-[#2D3591]" /> Our Location &amp; Contact
+              <Mail className="w-3.5 h-3.5 text-[#2D3591]" /> Get in Touch
             </span>
             <h2 className="text-3xl sm:text-4xl font-semibold text-slate-900 tracking-tight">
-              Visit Insuraa Headquarters or Get in Touch
+              Get in Touch with Our Team
             </h2>
             <p className="text-slate-600 text-sm sm:text-base font-normal">
               Have questions about agency onboarding or need a custom demonstration? We are right here in Surat to help you grow.
@@ -1643,12 +1690,14 @@ export default function LandingPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
 
-            {/* Left Contact Information Card */}
+            {/* Left Contact Information Card (Buttons Removed) */}
             <div className="lg:col-span-5 bg-slate-50/90 rounded-3xl p-7 sm:p-9 border border-slate-200 shadow-sm flex flex-col justify-between space-y-6">
 
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-xl font-semibold text-slate-900">Shopno Ecommerce Pvt Ltd</h3>
+                  <h3 className="text-xl font-semibold text-slate-900">
+                    {appSettings?.company_name ? `${appSettings.company_name} (Shopno Ecommerce Pvt Ltd)` : 'Shopno Ecommerce Pvt Ltd'}
+                  </h3>
                   <p className="text-xs font-medium text-[#2D3591] mt-0.5">Creators &amp; Operators of Insuraa OS</p>
                 </div>
 
@@ -1673,8 +1722,13 @@ export default function LandingPage() {
                     </div>
                     <div>
                       <span className="text-slate-900 block font-medium">Call &amp; WhatsApp Support:</span>
-                      <a href="tel:+918866779008" className="text-[#2D3591] font-medium text-sm hover:underline block mt-0.5">
-                        +91 8866779008
+                      <a
+                        href={`https://api.whatsapp.com/send?phone=91${(appSettings?.whatsapp_number || appSettings?.mobile_number || '8866779008').replace(/\D/g, '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[#2D3591] font-medium text-sm hover:underline block mt-0.5"
+                      >
+                        +91 {appSettings?.whatsapp_number || appSettings?.mobile_number || '8866779008'}
                       </a>
                     </div>
                   </div>
@@ -1686,8 +1740,8 @@ export default function LandingPage() {
                     </div>
                     <div>
                       <span className="text-slate-900 block font-medium">Official Email:</span>
-                      <a href="mailto:contact@insuraa.in" className="text-[#2D3591] font-medium hover:underline block mt-0.5">
-                        contact@insuraa.in
+                      <a href={`mailto:${appSettings?.email || 'contact@insuraa.in'}`} className="text-[#2D3591] font-medium hover:underline block mt-0.5">
+                        {appSettings?.email || 'contact@insuraa.in'}
                       </a>
                     </div>
                   </div>
@@ -1707,51 +1761,93 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              {/* Direct Buttons */}
-              <div className="pt-4 border-t border-slate-200/80 flex flex-col sm:flex-row gap-3">
-                <button
-                  onClick={handleLoginClick}
-                  className="flex-1 py-3 px-4 rounded-xl text-xs sm:text-sm font-medium text-white bg-[#2D3591] hover:bg-[#222870] shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <LogIn className="w-4 h-4" />
-                  <span>Login to Portal</span>
-                </button>
-                <a
-                  href="https://maps.app.goo.gl/35b3J6ZzG4i9Qh2L9"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="py-3 px-4 rounded-xl text-xs sm:text-sm font-medium text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 transition-all flex items-center justify-center gap-1.5"
-                >
-                  <Compass className="w-4 h-4 text-[#2BBF8C]" />
-                  <span>Get Directions</span>
-                </a>
-              </div>
-
             </div>
 
-            {/* Right Embedded Google Map */}
-            <div className="lg:col-span-7 relative flex flex-col justify-center">
-              <div className="relative w-full h-[450px] lg:h-full min-h-[420px] rounded-3xl overflow-hidden border-2 border-slate-200/90 shadow-xl group">
+            {/* Right Contact Form (Replaces Google Map) */}
+            <div className="lg:col-span-7 bg-white rounded-3xl p-7 sm:p-9 border border-slate-200/90 shadow-sm flex flex-col justify-center relative overflow-hidden">
+              <div className="mb-6">
+                <span className="text-xs font-bold text-[#2BBF8C] uppercase tracking-wider bg-emerald-50 border border-emerald-200/60 px-3.5 py-1.5 rounded-full inline-flex items-center gap-1.5">
+                  <MessageCircle className="w-3.5 h-3.5" /> Instant WhatsApp Connect
+                </span>
+                <h3 className="text-2xl font-bold text-slate-900 mt-2.5">Send Us a Message</h3>
+                <p className="text-slate-500 text-xs sm:text-sm mt-1">
+                  Fill in your details below and we will connect with you directly on WhatsApp.
+                </p>
+              </div>
 
-                {/* Floating Top Label */}
-                <div className="absolute top-4 left-4 z-10 bg-white/95 backdrop-blur-md px-3.5 py-2 rounded-xl shadow-lg border border-slate-200 flex items-center gap-2 text-xs font-medium text-slate-900">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
-                  <span>SHOPNO ECOMMERCE PVT LTD • Insuraa HQ</span>
+              <form onSubmit={handleContactSubmit} className="space-y-4">
+                {/* Full Name */}
+                <div>
+                  <label htmlFor="contact-fullname" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                    Full Name <span className="text-rose-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                      <User className="w-4 h-4" />
+                    </div>
+                    <input
+                      id="contact-fullname"
+                      type="text"
+                      required
+                      placeholder="Enter your full name"
+                      value={contactForm.fullName}
+                      onChange={(e) => setContactForm((prev) => ({ ...prev, fullName: e.target.value }))}
+                      className="w-full pl-10 pr-4 py-3 bg-slate-50/70 hover:bg-slate-50 text-sm font-medium text-slate-800 rounded-xl border border-slate-200 focus:border-[#2D3591] focus:bg-white focus:ring-4 focus:ring-[#2D3591]/10 outline-none transition-all placeholder:text-slate-400"
+                    />
+                  </div>
                 </div>
 
-                {/* Google Maps Embed */}
-                <iframe
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d4614.528907291065!2d72.888763!3d21.242198700000003!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3be04f632203420b%3A0xbcc07ea91cb79d08!2sSHOPNO%20ECOMMERCE%20PVT%20LTD!5e1!3m2!1sen!2sin!4v1791951989388!5m2!1sen!2sin"
-                  width="100%"
-                  height="100%"
-                  style={{ border: 0 }}
-                  allowFullScreen
-                  loading="lazy"
-                  referrerPolicy="strict-origin-when-cross-origin"
-                  title="Insuraa Office Location - SHOPNO ECOMMERCE PVT LTD Surat"
-                  className="w-full h-full min-h-[420px] rounded-3xl"
-                />
-              </div>
+                {/* Mobile Number */}
+                <div>
+                  <label htmlFor="contact-mobile" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                    Mobile Number <span className="text-rose-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                      <Phone className="w-4 h-4" />
+                    </div>
+                    <input
+                      id="contact-mobile"
+                      type="tel"
+                      required
+                      maxLength={10}
+                      placeholder="Enter 10-digit mobile number"
+                      value={contactForm.mobileNumber}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                        setContactForm((prev) => ({ ...prev, mobileNumber: val }));
+                      }}
+                      className="w-full pl-10 pr-4 py-3 bg-slate-50/70 hover:bg-slate-50 text-sm font-medium text-slate-800 rounded-xl border border-slate-200 focus:border-[#2D3591] focus:bg-white focus:ring-4 focus:ring-[#2D3591]/10 outline-none transition-all placeholder:text-slate-400 font-mono"
+                    />
+                  </div>
+                </div>
+
+                {/* Message */}
+                <div>
+                  <label htmlFor="contact-message" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                    Message <span className="text-rose-500">*</span>
+                  </label>
+                  <textarea
+                    id="contact-message"
+                    required
+                    rows={4}
+                    placeholder="Write your message or inquiry here..."
+                    value={contactForm.message}
+                    onChange={(e) => setContactForm((prev) => ({ ...prev, message: e.target.value }))}
+                    className="w-full px-4 py-3 bg-slate-50/70 hover:bg-slate-50 text-sm font-medium text-slate-800 rounded-xl border border-slate-200 focus:border-[#2D3591] focus:bg-white focus:ring-4 focus:ring-[#2D3591]/10 outline-none transition-all placeholder:text-slate-400 resize-none"
+                  />
+                </div>
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  id="contact-submit-btn"
+                  className="w-full py-3.5 px-6 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-[#2BBF8C] to-[#1EA376] hover:from-[#24aa7c] hover:to-[#1a8e67] shadow-md hover:shadow-emerald-500/25 transition-all flex items-center justify-center gap-2.5 active:scale-[0.99] cursor-pointer"
+                >
+                  <MessageCircle className="w-4 h-4 fill-current" />
+                  <span>Send Message via WhatsApp</span>
+                </button>
+              </form>
             </div>
 
           </div>
@@ -2087,8 +2183,8 @@ export default function LandingPage() {
                                 key={plan.name}
                                 onClick={() => handleSelectTier(plan.name)}
                                 className={`px-3 py-2 rounded-xl border-2 transition-all cursor-pointer flex items-center justify-between ${isSelected
-                                    ? 'border-[#2D3591] bg-indigo-50/50 shadow-xs ring-1 ring-[#2D3591]/20'
-                                    : 'border-slate-200 hover:border-slate-300 bg-white'
+                                  ? 'border-[#2D3591] bg-indigo-50/50 shadow-xs ring-1 ring-[#2D3591]/20'
+                                  : 'border-slate-200 hover:border-slate-300 bg-white'
                                   }`}
                               >
                                 <div className="min-w-0">
@@ -2097,8 +2193,8 @@ export default function LandingPage() {
                                 </div>
                                 <div
                                   className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ml-1.5 transition-all ${isSelected
-                                      ? 'bg-[#2D3591] text-white'
-                                      : 'border-2 border-slate-300'
+                                    ? 'bg-[#2D3591] text-white'
+                                    : 'border-2 border-slate-300'
                                     }`}
                                 >
                                   {isSelected && <Check className="w-2.5 h-2.5 stroke-[3]" />}
@@ -2291,8 +2387,8 @@ export default function LandingPage() {
                                 }
                               }}
                               className={`w-full pl-8 pr-16 py-2 rounded-lg border text-xs sm:text-sm uppercase transition-all focus:outline-hidden focus:border-[#2D3591] focus:ring-2 focus:ring-indigo-100 ${isGstVerified
-                                  ? 'border-emerald-300 bg-emerald-50/20'
-                                  : 'border-slate-200'
+                                ? 'border-emerald-300 bg-emerald-50/20'
+                                : 'border-slate-200'
                                 }`}
                             />
                             {billingForm.gstNumber.trim().length === 15 && !isGstVerified && (
@@ -2681,8 +2777,8 @@ export default function LandingPage() {
                           onClick={handlePayNow}
                           disabled={!isBillingFormValid || isProcessingPayment || isFetchingQuote}
                           className={`w-full py-2.5 sm:py-3 px-4 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${!isBillingFormValid || isProcessingPayment || isFetchingQuote
-                              ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none border border-slate-300/60'
-                              : 'text-white bg-[#2D3591] hover:bg-[#222870] shadow-md hover:shadow-lg cursor-pointer active:scale-[0.99]'
+                            ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none border border-slate-300/60'
+                            : 'text-white bg-[#2D3591] hover:bg-[#222870] shadow-md hover:shadow-lg cursor-pointer active:scale-[0.99]'
                             }`}
                         >
                           {isProcessingPayment ? (
