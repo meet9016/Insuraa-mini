@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -59,7 +59,16 @@ import {
   Plus,
   Wallet,
   Receipt,
-  Loader2
+  Loader2,
+  LayoutDashboard,
+  Settings,
+  Bell,
+  Search,
+  Send,
+  ChevronUp,
+  Instagram,
+  Linkedin,
+  Twitter
 } from 'lucide-react';
 import {
   useDirectPlanInfo,
@@ -76,8 +85,102 @@ import endPointApi from '@/utils/endPointApi';
 import { toast } from 'react-toastify';
 import OtpBoxInput from '@/components/OtpBoxInput';
 
+const SOFTWARE_FEATURES = [
+  {
+    title: 'Smart Dashboard',
+    desc: 'Get a complete view of your business with real-time insights and key metrics.',
+    icon: LayoutDashboard,
+    iconBg: 'bg-blue-50 text-[#2D3591] border-blue-200/60 group-hover:bg-[#2D3591] group-hover:text-white',
+  },
+  {
+    title: 'CRM & Leads',
+    desc: 'Capture, track and manage prospective leads from multiple channels.',
+    icon: Users,
+    iconBg: 'bg-indigo-50 text-indigo-600 border-indigo-200/60 group-hover:bg-indigo-600 group-hover:text-white',
+  },
+  {
+    title: 'Policy Management',
+    desc: 'Issue, manage and track all insurance policies in one secure place.',
+    icon: FileText,
+    iconBg: 'bg-sky-50 text-sky-600 border-sky-200/60 group-hover:bg-sky-600 group-hover:text-white',
+  },
+  {
+    title: 'Renewal Reminders',
+    desc: 'Never miss a renewal with automated alerts and notifications.',
+    icon: Calendar,
+    iconBg: 'bg-amber-50 text-amber-600 border-amber-200/60 group-hover:bg-amber-600 group-hover:text-white',
+  },
+  {
+    title: 'Claims Tracking',
+    desc: 'Track claim status, documents, surveyor notes and updates in real time.',
+    icon: ShieldCheck,
+    iconBg: 'bg-rose-50 text-rose-600 border-rose-200/60 group-hover:bg-rose-600 group-hover:text-white',
+  },
+  {
+    title: 'Commission & Reports',
+    desc: 'Monitor commissions, generate reports and make better decisions.',
+    icon: TrendingUp,
+    iconBg: 'bg-violet-50 text-violet-600 border-violet-200/60 group-hover:bg-violet-600 group-hover:text-white',
+  },
+  {
+    title: 'Instant Quotations',
+    desc: 'Compare Health and Motor quotes side-by-side with customized IDV and add-ons.',
+    icon: Calculator,
+    iconBg: 'bg-purple-50 text-purple-600 border-purple-200/60 group-hover:bg-purple-600 group-hover:text-white',
+  },
+  {
+    title: 'WhatsApp Automation',
+    desc: 'Send messages, updates and alerts automatically via WhatsApp.',
+    icon: MessageCircle,
+    iconBg: 'bg-emerald-50 text-[#2BBF8C] border-emerald-200/60 group-hover:bg-[#2BBF8C] group-hover:text-white',
+  },
+];
+
+const showcaseImages = [
+  { src: '/images/landing/software_dashboard.png', alt: 'Insuraa Dashboard' },
+  { src: '/images/landing/software_policies.png', alt: 'Insuraa Policy Management' },
+  { src: '/images/landing/software_customer.png', alt: 'Insuraa Customer Management' },
+  { src: '/images/landing/software_calendar.png', alt: 'Insuraa Renewal Calendar' },
+  { src: '/images/landing/dashboard.png', alt: 'Insuraa Executive Analytics' },
+];
+
 export default function LandingPage() {
   const router = useRouter();
+  const showcaseSectionRef = useRef<HTMLDivElement>(null);
+  const [showcaseActiveIndex, setShowcaseActiveIndex] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!showcaseSectionRef.current) return;
+      const rect = showcaseSectionRef.current.getBoundingClientRect();
+      const scrollableHeight = showcaseSectionRef.current.offsetHeight - window.innerHeight;
+      if (scrollableHeight <= 0) return;
+
+      const progress = Math.max(0, Math.min(1, -rect.top / scrollableHeight));
+      const nextIdx = Math.min(
+        showcaseImages.length - 1,
+        Math.floor(progress * showcaseImages.length)
+      );
+      setShowcaseActiveIndex(nextIdx);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const handleShowcaseStep = (targetIndex: number) => {
+    const nextIdx = Math.max(0, Math.min(showcaseImages.length - 1, targetIndex));
+    setShowcaseActiveIndex(nextIdx);
+    if (!showcaseSectionRef.current) return;
+    const rect = showcaseSectionRef.current.getBoundingClientRect();
+    const currentScrollY = window.scrollY;
+    const sectionTop = currentScrollY + rect.top;
+    const scrollableHeight = showcaseSectionRef.current.offsetHeight - window.innerHeight;
+    if (scrollableHeight <= 0) return;
+    const targetScrollY = sectionTop + (nextIdx / (showcaseImages.length - 1)) * scrollableHeight;
+    window.scrollTo({ top: targetScrollY, behavior: 'smooth' });
+  };
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -91,6 +194,34 @@ export default function LandingPage() {
     mobileNumber: '',
     message: '',
   });
+
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+
+  // Enquiry Modal state (Opened via "ENQUIRY NOW" side button)
+  const [enquiryModalOpen, setEnquiryModalOpen] = useState(false);
+  const [enquiryForm, setEnquiryForm] = useState({
+    fullName: '',
+    mobileNumber: '',
+    message: '',
+  });
+
+  // Floating WhatsApp Direct Contact Widget State (Hover & Click support)
+  const [whatsappWidgetOpen, setWhatsappWidgetOpen] = useState(false);
+  const whatsappHoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleWhatsappMouseEnter = () => {
+    if (whatsappHoverTimeoutRef.current) {
+      clearTimeout(whatsappHoverTimeoutRef.current);
+      whatsappHoverTimeoutRef.current = null;
+    }
+    setWhatsappWidgetOpen(true);
+  };
+
+  const handleWhatsappMouseLeave = () => {
+    whatsappHoverTimeoutRef.current = setTimeout(() => {
+      setWhatsappWidgetOpen(false);
+    }, 280);
+  };
 
   // Pricing & Payment Flow States (Powered purely by dynamic useDirectPlanInfo hook)
   const { data: planData, isLoading: isLoadingPlans } = useDirectPlanInfo();
@@ -683,6 +814,43 @@ export default function LandingPage() {
     setContactForm({ fullName: '', mobileNumber: '', message: '' });
   };
 
+  const handleEnquirySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const name = enquiryForm.fullName.trim();
+    const phone = enquiryForm.mobileNumber.trim();
+    const msg = enquiryForm.message.trim();
+
+    if (!name) {
+      toast.error('Please enter your full name');
+      return;
+    }
+    if (!phone) {
+      toast.error('Please enter your mobile number');
+      return;
+    }
+    const cleanDigits = phone.replace(/\D/g, '');
+    if (cleanDigits.length < 10) {
+      toast.error('Please enter a valid 10-digit mobile number');
+      return;
+    }
+    if (!msg) {
+      toast.error('Please enter your message');
+      return;
+    }
+
+    const rawTargetPhone = (appSettings?.whatsapp_number || appSettings?.mobile_number || '8866779008').toString().trim();
+    const targetDigits = rawTargetPhone.replace(/\D/g, '');
+    const targetWhatsApp = targetDigits.length === 10 ? `91${targetDigits}` : targetDigits;
+
+    const waText = `*New Inquiry via Website*\n\n*Full Name:* ${name}\n*Mobile Number:* ${phone}\n*Message:* ${msg}`;
+    const whatsappUrl = `https://api.whatsapp.com/send?phone=${targetWhatsApp}&text=${encodeURIComponent(waText)}`;
+
+    toast.success('Redirecting to WhatsApp...');
+    window.open(whatsappUrl, '_blank');
+    setEnquiryForm({ fullName: '', mobileNumber: '', message: '' });
+    setEnquiryModalOpen(false);
+  };
+
   return (
     <div className="min-h-screen bg-[#F8FAFD] text-slate-800 font-sans antialiased selection:bg-[#2D3591] selection:text-white">
       <Head>
@@ -718,7 +886,7 @@ export default function LandingPage() {
             <a href="#with-vs-without" className="hover:text-[#2D3591] transition-colors flex items-center gap-1 font-medium">
               <span className="text-[#2BBF8C] font-medium">With</span> vs Without
             </a>
-            <a href="#features" className="hover:text-[#2D3591] transition-colors">
+            <a href="#software-features" className="hover:text-[#2D3591] transition-colors">
               Features
             </a>
             <a href="#solutions" className="hover:text-[#2D3591] transition-colors">
@@ -729,9 +897,6 @@ export default function LandingPage() {
             </a>
             <a href="#contact" className="hover:text-[#2D3591] transition-colors">
               Contact Us
-            </a>
-            <a href="#faq" className="hover:text-[#2D3591] transition-colors">
-              FAQ
             </a>
           </nav>
 
@@ -799,7 +964,7 @@ export default function LandingPage() {
               With Insuraa vs Without Insuraa
             </a>
             <a
-              href="#features"
+              href="#software-features"
               onClick={() => setMobileMenuOpen(false)}
               className="block px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 rounded-lg"
             >
@@ -826,13 +991,6 @@ export default function LandingPage() {
             >
               Contact Us
             </a>
-            <a
-              href="#faq"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 rounded-lg"
-            >
-              FAQ
-            </a>
             <div className="pt-3 border-t border-slate-100 flex flex-col gap-2">
               <button
                 onClick={handleLoginClick}
@@ -852,685 +1010,627 @@ export default function LandingPage() {
         )}
       </header>
 
-      {/* HERO SECTION (Strict 2-Line Headline, Medium Weights, Clean Modern Balance) */}
-      <section className="relative pt-12 pb-16 lg:pt-16 lg:pb-24 overflow-hidden bg-gradient-to-b from-white via-indigo-50/40 to-[#F8FAFD]">
+      {/* HERO SECTION (Exact Match to User Reference Screenshot with Website Brand Colors) */}
+      <section className="relative pt-12 pb-16 lg:pt-16 lg:pb-12 overflow-hidden bg-gradient-to-b from-white via-indigo-50/30 to-[#F8FAFD]">
 
-        {/* Ambient Glowing Background Orbs */}
-        <div className="absolute top-10 left-10 w-96 h-96 bg-[#2D3591]/10 rounded-full blur-3xl animate-glow-pulse pointer-events-none" />
-        <div className="absolute top-36 right-10 w-96 h-96 bg-[#2BBF8C]/15 rounded-full blur-3xl animate-glow-pulse pointer-events-none" style={{ animationDelay: '3s' }} />
+        {/* Ambient Subtle Background Orbs */}
+        <div className="absolute top-10 left-10 w-96 h-96 bg-[#2D3591]/8 rounded-full blur-3xl animate-glow-pulse pointer-events-none" />
+        <div className="absolute top-20 right-10 w-96 h-96 bg-[#2BBF8C]/10 rounded-full blur-3xl animate-glow-pulse pointer-events-none" style={{ animationDelay: '3s' }} />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
 
-            {/* Left Column (7 cols): Exactly 2-Line Headline, Medium Typography, CTAs */}
-            <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
+            {/* Left Column (6 cols): Exact Headline, Subtext, CTAs, Trust Strip */}
+            <div className="lg:col-span-6 space-y-6 text-center lg:text-left">
 
-              {/* Badge with pulse dot */}
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-indigo-200/80 shadow-xs hover:border-[#2D3591] transition-all">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#2BBF8C] opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#2BBF8C]"></span>
-                </span>
-                <span className="text-xs font-medium text-slate-700 tracking-wide">
-                  AI-Powered Insurance Operating System
+              {/* Top Badge: "Insurance Management Software" */}
+              <div className="inline-flex items-center px-4 py-1.5 rounded-full bg-blue-50 border border-blue-200/70 shadow-2xs">
+                <span className="text-xs font-medium text-[#2D3591] tracking-wide">
+                  Insurance Management Software
                 </span>
               </div>
 
-              {/* Strict 2-Line Headline with Medium/Semibold Weight */}
-              <h1 className="text-2xl sm:text-3xl lg:text-[34px] xl:text-[38px] font-semibold text-slate-900 tracking-tight leading-[1.25]">
-                <span className="block whitespace-normal sm:whitespace-nowrap">Smart Insurance Agency CRM &amp;</span>
-                <span className="block whitespace-normal sm:whitespace-nowrap bg-gradient-to-r from-[#2D3591] via-[#3B49B8] to-[#2BBF8C] bg-clip-text text-transparent">
-                  AI-Powered Policy Platform
+              {/* Exact Headline: "Your Entire Insurance Business. One Smart Platform." */}
+              <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-semibold text-slate-900 tracking-tight leading-[1.2]">
+                <span>Your Entire Insurance Business.</span> <br />
+                <span className="text-[#2D3591]">
+                  One Smart Platform.
                 </span>
               </h1>
 
-              {/* Subheadline */}
-              <p className="text-base sm:text-lg text-slate-600 max-w-xl mx-auto lg:mx-0 leading-relaxed font-normal">
-                Upload any policy PDF and let AI auto-extract 35+ fields in <span className="font-medium text-slate-900">5 seconds</span>. Manage Life, Health, Motor &amp; Commercial policies, automated WhatsApp renewals, and visual lead pipelines.
+              {/* Exact Subheadline */}
+              <p className="text-sm sm:text-base text-slate-600 max-w-lg mx-auto lg:mx-0 leading-relaxed font-normal">
+                Manage your customers, policies, renewals, claims and commissions — all from a single, powerful dashboard.
               </p>
 
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
-                {/* Main Prominent Login Button */}
-                <button
-                  onClick={handleLoginClick}
-                  id="hero-login-btn"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-gradient-to-r from-[#2D3591] to-[#3B49B8] hover:from-[#242b78] hover:to-[#2D3591] text-white px-8 py-3.5 rounded-xl font-medium text-sm sm:text-base shadow-lg shadow-indigo-950/20 hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
-                >
-                  <LogIn className="w-5 h-5 text-emerald-300" />
-                  <span>Login to Portal</span>
-                  <ArrowRight className="w-4 h-4 ml-0.5 text-slate-300" />
-                </button>
-
-                {/* Free Demo / Register */}
+              {/* CTAs */}
+              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3.5 pt-1">
+                {/* Book a Free Demo */}
                 <button
                   onClick={handleRegisterClick}
                   id="hero-demo-btn"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-800 border-2 border-slate-200 hover:border-[#2BBF8C] px-7 py-3.5 rounded-xl font-medium text-sm sm:text-base transition-all duration-300 shadow-xs hover:shadow-md hover:-translate-y-0.5 cursor-pointer"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#2D3591] hover:bg-[#222870] text-white px-6 py-3.5 rounded-xl font-medium text-sm sm:text-base shadow-md hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5 cursor-pointer"
                 >
-                  <Sparkles className="w-4 h-4 text-[#2BBF8C]" />
-                  <span>Start Free Trial</span>
+                  <Calendar className="w-4 h-4" />
+                  <span>Book a Free Demo</span>
+                  <ArrowRight className="w-4 h-4 ml-0.5" />
                 </button>
+
+                {/* Explore Features */}
+                <a
+                  href="#software-features"
+                  id="hero-explore-btn"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-[#2D3591] px-6 py-3.5 rounded-xl font-medium text-sm sm:text-base transition-all duration-200 shadow-2xs hover:shadow-md hover:-translate-y-0.5 cursor-pointer"
+                >
+                  <span>Explore Features</span>
+                </a>
               </div>
 
-              {/* Trust Indicators */}
-              <div className="pt-2 flex flex-wrap items-center justify-center lg:justify-start gap-y-2 gap-x-5 text-xs font-medium text-slate-600">
-                <span className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-[#2BBF8C]" /> 5-Second AI Read
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-[#2BBF8C]" /> Instant Mobile OTP Login
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-[#2BBF8C]" /> Life, Health, Motor &amp; Commercial
-                </span>
-              </div>
             </div>
 
-            {/* Right Column (5 cols): Hero Image with 3D Float */}
-            <div className="lg:col-span-5 relative flex justify-center items-center">
+            {/* Right Column (6 cols): Insuraa Hero Illustration with Proper Border */}
+            <div className="lg:col-span-6 relative flex justify-center items-center">
 
-              {/* Outer Glow Background */}
-              <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/10 via-emerald-500/15 to-transparent rounded-3xl blur-2xl -z-10" />
+              {/* Outer Ambient Glow with Brand Colors */}
+              <div className="absolute inset-0 bg-gradient-to-tr from-[#2D3591]/15 via-[#2BBF8C]/15 to-transparent rounded-3xl blur-2xl -z-10" />
 
-              {/* Centerpiece 3D Hero Image with Floating Animation */}
-              <div className="relative group w-full max-w-lg">
+              {/* Hero Image Container with Proper Border */}
+              <div className="w-full max-w-lg lg:max-w-[530px] relative rounded-2xl sm:rounded-3xl shadow-xl border-2 border-slate-200/90 overflow-hidden bg-white/95 p-3 sm:p-4 backdrop-blur-xs group hover:border-[#2D3591]/40 hover:shadow-2xl transition-all duration-300">
                 <img
-                  src="/images/hero_image.png"
-                  alt="Insuraa AI Policy Extraction and Management Platform"
-                  className="w-full h-auto object-contain drop-shadow-2xl animate-hero-float select-none transition-transform duration-500"
+                  src="/images/landing/insuraa_hero_illustrator.png"
+                  alt="Insuraa Insurance Management Platform"
+                  className="w-full h-auto object-contain rounded-xl transition-transform duration-500 group-hover:scale-[1.02]"
                 />
               </div>
 
             </div>
 
           </div>
+
+          {/* Trust Indicators Strip Across Bottom (Exact Match: Secure & Reliable | Easy to Use | Trusted by 1000+ Businesses | Dedicated Support) */}
+          <div className="mt-12 sm:mt-16 pt-8 border-t border-slate-200/60 flex flex-wrap items-center justify-around gap-6 text-xs sm:text-sm font-medium text-slate-600">
+            <span className="flex items-center gap-2.5">
+              <Shield className="w-5 h-5 text-[#2D3591]" /> Secure &amp; Reliable
+            </span>
+            <span className="flex items-center gap-2.5">
+              <Zap className="w-5 h-5 text-[#2D3591]" /> Easy to Use
+            </span>
+            <span className="flex items-center gap-2.5">
+              <Users className="w-5 h-5 text-[#2D3591]" /> Trusted by 1000+ Businesses
+            </span>
+            <span className="flex items-center gap-2.5">
+              <Star className="w-5 h-5 text-[#2D3591]" /> Dedicated Support
+            </span>
+          </div>
+
         </div>
       </section>
 
-      {/* Partners / Insurer Logos Strip */}
-      <section className="bg-white border-y border-slate-200/80 py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-center text-xs font-medium uppercase tracking-wider text-slate-400 mb-4">
-            Unified Cloud Support For All Leading Indian Insurance Carriers
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 text-xs sm:text-sm font-medium text-slate-600">
-            {['HDFC ERGO', 'Star Health', 'ICICI Lombard', 'Tata AIG', 'Care Health', 'Bajaj Allianz', 'LIC of India', 'National Insurance'].map((brand, i) => (
-              <span
-                key={i}
-                className="px-3.5 py-1.5 bg-slate-50 hover:bg-indigo-50 hover:text-[#2D3591] rounded-lg border border-slate-200/80 shadow-2xs transition-all cursor-default"
-              >
-                {brand}
-              </span>
-            ))}
+
+      {/* ABOUT / WHY CHOOSE INSURAA SECTION (Left: Device Mockup, Right: Clean Content) */}
+      <section id="about" className="py-16 sm:py-12 bg-white relative overflow-hidden">
+
+        {/* Subtle Ambient Background Orbs */}
+        <div className="absolute top-1/2 left-10 -translate-y-1/2 w-96 h-96 bg-[#2D3591]/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-10 right-10 w-80 h-80 bg-[#2BBF8C]/6 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
+
+            {/* Left Column (6 cols): Advisor Image with Unique Frame */}
+            <div className="lg:col-span-6 relative flex justify-center items-center order-2 lg:order-1 py-4">
+
+              {/* Ambient Dynamic Glow */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[108%] h-[108%] bg-gradient-to-tr from-[#2D3591]/15 via-indigo-100/30 to-[#2BBF8C]/15 rounded-[40px] blur-2xl -z-10" />
+
+              {/* Decorative Offset Frame Wrapper */}
+              <div className="relative w-full max-w-lg group">
+
+                {/* 1. Subtle Gradient Border Halo */}
+                <div className="absolute -inset-2 rounded-[32px] bg-gradient-to-tr from-[#2D3591] via-indigo-500/20 to-[#2BBF8C] opacity-30 blur-xs group-hover:opacity-55 transition-opacity duration-500" />
+
+                {/* 2. Top-Left & Bottom-Right Corner Decorative Accents */}
+                <div className="absolute -top-3 -left-3 w-20 h-20 rounded-tl-[32px] border-t-2 border-l-2 border-[#2D3591] pointer-events-none z-10 opacity-70 group-hover:scale-105 transition-transform duration-300" />
+                <div className="absolute -bottom-3 -right-3 w-20 h-20 rounded-br-[32px] border-b-2 border-r-2 border-[#2BBF8C] pointer-events-none z-10 opacity-70 group-hover:scale-105 transition-transform duration-300" />
+
+                {/* 3. Main Layered Card Container */}
+                <div className="relative rounded-[28px] overflow-hidden bg-white p-2 shadow-2xl ring-1 ring-slate-200/90">
+                  <div className="rounded-[22px] overflow-hidden relative">
+                    <img
+                      src="/images/landing/advisor.jpg"
+                      alt="Insuraa Insurance Advisor"
+                      className="w-full h-auto object-cover rounded-[22px] transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+                    />
+                    {/* Subtle Inner Glass Vignette Ring */}
+                    <div className="absolute inset-0 rounded-[22px] ring-1 ring-inset ring-black/10 pointer-events-none" />
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+
+            {/* Right Column (6 cols): Badge, Title, Subtitle, 4 Key Benefits */}
+            <div className="lg:col-span-6 space-y-5 text-left order-1 lg:order-2 pl-0 lg:pl-4">
+
+              {/* Badge: "Why Choose Insuraa" */}
+              <div className="inline-flex items-center px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-200/70 shadow-2xs">
+                <span className="text-xs font-medium text-[#2D3591] tracking-wide">
+                  Why Choose Insuraa
+                </span>
+              </div>
+
+              {/* Heading: "Built for Growth. Designed for You." */}
+              <h2 className="text-2xl sm:text-3xl lg:text-[38px] font-semibold text-slate-900 tracking-tight leading-snug">
+                <span>Built for Growth.</span> <br />
+                <span className="text-[#2D3591]">Designed for You.</span>
+              </h2>
+
+              {/* Subheadline */}
+              <p className="text-sm sm:text-base text-slate-600 max-w-lg leading-relaxed font-normal">
+                Insuraa helps insurance professionals, agents and brokers work smarter, serve better and grow faster.
+              </p>
+
+              {/* 4 Feature Items */}
+              <div className="space-y-3.5 pt-1">
+                {/* 1. All-in-One Platform */}
+                <div className="flex items-start gap-3.5 group">
+                  <div className="w-10 h-10 rounded-xl bg-blue-50/80 border border-blue-100/80 flex items-center justify-center text-[#2D3591] shrink-0 group-hover:bg-[#2D3591] group-hover:text-white transition-all duration-200 shadow-2xs">
+                    <LayoutDashboard className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm sm:text-base font-semibold text-slate-800">All-in-One Platform</h3>
+                    <p className="text-xs sm:text-sm text-slate-500 font-normal leading-relaxed">Manage everything from one dashboard.</p>
+                  </div>
+                </div>
+
+                {/* 2. Save Time */}
+                <div className="flex items-start gap-3.5 group">
+                  <div className="w-10 h-10 rounded-xl bg-blue-50/80 border border-blue-100/80 flex items-center justify-center text-[#2D3591] shrink-0 group-hover:bg-[#2D3591] group-hover:text-white transition-all duration-200 shadow-2xs">
+                    <Clock className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm sm:text-base font-semibold text-slate-800">Save Time</h3>
+                    <p className="text-xs sm:text-sm text-slate-500 font-normal leading-relaxed">Automate routine tasks and focus on what matters.</p>
+                  </div>
+                </div>
+
+                {/* 3. Increase Productivity */}
+                <div className="flex items-start gap-3.5 group">
+                  <div className="w-10 h-10 rounded-xl bg-blue-50/80 border border-blue-100/80 flex items-center justify-center text-[#2D3591] shrink-0 group-hover:bg-[#2D3591] group-hover:text-white transition-all duration-200 shadow-2xs">
+                    <TrendingUp className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm sm:text-base font-semibold text-slate-800">Increase Productivity</h3>
+                    <p className="text-xs sm:text-sm text-slate-500 font-normal leading-relaxed">Stay organized with smart tools and reminders.</p>
+                  </div>
+                </div>
+
+                {/* 4. Secure & Compliant */}
+                <div className="flex items-start gap-3.5 group">
+                  <div className="w-10 h-10 rounded-xl bg-blue-50/80 border border-blue-100/80 flex items-center justify-center text-[#2D3591] shrink-0 group-hover:bg-[#2D3591] group-hover:text-white transition-all duration-200 shadow-2xs">
+                    <ShieldCheck className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm sm:text-base font-semibold text-slate-800">Secure &amp; Compliant</h3>
+                    <p className="text-xs sm:text-sm text-slate-500 font-normal leading-relaxed">Your data is always safe with us.</p>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
           </div>
         </div>
       </section>
 
-      {/* WITH INSURAA VS WITHOUT INSURAA (Balanced Height & Premium Spacing) */}
-      <section id="with-vs-without" className="py-16 sm:py-20 bg-slate-50 relative overflow-hidden">
 
-        {/* Subtle background glow */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-5xl h-88 bg-gradient-to-r from-rose-100/25 via-transparent to-emerald-100/35 rounded-full blur-3xl pointer-events-none" />
+      <section id="with-vs-without" className="py-10 sm:py-12 bg-gradient-to-b from-slate-50 via-white to-slate-50 relative overflow-hidden">
+
+        {/* Ambient background glows */}
+        <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-80 h-80 bg-rose-100/30 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-1/2 right-1/4 -translate-y-1/2 w-80 h-80 bg-emerald-100/30 rounded-full blur-3xl pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
 
-          <div className="text-center max-w-3xl mx-auto space-y-3 mb-12">
-            <span className="text-xs font-medium uppercase tracking-wider text-[#2D3591] bg-indigo-50 border border-indigo-200 px-3.5 py-1 rounded-full">
-              Why Switch to Insuraa
+          {/* Section Header (Matches image size & styling, names preserved) */}
+          <div className="text-center max-w-3xl mx-auto space-y-3 mb-8 sm:mb-10">
+            <span className="text-xs sm:text-sm font-medium text-[#2D3591] bg-blue-50/80 border border-blue-200/80 px-4 py-1.5 rounded-full inline-block shadow-2xs">
+              Why Choose Insuraa
             </span>
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-semibold text-slate-900 tracking-tight">
-              Traditional Agency vs Powered by Insuraa
+            <h2 className="text-3xl sm:text-4xl lg:text-[38px] font-semibold text-slate-900 tracking-tight leading-[1.15]">
+              Traditional Agency vs
+              <br />
+              <span className="text-[#2D3591]">Powered by Insuraa.</span>
             </h2>
-            <p className="text-slate-600 text-xs sm:text-sm font-normal">
-              The side-by-side reality of managing insurance on spreadsheets versus an automated AI agency operating system.
+            <p className="text-slate-600 text-sm sm:text-base font-normal max-w-2xl mx-auto leading-relaxed">
+              Insuraa helps insurance professionals, agents and brokers work smarter, serve better and grow faster.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto items-stretch">
+          {/* Comparison Cards Grid with Central Animated VS badge */}
+          <div className="relative max-w-5xl mx-auto">
 
-            {/* WITHOUT INSURAA CARD */}
-            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-rose-200/90 shadow-sm space-y-5 flex flex-col justify-between hover:shadow-md transition-all">
-              <div className="space-y-5">
+            {/* Desktop Center Floating Animated VS Badge (Zero Yellow, Royal Blue & Mint) */}
+            <div className="hidden lg:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 items-center justify-center pointer-events-none">
+              {/* Continuous Pulsing Ambient Rings (Royal Blue & Mint) */}
+              <span className="absolute w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-[#2D3591]/20 animate-ping opacity-75" />
+              <span className="absolute w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-[#2BBF8C]/20 blur-md animate-pulse" />
 
-                {/* Header */}
-                <div className="flex items-center justify-between pb-4 border-b border-rose-100">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center font-semibold text-lg shadow-2xs">
-                      ✕
-                    </div>
-                    <div>
-                      <h3 className="text-lg sm:text-xl font-semibold text-slate-900">Without Insuraa</h3>
-                      <p className="text-xs text-rose-600 font-normal">Slow, manual, and prone to costly errors</p>
-                    </div>
-                  </div>
-                  <span className="text-xs font-medium text-rose-700 bg-rose-50 border border-rose-200 px-3 py-1 rounded-full">
-                    High Friction
+              {/* Main VS Circle with Crisp Gradient Border (Zero Yellow) */}
+              <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full p-[3px] bg-gradient-to-br from-[#2D3591] via-[#3B49B8] to-[#2BBF8C] shadow-2xl animate-pulse">
+                <div className="w-full h-full rounded-full bg-white flex flex-col items-center justify-center shadow-inner">
+                  <span className="text-base sm:text-xl font-black tracking-widest text-[#2D3591] drop-shadow-2xs">
+                    VS
                   </span>
                 </div>
+              </div>
+            </div>
 
-                {/* Pain Points with Moderate Spacing */}
-                <div className="space-y-3 text-xs sm:text-sm text-slate-600 font-normal">
-                  <div className="flex items-start gap-3 p-2.5 sm:p-3 rounded-xl bg-rose-50/40 hover:bg-rose-50/70 transition-colors">
-                    <XCircle className="w-4.5 h-4.5 text-rose-500 shrink-0 mt-0.5" />
-                    <div>
-                      <span className="font-medium text-slate-900">15–20 Mins Manual Entry:</span> Staff re-types 30+ fields per PDF schedule; high typo dispute risk.
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-8 items-stretch">
+
+              {/* WITHOUT INSURAA CARD (The Problem - Compact) */}
+              <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-rose-200/80 shadow-xs hover:shadow-md transition-all flex flex-col justify-between group">
+                <div className="space-y-3">
+
+                  {/* Header */}
+                  <div className="flex items-center justify-between pb-2.5 border-b border-rose-100">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center font-semibold text-sm shadow-2xs border border-rose-100">
+                        ✕
+                      </div>
+                      <div>
+                        <h3 className="text-base sm:text-lg font-semibold text-slate-900">Without Insuraa</h3>
+                        <p className="text-[11px] sm:text-xs text-rose-600 font-normal">Slow, manual &amp; vulnerable to churn</p>
+                      </div>
+                    </div>
+                    <span className="text-[11px] sm:text-xs font-medium text-rose-700 bg-rose-50 border border-rose-200 px-2.5 py-0.5 rounded-full">
+                      Problem
+                    </span>
+                  </div>
+
+                  {/* Dedicated Image Box (Fit Full Box with Proper Height & 16:9 Aspect Ratio) */}
+                  <div className="w-full aspect-[16/9] rounded-xl overflow-hidden border border-rose-200/80 bg-white flex items-center justify-center shadow-2xs">
+                    <img
+                      src="/images/landing/without_insuraa.png?v=2"
+                      alt="Without Insuraa - Problem"
+                      className="w-full h-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
+                      loading="lazy"
+                    />
+                  </div>
+
+                  {/* Pain Points (Crisp, 1-line content) */}
+                  <div className="space-y-1.5 text-xs sm:text-[13px] text-slate-600 font-normal">
+                    <div className="flex items-start gap-2 p-2 rounded-lg bg-rose-50/40 hover:bg-rose-50/70 transition-colors">
+                      <XCircle className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-semibold text-slate-900">Manual Entry:</span> 15–20 min wasted typing 30+ fields per policy.
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-2 p-2 rounded-lg bg-rose-50/40 hover:bg-rose-50/70 transition-colors">
+                      <XCircle className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-semibold text-slate-900">Lapsed Renewals:</span> No reminder system; 30%+ clients lost.
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-2 p-2 rounded-lg bg-rose-50/40 hover:bg-rose-50/70 transition-colors">
+                      <XCircle className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-semibold text-slate-900">Scattered Files:</span> Records split across Excel, diaries &amp; WhatsApp.
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-2 p-2 rounded-lg bg-rose-50/40 hover:bg-rose-50/70 transition-colors">
+                      <XCircle className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-semibold text-slate-900">Chaotic Claims:</span> Discharge summaries &amp; surveyor numbers lost in inboxes.
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-2 p-2 rounded-lg bg-rose-50/40 hover:bg-rose-50/70 transition-colors">
+                      <XCircle className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-semibold text-slate-900">Data Leak Risk:</span> Staff can copy private client databases without control.
+                      </div>
                     </div>
                   </div>
 
-                  <div className="flex items-start gap-3 p-2.5 sm:p-3 rounded-xl bg-rose-50/40 hover:bg-rose-50/70 transition-colors">
-                    <XCircle className="w-4.5 h-4.5 text-rose-500 shrink-0 mt-0.5" />
-                    <div>
-                      <span className="font-medium text-slate-900">Lost &amp; Lapsed Renewals:</span> No automatic reminder radar; 30%+ clients slip away to competitors.
-                    </div>
-                  </div>
+                </div>
 
-                  <div className="flex items-start gap-3 p-2.5 sm:p-3 rounded-xl bg-rose-50/40 hover:bg-rose-50/70 transition-colors">
-                    <XCircle className="w-4.5 h-4.5 text-rose-500 shrink-0 mt-0.5" />
-                    <div>
-                      <span className="font-medium text-slate-900">Scattered Files:</span> Records split across separate Excel sheets, paper diaries &amp; WhatsApp.
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3 p-2.5 sm:p-3 rounded-xl bg-rose-50/40 hover:bg-rose-50/70 transition-colors">
-                    <XCircle className="w-4.5 h-4.5 text-rose-500 shrink-0 mt-0.5" />
-                    <div>
-                      <span className="font-medium text-slate-900">Chaotic Claims:</span> Hospital discharge summaries, queries &amp; surveyor numbers lost in inbox.
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3 p-2.5 sm:p-3 rounded-xl bg-rose-50/40 hover:bg-rose-50/70 transition-colors">
-                    <XCircle className="w-4.5 h-4.5 text-rose-500 shrink-0 mt-0.5" />
-                    <div>
-                      <span className="font-medium text-slate-900">Zero Data Protection:</span> Staff can export full client lists and sensitive  payouts.
-                    </div>
-                  </div>
+                {/* Footnote inside Card */}
+                <div className="mt-3 pt-2.5 border-t border-rose-100 flex items-center justify-center gap-1.5 text-[11px] sm:text-xs font-medium text-rose-600 bg-rose-50/40 py-1.5 px-3 rounded-lg">
+                  <span>⚠️ Leads to 30–40% loss in annual agency revenue</span>
                 </div>
 
               </div>
 
-              {/* Footnote inside Card */}
-              <div className="pt-4 border-t border-rose-100 flex items-center justify-center gap-1.5 text-xs font-medium text-rose-600 bg-rose-50/40 py-3 px-4 rounded-xl">
-                <span>⚠️ Causes 30–40% loss in annual agency revenue</span>
+              {/* Mobile Animated VS Badge (Zero Yellow) */}
+              <div className="flex lg:hidden justify-center -my-3 z-10 relative">
+                <div className="relative flex items-center justify-center">
+                  <span className="absolute w-12 h-12 rounded-full bg-[#2D3591]/20 animate-ping opacity-75" />
+                  <div className="relative p-[2.5px] rounded-full bg-gradient-to-r from-[#2D3591] via-[#3B49B8] to-[#2BBF8C] shadow-lg animate-pulse">
+                    <span className="px-4 py-1 rounded-full bg-white text-xs font-black tracking-widest text-[#2D3591] flex items-center justify-center">
+                      VS
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* WITH INSURAA CARD (The Solution - Compact) */}
+              <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-5 border-2 border-emerald-400 shadow-md space-y-3 flex flex-col justify-between relative ring-4 ring-emerald-500/10 hover:shadow-xl transition-all group">
+
+                <div className="space-y-3">
+
+                  {/* Header */}
+                  <div className="flex items-center justify-between pb-2.5 border-b border-emerald-100">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-semibold text-sm shadow-2xs border border-emerald-200/70">
+                        ✓
+                      </div>
+                      <div>
+                        <h3 className="text-base sm:text-lg font-semibold text-slate-900">With Insuraa</h3>
+                        <p className="text-[11px] sm:text-xs text-emerald-600 font-normal">Fast, automated, unified, and error-free</p>
+                      </div>
+                    </div>
+                    <span className="text-[11px] sm:text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+                      Solution
+                    </span>
+                  </div>
+
+                  {/* Dedicated Image Box (Fit Full Box with Proper Height & 16:9 Aspect Ratio) */}
+                  <div className="w-full aspect-[16/9] rounded-xl overflow-hidden border border-emerald-200/80 bg-white flex items-center justify-center shadow-2xs">
+                    <img
+                      src="/images/landing/with_insuraa.png?v=2"
+                      alt="With Insuraa - Solution"
+                      className="w-full h-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
+                      loading="lazy"
+                    />
+                  </div>
+
+                  {/* Benefits (Crisp, 1-line content) */}
+                  <div className="space-y-1.5 text-xs sm:text-[13px] text-slate-700 font-normal">
+                    <div className="flex items-start gap-2 p-2 rounded-lg bg-emerald-50/50 hover:bg-emerald-50/80 transition-colors">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-[#2BBF8C] shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-semibold text-slate-900">5-Sec AI Policy Read:</span> Upload any PDF; auto-extracts 35+ fields in 5s.
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-2 p-2 rounded-lg bg-emerald-50/50 hover:bg-emerald-50/80 transition-colors">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-[#2BBF8C] shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-semibold text-slate-900">Renewal Radar:</span> WhatsApp alerts sent at 30, 15, and 3 days before expiry.
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-2 p-2 rounded-lg bg-emerald-50/50 hover:bg-emerald-50/80 transition-colors">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-[#2BBF8C] shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-semibold text-slate-900">Unified 360° Vault:</span> Life, Health &amp; Motor organized by family tree.
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-2 p-2 rounded-lg bg-emerald-50/50 hover:bg-emerald-50/80 transition-colors">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-[#2BBF8C] shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-semibold text-slate-900">Live Claim Timeline:</span> Real-time status from intimation to bank credit.
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-2 p-2 rounded-lg bg-emerald-50/50 hover:bg-emerald-50/80 transition-colors">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-[#2BBF8C] shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-semibold text-slate-900">Role-Based Security:</span> Admin locks commission reports; staff manage leads.
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Action Buttons inside Card */}
+                <div className="mt-3 pt-2.5 border-t border-emerald-100 flex flex-col sm:flex-row gap-2">
+                  <button
+                    onClick={handleLoginClick}
+                    className="flex-1 py-2 sm:py-2.5 px-3.5 rounded-xl text-xs sm:text-sm font-medium text-white bg-gradient-to-r from-[#2D3591] to-[#3B49B8] hover:from-[#242b78] hover:to-[#2D3591] shadow-xs hover:shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <LogIn className="w-3.5 h-3.5 text-emerald-300" />
+                    <span>Login to Your Agency</span>
+                    <ArrowRight className="w-3 h-3 ml-0.5" />
+                  </button>
+                  <button
+                    onClick={handleRegisterClick}
+                    className="sm:w-auto py-2 sm:py-2.5 px-3 rounded-xl text-xs sm:text-sm font-medium text-[#2D3591] bg-indigo-50/90 hover:bg-indigo-100/90 border border-indigo-200/70 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Sparkles className="w-3 h-3 text-[#2BBF8C]" />
+                    <span>Free Trial</span>
+                  </button>
+                </div>
+
               </div>
 
             </div>
-
-            {/* WITH INSURAA CARD */}
-            <div className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-emerald-400 shadow-md space-y-5 flex flex-col justify-between relative ring-4 ring-emerald-500/10 hover:shadow-xl transition-all">
-
-              <div className="space-y-5">
-
-                {/* Header */}
-                <div className="flex items-center justify-between pb-4 border-b border-emerald-100">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-semibold text-lg shadow-2xs">
-                      ✓
-                    </div>
-                    <div>
-                      <h3 className="text-lg sm:text-xl font-semibold text-slate-900">With Insuraa</h3>
-                      <p className="text-xs text-emerald-600 font-normal">Fast, automated, unified, and error-free</p>
-                    </div>
-                  </div>
-                  <span className="text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">
-                    98% Retention
-                  </span>
-                </div>
-
-                {/* Benefits with Moderate Spacing */}
-                <div className="space-y-3 text-xs sm:text-sm text-slate-700 font-normal">
-                  <div className="flex items-start gap-3 p-2.5 sm:p-3 rounded-xl bg-emerald-50/50 hover:bg-emerald-50/80 transition-colors">
-                    <CheckCircle2 className="w-4.5 h-4.5 text-[#2BBF8C] shrink-0 mt-0.5" />
-                    <div>
-                      <span className="font-medium text-slate-900">5-Sec AI Policy Read:</span> Upload any PDF schedule; auto-extracts 35+ fields in 5 seconds.
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3 p-2.5 sm:p-3 rounded-xl bg-emerald-50/50 hover:bg-emerald-50/80 transition-colors">
-                    <CheckCircle2 className="w-4.5 h-4.5 text-[#2BBF8C] shrink-0 mt-0.5" />
-                    <div>
-                      <span className="font-medium text-slate-900">Automated Renewal Radar:</span> WhatsApp &amp; SMS sent at 30, 15, and 3 days before expiry.
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3 p-2.5 sm:p-3 rounded-xl bg-emerald-50/50 hover:bg-emerald-50/80 transition-colors">
-                    <CheckCircle2 className="w-4.5 h-4.5 text-[#2BBF8C] shrink-0 mt-0.5" />
-                    <div>
-                      <span className="font-medium text-slate-900">Unified 360° Vault:</span> Life, Health, Motor &amp; Commercial grouped by household family.
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3 p-2.5 sm:p-3 rounded-xl bg-emerald-50/50 hover:bg-emerald-50/80 transition-colors">
-                    <CheckCircle2 className="w-4.5 h-4.5 text-[#2BBF8C] shrink-0 mt-0.5" />
-                    <div>
-                      <span className="font-medium text-slate-900">Live Claim Timeline:</span> End-to-end status from intimation to surveyor &amp; bank credit.
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3 p-2.5 sm:p-3 rounded-xl bg-emerald-50/50 hover:bg-emerald-50/80 transition-colors">
-                    <CheckCircle2 className="w-4.5 h-4.5 text-[#2BBF8C] shrink-0 mt-0.5" />
-                    <div>
-                      <span className="font-medium text-slate-900">Role-Based Security:</span> Admin locks commission reports while staff safely manage leads.
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Action Button inside Card */}
-              <div className="pt-4 border-t border-emerald-100">
-                <button
-                  onClick={handleLoginClick}
-                  className="w-full py-3 px-5 rounded-xl text-xs sm:text-sm font-medium text-white bg-gradient-to-r from-[#2D3591] to-[#3B49B8] hover:from-[#242b78] hover:to-[#2D3591] shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <LogIn className="w-4 h-4 text-emerald-300" />
-                  <span>Login to Your Agency Account</span>
-                  <ArrowRight className="w-3.5 h-3.5 ml-0.5" />
-                </button>
-              </div>
-
-            </div>
-
           </div>
         </div>
       </section>
 
-      {/* ABOUT INSURAA SECTION (Truly Unique, Modern Bento Architecture with Interactive Process Bar & Glowing Accents) */}
-      <section id="about" className="py-24 bg-white relative overflow-hidden">
 
-        {/* Subtle Decorative Background Lines */}
-        <div className="absolute inset-0 bg-[radial-gradient(#2D3591_1px,transparent_1px)] [background-size:24px_24px] opacity-[0.03] pointer-events-none" />
-        <div className="absolute top-1/4 -left-20 w-80 h-80 bg-indigo-100/50 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-10 -right-20 w-80 h-80 bg-emerald-100/40 rounded-full blur-3xl pointer-events-none" />
+      {/* ========================================================================= */}
+      {/* SOFTWARE CORE FEATURES SECTION (Above About Insuraa)                       */}
+      {/* Clean 4-column card grid with concise content and beautiful icon badges    */}
+      {/* ========================================================================= */}
+      <section id="software-features" className="scroll-mt-28 pt-12 sm:pt-12 pb-12 sm:pb-12 bg-slate-50/70 border-b border-slate-200/80 relative overflow-hidden">
+        {/* Subtle decorative glow elements */}
+        <div className="absolute top-1/4 left-5 w-72 h-72 bg-[#2D3591]/4 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-1/4 right-5 w-80 h-80 bg-[#2BBF8C]/5 rounded-full blur-3xl pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
 
           {/* Section Header */}
-          <div className="text-center max-w-4xl mx-auto space-y-3.5 mb-16">
-            <span className="text-xs font-medium uppercase tracking-wider text-[#2D3591] bg-indigo-50/90 border border-indigo-200/80 px-4 py-1.5 rounded-full inline-flex items-center gap-2 shadow-2xs">
-              <Building2 className="w-3.5 h-3.5 text-[#2BBF8C]" />
-              <span>About Insuraa • Shopno Ecommerce Pvt Ltd</span>
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-semibold text-slate-900 tracking-tight">
-              Architected for India&apos;s Fastest Growing Insurance Agencies
+          <div className="text-center max-w-3xl mx-auto space-y-2 mb-8 sm:mb-10">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-200/70 shadow-2xs">
+              <Sparkles className="w-3.5 h-3.5 text-[#2BBF8C]" />
+              <span className="text-xs font-semibold text-[#2D3591] tracking-wide uppercase">
+                Insuraa Core Features
+              </span>
+            </div>
+
+            <h2 className="text-2xl sm:text-3xl lg:text-[38px] font-semibold text-slate-900 tracking-tight leading-tight">
+              Everything You Need to{' '}
+              <span className="text-[#2D3591]">
+                Run Your Agency
+              </span>
             </h2>
-            <p className="text-slate-600 text-sm sm:text-base font-normal leading-relaxed">
-              Crafted in Surat, Gujarat to eliminate repetitive paperwork and unlock exponential growth for insurance advisors, broking networks, and POSPs.
-            </p>
+
           </div>
 
-          {/* Top Bento Row: Story Card (7 Cols) + High-Tech Stats Card (5 Cols) */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch mb-8">
+          {/* 4-Column Features Grid (Compact, Proper Proportions, Clean & Attractive) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+            {SOFTWARE_FEATURES.map((feat) => (
+              <div
+                key={feat.title}
+                className="group relative bg-white rounded-2xl p-5 sm:p-5.5 border border-slate-200/85 hover:border-[#2D3591]/40 shadow-2xs hover:shadow-lg hover:shadow-indigo-500/8 hover:-translate-y-1 transition-all duration-300 overflow-hidden"
+              >
+                {/* Subtle Top Glow Accent Line on Hover */}
+                <div className="absolute top-0 inset-x-0 h-[2.5px] bg-gradient-to-r from-[#2D3591] via-indigo-500 to-[#2BBF8C] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute -top-10 -right-10 w-24 h-24 bg-gradient-to-br from-indigo-100/35 to-transparent rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
-            {/* Left Story Card */}
-            <div className="lg:col-span-7 bg-gradient-to-br from-[#F9FBFF] via-white to-indigo-50/30 rounded-3xl p-8 sm:p-10 border border-slate-200/90 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-6 relative overflow-hidden">
-
-              <div className="space-y-4">
-                <div className="inline-flex items-center gap-2 text-xs font-medium text-[#2D3591] bg-white border border-indigo-100 px-3 py-1 rounded-lg">
-                  <Compass className="w-3.5 h-3.5 text-[#2BBF8C]" />
-                  <span>Our Mission &amp; Purpose</span>
+                {/* Icon Box (Light pastel rounded square with micro-hover scale and solid color fill) */}
+                <div className={`w-11 h-11 rounded-xl border flex items-center justify-center shrink-0 mb-3.5 transition-all duration-300 group-hover:scale-105 shadow-2xs ${feat.iconBg}`}>
+                  <feat.icon className="w-5 h-5 transition-colors duration-200" />
                 </div>
 
-                <h3 className="text-2xl font-semibold text-slate-900 leading-snug">
-                  Built to empower advisors to spend less time typing schedules and more time closing policies.
+                {/* Title */}
+                <h3 className="text-[15px] sm:text-base font-bold text-slate-900 group-hover:text-[#2D3591] transition-colors tracking-tight leading-snug">
+                  {feat.title}
                 </h3>
 
-                <p className="text-slate-600 text-sm leading-relaxed font-normal">
-                  Insuraa was founded by <span className="font-medium text-slate-900">Shopno Ecommerce Pvt Ltd</span> in Surat, Gujarat. Indian insurance  routinely lose 40% of their business day manually entering PDF schedules, tracking renewal dates on paper diaries, and juggling scattered WhatsApp chats.
-                </p>
-
-                <p className="text-slate-600 text-sm leading-relaxed font-normal">
-                  By uniting computer-vision AI extraction with a multi-line customer registry (Life, Health, Motor, Commercial), Insuraa transforms chaotic manual paperwork into an automated, error-free operation.
+                {/* Short 2-Line Description */}
+                <p className="text-xs sm:text-[13px] text-slate-500 font-normal leading-relaxed mt-1.5">
+                  {feat.desc}
                 </p>
               </div>
-
-              {/* Interactive Process Flow Capsule */}
-              <div className="p-3.5 bg-white/90 rounded-2xl border border-indigo-100 shadow-2xs space-y-2">
-                <div className="text-[11px] font-medium text-slate-400 uppercase tracking-wider flex items-center justify-between">
-                  <span>How Insuraa Operates In Practice</span>
-                  <span className="text-[#2BBF8C]">● Instant Workflow</span>
-                </div>
-                <div className="grid grid-cols-3 gap-2 text-center text-xs font-medium text-slate-700">
-                  <div className="p-2 bg-indigo-50/60 rounded-xl border border-indigo-100/60">
-                    <span className="block text-[10px] text-[#2D3591]">Step 1</span>
-                    <span className="text-slate-800">📄 Upload PDF</span>
-                  </div>
-                  <div className="p-2 bg-emerald-50/60 rounded-xl border border-emerald-100/60">
-                    <span className="block text-[10px] text-[#2BBF8C]">Step 2 (5s)</span>
-                    <span className="text-slate-800">⚡ AI Auto-Fill</span>
-                  </div>
-                  <div className="p-2 bg-blue-50/60 rounded-xl border border-blue-100/60">
-                    <span className="block text-[10px] text-blue-600">Step 3</span>
-                    <span className="text-slate-800">💬 Auto-Renewal</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Value Pills */}
-              <div className="pt-2 border-t border-slate-100 flex flex-wrap gap-2.5 text-xs text-slate-700">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 font-medium">
-                  <Zap className="w-3.5 h-3.5 text-[#2BBF8C]" /> 5-Sec AI OCR Engine
-                </span>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 font-medium">
-                  <ShieldCheck className="w-3.5 h-3.5 text-[#2D3591]" /> 100% Data Sovereignty
-                </span>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 font-medium">
-                  <PhoneCall className="w-3.5 h-3.5 text-emerald-600" /> Gujarati &amp; Hindi Desk
-                </span>
-              </div>
-
-              {/* Surat Headquarters Status Bar */}
-              <div className="bg-slate-50/90 rounded-2xl p-4 border border-slate-200/80 flex items-center justify-between text-xs text-slate-600">
-                <div className="flex items-center gap-2.5">
-                  <span className="relative flex h-2.5 w-2.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                  </span>
-                  <span className="font-medium text-slate-800">
-                    Surat Operations Center: Mota Varachha, Surat, Gujarat
-                  </span>
-                </div>
-                <span className="text-[11px] text-emerald-600 font-medium hidden sm:inline">Active &amp; Live</span>
-              </div>
-
-            </div>
-
-            {/* Right Tech Metrics Card */}
-            <div className="lg:col-span-5 bg-gradient-to-br from-[#12163A] via-[#1E2568] to-[#121840] text-white rounded-3xl p-8 sm:p-10 shadow-xl flex flex-col justify-between space-y-8 relative overflow-hidden">
-
-              {/* Background ambient ring */}
-              <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
-
-              <div className="space-y-4 relative z-10">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-medium text-emerald-400 uppercase tracking-widest bg-white/10 px-3 py-1 rounded-full border border-white/10">
-                    Platform Scale
-                  </span>
-                  <span className="text-xs text-slate-300 font-normal">Across 18+ States</span>
-                </div>
-
-                <h4 className="text-xl font-semibold text-white">
-                  Trusted Agency Infrastructure
-                </h4>
-
-                {/* 2x2 Clean Metrics Grid */}
-                <div className="grid grid-cols-2 gap-4 pt-3">
-                  <div className="bg-white/5 rounded-2xl p-4 border border-white/10 backdrop-blur-sm">
-                    <div className="text-2xl sm:text-3xl font-semibold text-emerald-400">100K+</div>
-                    <div className="text-xs text-slate-300 font-normal mt-1">Policies Digitized</div>
-                  </div>
-
-                  <div className="bg-white/5 rounded-2xl p-4 border border-white/10 backdrop-blur-sm">
-                    <div className="text-2xl sm:text-3xl font-semibold text-amber-300">₹85Cr+</div>
-                    <div className="text-xs text-slate-300 font-normal mt-1">Gross Premium Tracked</div>
-                  </div>
-
-                  <div className="bg-white/5 rounded-2xl p-4 border border-white/10 backdrop-blur-sm">
-                    <div className="text-2xl sm:text-3xl font-semibold text-indigo-300">1,200+</div>
-                    <div className="text-xs text-slate-300 font-normal mt-1">Active Advisors &amp; POSPs</div>
-                  </div>
-
-                  <div className="bg-white/5 rounded-2xl p-4 border border-white/10 backdrop-blur-sm">
-                    <div className="text-2xl sm:text-3xl font-semibold text-cyan-300">99.4%</div>
-                    <div className="text-xs text-slate-300 font-normal mt-1">AI Extraction Precision</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Bottom Quick Login CTA inside dark card */}
-              <div className="pt-2 relative z-10">
-                <button
-                  onClick={handleLoginClick}
-                  className="w-full py-3 px-4 rounded-xl text-xs font-medium text-[#161B46] bg-white hover:bg-slate-100 transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-md"
-                >
-                  <LogIn className="w-3.5 h-3.5 text-[#2D3591]" />
-                  <span>Access Agency Cloud Portal</span>
-                  <ArrowRight className="w-3.5 h-3.5 text-[#2D3591]" />
-                </button>
-              </div>
-
-            </div>
-
-          </div>
-
-          {/* Lower Bento Row: 4 Specialized Architectural Pillars with Sleek Top Colored Accents */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-
-            {/* Pillar 1: AI Innovation */}
-            <div className="bg-slate-50/80 rounded-2xl p-6 border-t-2 border-t-[#2D3591] border-x border-b border-slate-200/80 hover:bg-white hover:shadow-xl transition-all duration-300 space-y-3 group hover:-translate-y-1">
-              <div className="w-11 h-11 rounded-xl bg-indigo-50 text-[#2D3591] flex items-center justify-center font-medium group-hover:scale-105 transition-transform">
-                <Sparkles className="w-5 h-5" />
-              </div>
-              <h4 className="text-base font-medium text-slate-900">Next-Gen Policy OCR</h4>
-              <p className="text-xs text-slate-600 leading-relaxed font-normal">
-                Continuous AI computer-vision trained on schedules from all 30+ Indian carriers for 5-second automatic data entry.
-              </p>
-            </div>
-
-            {/* Pillar 2: 360° Household Vault */}
-            <div className="bg-slate-50/80 rounded-2xl p-6 border-t-2 border-t-[#2BBF8C] border-x border-b border-slate-200/80 hover:bg-white hover:shadow-xl transition-all duration-300 space-y-3 group hover:-translate-y-1">
-              <div className="w-11 h-11 rounded-xl bg-emerald-50 text-[#2BBF8C] flex items-center justify-center font-medium group-hover:scale-105 transition-transform">
-                <Users className="w-5 h-5" />
-              </div>
-              <h4 className="text-base font-medium text-slate-900">Household Family Vault</h4>
-              <p className="text-xs text-slate-600 leading-relaxed font-normal">
-                Group Life, Health, Motor, and Fire policies under a single family graph to effortlessly identify cross-selling opportunities.
-              </p>
-            </div>
-
-            {/* Pillar 3: Bank-Grade Privacy */}
-            <div className="bg-slate-50/80 rounded-2xl p-6 border-t-2 border-t-blue-500 border-x border-b border-slate-200/80 hover:bg-white hover:shadow-xl transition-all duration-300 space-y-3 group hover:-translate-y-1">
-              <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-medium group-hover:scale-105 transition-transform">
-                <Lock className="w-5 h-5" />
-              </div>
-              <h4 className="text-base font-medium text-slate-900">Zero-Trust Privacy</h4>
-              <p className="text-xs text-slate-600 leading-relaxed font-normal">
-                256-bit SSL encryption. Zero selling or cross-marketing of your client records. Your customer data remains 100% private.
-              </p>
-            </div>
-
-            {/* Pillar 4: Dedicated Surat Support */}
-            <div className="bg-slate-50/80 rounded-2xl p-6 border-t-2 border-t-amber-500 border-x border-b border-slate-200/80 hover:bg-white hover:shadow-xl transition-all duration-300 space-y-3 group hover:-translate-y-1">
-              <div className="w-11 h-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-medium group-hover:scale-105 transition-transform">
-                <PhoneCall className="w-5 h-5" />
-              </div>
-              <h4 className="text-base font-medium text-slate-900">Dedicated Regional Support</h4>
-              <p className="text-xs text-slate-600 leading-relaxed font-normal">
-                Dedicated telephone &amp; WhatsApp onboarding in Gujarati, Hindi, and English straight from our Surat headquarters.
-              </p>
-            </div>
-
+            ))}
           </div>
 
         </div>
       </section>
 
-      {/* CORE PLATFORM FEATURES (Using Genuine Images from /images) */}
-      <section id="features" className="py-20 bg-slate-50 border-t border-slate-200/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-          <div className="text-center max-w-3xl mx-auto space-y-3 mb-16">
-            <span className="text-xs font-medium uppercase tracking-wider text-[#2BBF8C] bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">
-              Built For Indian Agencies
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-semibold text-slate-900 tracking-tight">
-              Powerful Features That Power Your Agency
-            </h2>
-            <p className="text-slate-600 text-sm sm:text-base font-normal">
-              Every tool you need to run, scale, and automate your insurance operations.
-            </p>
-          </div>
+      {/* FULL-WIDTH SCROLL-DRIVEN SHOWCASE (5 Landing Images, Full Width, Native Sticky Scroll) */}
+      <section
+        id="solutions"
+        ref={showcaseSectionRef}
+        className="relative bg-gradient-to-b from-white via-slate-50/60 to-white border-t border-slate-200/80"
+        style={{ height: '320vh' }}
+      >
+        <div className="sticky top-16 sm:top-20 h-[calc(100vh-4rem)] sm:h-[calc(100vh-5rem)] flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 overflow-hidden">
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {/* Ambient Brand Color Glows behind the showcase frame */}
+          <div className="absolute w-[92%] max-w-7xl h-80 bg-gradient-to-tr from-[#2D3591]/15 via-[#2BBF8C]/15 to-transparent rounded-full blur-3xl -z-10 pointer-events-none" />
 
-            {/* Feature 1: AI Policy Extraction */}
-            <div className="group bg-white rounded-2xl p-6 border border-slate-200/90 hover:border-[#2D3591] shadow-xs hover:shadow-xl transition-all duration-300 hover:-translate-y-1 space-y-4">
-              <div className="h-16 w-16 rounded-2xl bg-slate-50 p-3 shadow-xs border border-slate-100 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <img src="/images/policy_pdf_illustration.jpg" alt="AI Policy Extraction" className="h-full w-full object-contain" />
+          {/* Main Full-Width Image Stage */}
+          <div className="w-full max-w-[1480px] xl:max-w-[1560px] mx-auto relative flex flex-col items-center">
+
+            {/* The Glassmorphic / Premium Image Frame */}
+            <div className="w-full bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200/90 overflow-hidden ring-1 ring-slate-900/5 relative aspect-[2.05/1] max-h-[68vh] sm:max-h-[70vh]">
+
+              {/* Subtle Window Bar */}
+              <div className="h-8 sm:h-9 bg-slate-50/90 border-b border-slate-100 px-3 sm:px-4 flex items-center justify-between select-none">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-rose-400/80" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-amber-400/80" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-400/80" />
+                </div>
+                <div className="text-[10px] sm:text-xs font-semibold text-slate-500 tracking-wider">
+                  {showcaseActiveIndex + 1} / {showcaseImages.length}
+                </div>
+                <div className="w-10 sm:w-12 flex justify-end">
+                  <div className="w-2 h-2 rounded-full bg-slate-300" />
+                </div>
               </div>
-              <h3 className="text-lg font-medium text-slate-900">AI-Powered Policy Extraction</h3>
-              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">
-                Upload policy schedule PDFs from any insurer. Our AI model reads unstructured text and tables, auto-filling 35+ fields in 5 seconds.
-              </p>
-              <div className="text-xs font-medium text-[#2D3591] flex items-center gap-1 pt-1">
-                <span>99.4% Extraction Accuracy</span> &rarr;
+
+              {/* Stacked Images with Smooth Slide & Opacity Transitions */}
+              <div className="relative w-full h-[calc(100%-2rem)] sm:h-[calc(100%-2.25rem)] bg-slate-50 overflow-hidden">
+                {showcaseImages.map((img, idx) => {
+                  const isActive = idx === showcaseActiveIndex;
+                  const isPast = idx < showcaseActiveIndex;
+                  return (
+                    <div
+                      key={img.src}
+                      className={`absolute inset-0 w-full h-full flex items-center justify-center transition-all duration-700 ease-out ${isActive
+                        ? 'opacity-100 translate-y-0 scale-100 z-10'
+                        : isPast
+                          ? 'opacity-0 -translate-y-8 scale-95 z-0 pointer-events-none'
+                          : 'opacity-0 translate-y-8 scale-100 z-0 pointer-events-none'
+                        }`}
+                    >
+                      <img
+                        src={img.src}
+                        alt={img.alt}
+                        className="w-full h-full object-cover object-top select-none"
+                      />
+                    </div>
+                  );
+                })}
               </div>
+
             </div>
 
-            {/* Feature 2: Multi-Line Policy Management */}
-            <div className="group bg-white rounded-2xl p-6 border border-slate-200/90 hover:border-[#2D3591] shadow-xs hover:shadow-xl transition-all duration-300 hover:-translate-y-1 space-y-4">
-              <div className="h-16 w-16 rounded-2xl bg-slate-50 p-3 shadow-xs border border-slate-100 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <img src="/images/insurance-policy.png" alt="Multi-Line Policies" className="h-full w-full object-contain" />
-              </div>
-              <h3 className="text-lg font-medium text-slate-900">Multi-Line Policy Vault</h3>
-              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">
-                Life, Health, Motor, and Commercial policies in one unified system. Filter by insurer, renewal date, agency code, or policy status.
-              </p>
-              <div className="text-xs font-medium text-[#2D3591] flex items-center gap-1 pt-1">
-                <span>Centralized Cloud Storage</span> &rarr;
-              </div>
-            </div>
+            {/* Bottom Progress Navigation Dots & Controls */}
+            <div className="mt-4 sm:mt-5 flex items-center gap-3 bg-white/95 backdrop-blur-md px-4 py-2 rounded-full shadow-lg border border-slate-200/80 ring-1 ring-slate-100 z-20">
+              <button
+                type="button"
+                onClick={() => handleShowcaseStep(showcaseActiveIndex - 1)}
+                disabled={showcaseActiveIndex === 0}
+                className="p-1 rounded-full text-slate-400 hover:text-slate-800 hover:bg-slate-100 disabled:opacity-25 disabled:pointer-events-none transition-colors"
+                aria-label="Previous image"
+              >
+                <ChevronDown className="w-4 h-4 rotate-90" />
+              </button>
 
-            {/* Feature 3: Smart Renewal Radar */}
-            <div className="group bg-white rounded-2xl p-6 border border-slate-200/90 hover:border-[#2D3591] shadow-xs hover:shadow-xl transition-all duration-300 hover:-translate-y-1 space-y-4">
-              <div className="h-16 w-16 rounded-2xl bg-slate-50 p-3 shadow-xs border border-slate-100 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <img src="/images/Renewal.png" alt="Smart Renewals" className="h-full w-full object-contain" />
+              <div className="flex items-center gap-1.5 sm:gap-2 px-1">
+                {showcaseImages.map((_, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => handleShowcaseStep(idx)}
+                    className={`transition-all duration-300 rounded-full ${idx === showcaseActiveIndex
+                      ? 'w-7 sm:w-8 h-2 bg-gradient-to-r from-[#2D3591] to-[#2BBF8C]'
+                      : 'w-2 h-2 bg-slate-300 hover:bg-slate-400'
+                      }`}
+                    aria-label={`Go to image ${idx + 1}`}
+                  />
+                ))}
               </div>
-              <h3 className="text-lg font-medium text-slate-900">Smart Renewal Management</h3>
-              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">
-                Track upcoming and expired policies. Automatically notify clients on WhatsApp with renewal quotes 30, 15, and 3 days prior.
-              </p>
-              <div className="text-xs font-medium text-[#2D3591] flex items-center gap-1 pt-1">
-                <span>45% Higher Retention</span> &rarr;
-              </div>
-            </div>
 
-            {/* Feature 4: Visual Lead Kanban */}
-            <div className="group bg-white rounded-2xl p-6 border border-slate-200/90 hover:border-[#2D3591] shadow-xs hover:shadow-xl transition-all duration-300 hover:-translate-y-1 space-y-4">
-              <div className="h-16 w-16 rounded-2xl bg-slate-50 p-3 shadow-xs border border-slate-100 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <img src="/images/lead.png" alt="Lead Kanban Pipeline" className="h-full w-full object-contain" />
-              </div>
-              <h3 className="text-lg font-medium text-slate-900">Visual Lead Pipeline (Kanban)</h3>
-              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">
-                Track inquiries across customized stages (New, In Progress, Quoted, Won). Switch seamlessly between Kanban cards and AG-Grid data tables.
-              </p>
-              <div className="text-xs font-medium text-[#2D3591] flex items-center gap-1 pt-1">
-                <span>Interactive Stage Dragging</span> &rarr;
-              </div>
+              <button
+                type="button"
+                onClick={() => handleShowcaseStep(showcaseActiveIndex + 1)}
+                disabled={showcaseActiveIndex === showcaseImages.length - 1}
+                className="p-1 rounded-full text-slate-400 hover:text-slate-800 hover:bg-slate-100 disabled:opacity-25 disabled:pointer-events-none transition-colors"
+                aria-label="Next image"
+              >
+                <ChevronDown className="w-4 h-4 -rotate-90" />
+              </button>
             </div>
-
-            {/* Feature 5: Instant Quotations */}
-            <div className="group bg-white rounded-2xl p-6 border border-slate-200/90 hover:border-[#2D3591] shadow-xs hover:shadow-xl transition-all duration-300 hover:-translate-y-1 space-y-4">
-              <div className="h-16 w-16 rounded-2xl bg-slate-50 p-3 shadow-xs border border-slate-100 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <img src="/images/Quotation.png" alt="Instant Quotation Engine" className="h-full w-full object-contain" />
-              </div>
-              <h3 className="text-lg font-medium text-slate-900">Instant Quotation Engine</h3>
-              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">
-                Generate Motor and Health comparison quotes. Compare IDV, NCB, and add-on covers side-by-side, and send branded PDF sheets to clients.
-              </p>
-              <div className="text-xs font-medium text-[#2D3591] flex items-center gap-1 pt-1">
-                <span>Branded Agency Quotes</span> &rarr;
-              </div>
-            </div>
-
-            {/* Feature 6: End-to-End Claim Management */}
-            <div className="group bg-white rounded-2xl p-6 border border-slate-200/90 hover:border-[#2D3591] shadow-xs hover:shadow-xl transition-all duration-300 hover:-translate-y-1 space-y-4">
-              <div className="h-16 w-16 rounded-2xl bg-slate-50 p-3 shadow-xs border border-slate-100 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <img src="/images/claim.png" alt="Claim Management" className="h-full w-full object-contain" />
-              </div>
-              <h3 className="text-lg font-medium text-slate-900">Complete Claim Tracker</h3>
-              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">
-                Never lose track of a client’s claim. Live timeline from intimation, surveyor coordination, query resolution, to final bank credit.
-              </p>
-              <div className="text-xs font-medium text-[#2D3591] flex items-center gap-1 pt-1">
-                <span>Faster Claim Settlements</span> &rarr;
-              </div>
-            </div>
-
           </div>
         </div>
       </section>
-
-      {/* INSURANCE SOLUTIONS GRID */}
-      <section id="solutions" className="py-20 bg-white border-t border-slate-200/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
-          <div className="text-center max-w-3xl mx-auto space-y-3 mb-16">
-            <span className="text-xs font-medium uppercase tracking-wider text-[#2D3591] bg-indigo-50 border border-indigo-200 px-3 py-1 rounded-full">
-              Full Spectrum Coverage
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-semibold text-slate-900 tracking-tight">
-              One Single Platform For All Insurance Categories
-            </h2>
-            <p className="text-slate-600 text-sm sm:text-base font-normal">
-              Customized fields, validation, and calculations tailored for every major line.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-
-            {/* Life Insurance */}
-            <div className="group bg-slate-50 rounded-2xl p-6 border border-slate-200 shadow-xs hover:shadow-xl hover:border-rose-400 transition-all duration-300 hover:-translate-y-1 space-y-3">
-              <div className="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <HeartPulse className="w-6 h-6 animate-icon-heartbeat" />
-              </div>
-              <h4 className="text-lg font-medium text-slate-900">Life Insurance</h4>
-              <p className="text-xs text-slate-600 leading-relaxed font-normal">
-                Term Insurance, ULIPs, Endowment, and Money-back plans. Track PPT, maturity schedules, surrender values, and nominee registry.
-              </p>
-            </div>
-
-            {/* Health Insurance */}
-            <div className="group bg-slate-50 rounded-2xl p-6 border border-slate-200 shadow-xs hover:shadow-xl hover:border-emerald-400 transition-all duration-300 hover:-translate-y-1 space-y-3">
-              <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Stethoscope className="w-6 h-6 animate-icon-stethoscope" />
-              </div>
-              <h4 className="text-lg font-medium text-slate-900">Health Insurance</h4>
-              <p className="text-xs text-slate-600 leading-relaxed font-normal">
-                Individual &amp; Family Floater plans. Member age matrices, pre-existing condition logs, cumulative bonus, and cashless hospital networks.
-              </p>
-            </div>
-
-            {/* Motor Insurance */}
-            <div className="group bg-slate-50 rounded-2xl p-6 border border-slate-200 shadow-xs hover:shadow-xl hover:border-blue-400 transition-all duration-300 hover:-translate-y-1 space-y-3">
-              <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Car className="w-6 h-6 animate-icon-car" />
-              </div>
-              <h4 className="text-lg font-medium text-slate-900">Motor Insurance</h4>
-              <p className="text-xs text-slate-600 leading-relaxed font-normal">
-                Private Cars, 2-Wheelers, and Commercial Fleets (GCW/PCCV). Instant IDV valuation, NCB bonus protection, and Zero-Dep add-ons.
-              </p>
-            </div>
-
-            {/* General & Commercial */}
-            <div className="group bg-slate-50 rounded-2xl p-6 border border-slate-200 shadow-xs hover:shadow-xl hover:border-amber-400 transition-all duration-300 hover:-translate-y-1 space-y-3">
-              <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Umbrella className="w-6 h-6 animate-icon-umbrella" />
-              </div>
-              <h4 className="text-lg font-medium text-slate-900">General &amp; Commercial</h4>
-              <p className="text-xs text-slate-600 leading-relaxed font-normal">
-                Fire &amp; Special Perils, Shopkeeper packages, Marine Cargo, Contractor All Risk, and Workmen Compensation for business clients.
-              </p>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
       {/* SUBSCRIPTION & PRICING PLANS (Direct Plan Info API with Dynamic Tiers & Features) */}
-      <section id="pricing" className="py-20 bg-slate-50 border-t border-slate-200/80 relative">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section id="pricing" className="py-12 bg-slate-50 border-t border-slate-200/80 relative">
+        <div className="w-full max-w-[1480px] xl:max-w-[1540px] mx-auto px-4 sm:px-6 lg:px-8">
 
           {/* Section Header with Wavy Curve */}
-          <div className="text-center max-w-3xl mx-auto space-y-2 mb-14">
-            <div className="inline-block">
-              <span className="text-sm font-semibold text-slate-800 tracking-wide block">
-                Simple, Transparent Pricing
+          <div className="text-center max-w-3xl mx-auto space-y-2 mb-7">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-200/70 shadow-2xs">
+
+              <span className="text-xs font-semibold text-[#2D3591] tracking-wide uppercase">
+                Insuraa Core Features
               </span>
-              <svg className="w-16 h-2 text-[#2D3591] mx-auto mt-0.5" viewBox="0 0 64 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M2 5C18 1 46 8 62 3" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-              </svg>
             </div>
+
 
             <h2 className="text-3xl sm:text-4xl font-semibold text-slate-900 tracking-tight pt-1">
               Choose The Best Plan, <span className="text-[#2D3591]">For Your Agency</span>
@@ -1546,10 +1646,7 @@ export default function LandingPage() {
 
             {planData?.first_purchase_free_ai_credits === 'equal_to_policies' && (
               <div className="pt-2">
-                <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold shadow-2xs">
-                  <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-                  First purchase bonus: Free AI Credits equal to your policy count
-                </span>
+
               </div>
             )}
           </div>
@@ -1561,7 +1658,7 @@ export default function LandingPage() {
               <span className="text-sm font-medium">Loading pricing plans...</span>
             </div>
           ) : (
-            <div className={`grid grid-cols-1 ${planData.tiers.length === 3 ? 'md:grid-cols-3 max-w-6xl' : 'md:grid-cols-2 xl:grid-cols-4 max-w-7xl'} gap-6 mx-auto items-stretch`}>
+            <div className={`grid grid-cols-1 ${planData.tiers.length === 3 ? 'md:grid-cols-3 max-w-6xl' : 'md:grid-cols-2 xl:grid-cols-4 w-full'} gap-6 mx-auto items-stretch`}>
               {planData.tiers.map((tier) => {
                 const isHighlighted = tier.name.toLowerCase() === 'gold';
                 const isExpanded = !!expandedCards[tier.name.toLowerCase()];
@@ -1673,7 +1770,7 @@ export default function LandingPage() {
 
 
       {/* CONTACT US & GET IN TOUCH */}
-      <section id="contact" className="py-20 bg-white border-t border-slate-200/80 relative">
+      <section id="contact" className="pt-12 pb-8 sm:pb-10 bg-white border-t border-slate-200/80 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
           <div className="text-center max-w-3xl mx-auto space-y-3 mb-14">
@@ -1690,43 +1787,52 @@ export default function LandingPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
 
-            {/* Left Contact Information Card (Buttons Removed) */}
-            <div className="lg:col-span-5 bg-slate-50/90 rounded-3xl p-7 sm:p-9 border border-slate-200 shadow-sm flex flex-col justify-between space-y-6">
+            {/* Left Contact Information Card with Support Illustration */}
+            <div className="lg:col-span-5 bg-gradient-to-b from-slate-50 via-white to-slate-50/70 rounded-3xl p-6 sm:p-7 border border-slate-200/90 shadow-sm flex flex-col justify-between space-y-6">
 
-              <div className="space-y-6">
+              {/* Dedicated Visual Support Team Illustration */}
+              <div className="w-full rounded-2xl overflow-hidden aspect-[16/9.5] shadow-xs border border-slate-200/70 relative group bg-gradient-to-tr from-indigo-50/50 to-emerald-50/50">
+                <img
+                  src="/images/landing/get_in_touch.png"
+                  alt="Insuraa Dedicated Support Team"
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+              </div>
+
+              <div className="space-y-5">
                 <div>
-                  <h3 className="text-xl font-semibold text-slate-900">
+                  <h3 className="text-lg font-bold text-slate-900">
                     {appSettings?.company_name ? `${appSettings.company_name} (Shopno Ecommerce Pvt Ltd)` : 'Shopno Ecommerce Pvt Ltd'}
                   </h3>
                   <p className="text-xs font-medium text-[#2D3591] mt-0.5">Creators &amp; Operators of Insuraa OS</p>
                 </div>
 
-                <div className="space-y-5 text-xs sm:text-sm text-slate-700">
+                <div className="space-y-3.5 text-xs sm:text-[13px] text-slate-700">
                   {/* Address */}
-                  <div className="flex items-start gap-3.5">
-                    <div className="w-10 h-10 rounded-xl bg-indigo-50 text-[#2D3591] flex items-center justify-center shrink-0 shadow-2xs font-medium">
-                      <MapPin className="w-5 h-5" />
+                  <div className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-indigo-50 text-[#2D3591] flex items-center justify-center shrink-0 shadow-2xs font-medium">
+                      <MapPin className="w-4 h-4" />
                     </div>
                     <div>
-                      <span className="text-slate-900 block font-medium">Office Address:</span>
-                      <span className="text-slate-600 leading-relaxed block mt-0.5 font-normal">
+                      <span className="text-slate-900 block font-semibold text-xs">Office Address:</span>
+                      <span className="text-slate-600 leading-relaxed block mt-0.5 font-normal text-xs">
                         2nd Floor, Shreenathji Bungalow, 6, Peddar Rd, near Raghuvir Shoppers, Mota Varachha, Surat, Gujarat 394101
                       </span>
                     </div>
                   </div>
 
                   {/* Phone */}
-                  <div className="flex items-start gap-3.5">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-50 text-[#2BBF8C] flex items-center justify-center shrink-0 shadow-2xs font-medium">
-                      <Phone className="w-5 h-5" />
+                  <div className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-50 text-[#2BBF8C] flex items-center justify-center shrink-0 shadow-2xs font-medium">
+                      <Phone className="w-4 h-4" />
                     </div>
                     <div>
-                      <span className="text-slate-900 block font-medium">Call &amp; WhatsApp Support:</span>
+                      <span className="text-slate-900 block font-semibold text-xs">Call &amp; WhatsApp Support:</span>
                       <a
                         href={`https://api.whatsapp.com/send?phone=91${(appSettings?.whatsapp_number || appSettings?.mobile_number || '8866779008').replace(/\D/g, '')}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-[#2D3591] font-medium text-sm hover:underline block mt-0.5"
+                        className="text-[#2D3591] font-semibold text-xs hover:underline block mt-0.5"
                       >
                         +91 {appSettings?.whatsapp_number || appSettings?.mobile_number || '8866779008'}
                       </a>
@@ -1734,26 +1840,26 @@ export default function LandingPage() {
                   </div>
 
                   {/* Email */}
-                  <div className="flex items-start gap-3.5">
-                    <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 shadow-2xs font-medium">
-                      <Mail className="w-5 h-5" />
+                  <div className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 shadow-2xs font-medium">
+                      <Mail className="w-4 h-4" />
                     </div>
                     <div>
-                      <span className="text-slate-900 block font-medium">Official Email:</span>
-                      <a href={`mailto:${appSettings?.email || 'contact@insuraa.in'}`} className="text-[#2D3591] font-medium hover:underline block mt-0.5">
+                      <span className="text-slate-900 block font-semibold text-xs">Official Email:</span>
+                      <a href={`mailto:${appSettings?.email || 'contact@insuraa.in'}`} className="text-[#2D3591] font-semibold text-xs hover:underline block mt-0.5">
                         {appSettings?.email || 'contact@insuraa.in'}
                       </a>
                     </div>
                   </div>
 
                   {/* Timings */}
-                  <div className="flex items-start gap-3.5">
-                    <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 shadow-2xs font-medium">
-                      <Clock className="w-5 h-5" />
+                  <div className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 shadow-2xs font-medium">
+                      <Clock className="w-4 h-4" />
                     </div>
                     <div>
-                      <span className="text-slate-900 block font-medium">Operating Hours:</span>
-                      <span className="text-slate-600 block mt-0.5 font-normal">
+                      <span className="text-slate-900 block font-semibold text-xs">Operating Hours:</span>
+                      <span className="text-slate-600 block mt-0.5 font-normal text-xs">
                         Monday – Saturday: 9:30 AM – 7:00 PM IST
                       </span>
                     </div>
@@ -1778,7 +1884,7 @@ export default function LandingPage() {
               <form onSubmit={handleContactSubmit} className="space-y-4">
                 {/* Full Name */}
                 <div>
-                  <label htmlFor="contact-fullname" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  <label htmlFor="contact-fullname" className="block text-sm font-bold text-slate-700  tracking-wider mb-1.5">
                     Full Name <span className="text-rose-500">*</span>
                   </label>
                   <div className="relative">
@@ -1799,7 +1905,7 @@ export default function LandingPage() {
 
                 {/* Mobile Number */}
                 <div>
-                  <label htmlFor="contact-mobile" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  <label htmlFor="contact-mobile" className="block text-sm font-bold text-slate-700  tracking-wider mb-1.5">
                     Mobile Number <span className="text-rose-500">*</span>
                   </label>
                   <div className="relative">
@@ -1824,7 +1930,7 @@ export default function LandingPage() {
 
                 {/* Message */}
                 <div>
-                  <label htmlFor="contact-message" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  <label htmlFor="contact-message" className="block text-sm font-bold text-slate-700  tracking-wider mb-1.5">
                     Message <span className="text-rose-500">*</span>
                   </label>
                   <textarea
@@ -1854,222 +1960,442 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* FREQUENTLY ASKED QUESTIONS */}
-      <section id="faq" className="py-20 bg-slate-50 border-t border-slate-200/80">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center space-y-3 mb-12">
-            <span className="text-xs font-medium uppercase tracking-wider text-[#2D3591] bg-indigo-50 border border-indigo-200 px-3 py-1 rounded-full">
-              Got Questions?
-            </span>
-            <h2 className="text-3xl font-semibold text-slate-900 tracking-tight">
-              Frequently Asked Questions
-            </h2>
-          </div>
 
-          <div className="space-y-3">
-            {[
-              {
-                q: 'How do I log in to my existing Insuraa agency portal?',
-                a: 'Click on the "Login" button on the top right header. Enter your registered 10-digit mobile number, choose your account role (Admin or Staff), and verify with the instant OTP sent to your phone. No passwords required.'
-              },
-              {
-                q: 'How does the AI Policy PDF Reader extract data in 5 seconds?',
-                a: 'Insuraa uses a specialized computer vision and OCR model trained on all major Indian insurance schedules. Simply upload the issued PDF, and it automatically reads the policy number, customer name, vehicle registration, IDV, premium, and expiry date.'
-              },
-              {
-                q: 'Does Insuraa support Life, Health, Motor, and Commercial policies?',
-                a: 'Yes. Insuraa supports Life Insurance as well as multiple General Insurance lines such as Health, Motor (Cars, 2-Wheelers & Fleets), Fire, Marine, Shopkeeper, and Travel.'
-              },
-              {
-                q: 'Can Insuraa track policy renewals and send automated reminders?',
-                a: 'Yes. Insuraa features a renewal radar that alerts you to policies expiring in 30, 15, and 3 days, with automated WhatsApp and SMS follow-ups for high client retention.'
-              },
-              {
-                q: 'Can I separate what my staff members can access?',
-                a: 'Yes. Role-based permissions allow agency administrators to let staff manage policies, leads, and quotes without seeing master financial commission reports or sensitive agency data.'
-              }
-            ].map((faq, idx) => (
-              <div
-                key={idx}
-                className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs transition-all"
-              >
-                <button
-                  onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
-                  className="w-full py-4 px-5 text-left flex items-center justify-between text-sm font-medium text-slate-800 hover:text-[#2D3591] transition-colors cursor-pointer"
-                >
-                  <span>{faq.q}</span>
-                  <ChevronDown
-                    className={`w-4 h-4 text-slate-400 transition-transform duration-200 shrink-0 ml-2 ${openFaq === idx ? 'rotate-180 text-[#2D3591]' : ''
-                      }`}
-                  />
-                </button>
-                {openFaq === idx && (
-                  <div className="px-5 pb-5 pt-1 text-xs sm:text-sm text-slate-600 leading-relaxed border-t border-slate-100 font-normal">
-                    {faq.a}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+      {/* "INSURANCE" BALLOONS BANNER IN CONTAINER TOUCHING THE FOOTER (NO BG COLOR, BIG & PROPER) */}
+      <div className="w-full relative z-10 -mb-[2px] flex justify-center pointer-events-none select-none overflow-hidden !bg-[#ffffff]">
+        <div className="w-full max-w-5xl xl:max-w-7xl mx-auto px-4 sm:px-6 flex justify-center items-end">
+          <img
+            src="/images/landing/footer_img.png"
+            alt="Insuraa Insurance"
+            className="w-full h-auto object-contain block align-bottom"
+          />
         </div>
-      </section>
-
-      {/* BOTTOM HIGH-IMPACT CTA BANNER */}
-      <section className="py-20 relative overflow-hidden bg-gradient-to-r from-[#171E57] via-[#2D3591] to-[#1A775C] text-white">
-
-        {/* Glow elements */}
-        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 rounded-full bg-white/10 blur-3xl pointer-events-none"></div>
-        <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-80 h-80 rounded-full bg-[#2BBF8C]/20 blur-3xl pointer-events-none"></div>
-
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6 relative z-10">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-white/15 text-emerald-300 border border-white/20">
-            <Sparkles className="w-3.5 h-3.5 text-amber-300" /> Transform Your Insurance Business
-          </span>
-
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight leading-tight">
-            Ready to Manage Your Insurance Agency Digitally?
-          </h2>
-
-          <p className="text-slate-200 text-sm sm:text-base max-w-xl mx-auto font-normal leading-relaxed">
-            Eliminate manual paperwork, retain more renewals, and automate your entire policy workflow with Insuraa today.
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-3">
-            {/* Primary Login Button */}
-            <button
-              onClick={handleLoginClick}
-              id="footer-cta-login-btn"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white text-[#2D3591] hover:bg-slate-100 px-8 py-4 rounded-xl font-medium text-base shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer"
-            >
-              <LogIn className="w-5 h-5 text-[#2D3591]" />
-              <span>Login to Agency Portal</span>
-              <ArrowRight className="w-4 h-4 ml-1" />
-            </button>
-
-            {/* Free Trial Button */}
-            <button
-              onClick={handleRegisterClick}
-              id="footer-cta-demo-btn"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#2BBF8C] hover:bg-[#239f74] text-white px-8 py-4 rounded-xl font-medium text-base shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer"
-            >
-              <Sparkles className="w-4 h-4 text-emerald-100" />
-              <span>Start 7-Day Free Trial</span>
-            </button>
-          </div>
-
-          <p className="text-xs text-slate-300 pt-1 font-normal">
-            Instant Mobile OTP verification • No credit card required • Full cloud security
-          </p>
-        </div>
-      </section>
+      </div>
 
       {/* SUPER UNIQUE & ATTRACTIVE FOOTER */}
-      <footer className="bg-gradient-to-b from-[#0F172A] via-[#0D1326] to-[#080C1B] text-slate-400 text-xs relative overflow-hidden">
+      <footer className="relative bg-[#070B18] text-slate-300 overflow-hidden pt-14 sm:pt-16 pb-8 border-t border-slate-800">
 
-        {/* Top Glowing Beam */}
-        <div className="h-[2px] w-full bg-gradient-to-r from-transparent via-[#2BBF8C] to-[#2D3591]" />
+        {/* Ambient Top Light Beam in Brand #27439C */}
+        <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-[#27439C] to-transparent" />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-12">
+        {/* Clean Luxury Dark Footer Background with Ambient Color Glows */}
+        <div className="absolute inset-0 pointer-events-none select-none overflow-hidden">
+          <div className="absolute -top-24 left-1/4 w-96 h-96 bg-[#27439C]/20 rounded-full blur-[120px]" />
+          <div className="absolute -bottom-24 right-1/4 w-96 h-96 bg-[#2BBF8C]/15 rounded-full blur-[120px]" />
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10 lg:gap-8 pb-12 border-b border-slate-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
 
-            {/* Col 1: Brand & Identity (4 Cols) */}
-            <div className="lg:col-span-4 space-y-5">
+          {/* 3 Balanced Main Columns: Brand (Left), Quick Links (Center), Contact (Right) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
+
+            {/* Column 1: Brand & Authority (4 cols) */}
+            <div className="lg:col-span-4 space-y-4">
               <Link href="/" className="inline-block">
-                <img src="/white_logo.png" alt="Insuraa" className="h-10 w-auto object-contain" />
+                <img src="/white_logo.png" alt="Insuraa" className="h-10 sm:h-11 w-auto object-contain" />
               </Link>
 
-              <p className="text-xs text-slate-400 leading-relaxed max-w-sm font-normal">
-                Insuraa is India’s next-generation Insurance Agency Management System &amp; CRM. Engineered by Shopno Ecommerce Pvt Ltd to empower advisors, broking networks, and POSP teams with AI-driven automation.
+              <p className="text-sm sm:text-[14.5px] text-slate-300 leading-relaxed font-normal max-w-sm">
+                SHOPNO ECOMMERCE PVT LTD, Located In Surat, Gujarat, Specializes In Top-Tier Insurance Agency Management Software &amp; CRM, Ensuring A Seamless Online Shopping &amp; Agency Experience For Your Customers.
               </p>
 
-              {/* Security Credential Badges */}
-              <div className="pt-1 space-y-2">
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[11px] text-emerald-400 font-medium">
-                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                  <span>256-Bit Bank-Grade SSL Data Encryption</span>
-                </div>
-                <div className="block text-[11px] text-slate-400 font-normal">
-                  <span>✓ 100% IRDAI Standard Compliant Workflows</span>
-                </div>
+              {/* 4 Circular Social Icon Buttons */}
+              <div className="flex items-center gap-3 pt-2">
+                <a
+                  href="https://api.whatsapp.com/send?phone=918866779008"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-full border border-white/20 bg-white/5 flex items-center justify-center text-slate-200 hover:text-white hover:border-[#27439C] hover:bg-[#27439C] hover:scale-110 transition-all cursor-pointer shadow-xs"
+                  aria-label="WhatsApp"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                </a>
+                <a
+                  href="https://instagram.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-full border border-white/20 bg-white/5 flex items-center justify-center text-slate-200 hover:text-white hover:border-[#27439C] hover:bg-[#27439C] hover:scale-110 transition-all cursor-pointer shadow-xs"
+                  aria-label="Instagram"
+                >
+                  <Instagram className="w-4 h-4" />
+                </a>
+                <a
+                  href="https://twitter.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-full border border-white/20 bg-white/5 flex items-center justify-center text-slate-200 hover:text-white hover:border-[#27439C] hover:bg-[#27439C] hover:scale-110 transition-all cursor-pointer shadow-xs"
+                  aria-label="Twitter"
+                >
+                  <Twitter className="w-4 h-4" />
+                </a>
+                <a
+                  href="https://linkedin.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-full border border-white/20 bg-white/5 flex items-center justify-center text-slate-200 hover:text-white hover:border-[#27439C] hover:bg-[#27439C] hover:scale-110 transition-all cursor-pointer shadow-xs"
+                  aria-label="LinkedIn"
+                >
+                  <Linkedin className="w-4 h-4" />
+                </a>
               </div>
             </div>
 
-            {/* Col 2: Solutions (2.5 Cols) */}
-            <div className="lg:col-span-3 space-y-4">
-              <h4 className="text-xs font-medium text-white uppercase tracking-wider border-l-2 border-[#2BBF8C] pl-2.5">
-                Insurance Solutions
-              </h4>
-              <ul className="space-y-2.5 text-xs font-normal">
-                <li><Link href="/insurance/life" className="hover:text-white transition-colors flex items-center gap-1.5"><HeartPulse className="w-3.5 h-3.5 text-rose-400" /> Life Insurance Management</Link></li>
-                <li><Link href="/insurance/health" className="hover:text-white transition-colors flex items-center gap-1.5"><Stethoscope className="w-3.5 h-3.5 text-emerald-400" /> Health &amp; Family Floaters</Link></li>
-                <li><Link href="/insurance/motor" className="hover:text-white transition-colors flex items-center gap-1.5"><Car className="w-3.5 h-3.5 text-blue-400" /> Motor &amp; Commercial Fleets</Link></li>
-                <li><Link href="/insurance/other" className="hover:text-white transition-colors flex items-center gap-1.5"><Umbrella className="w-3.5 h-3.5 text-amber-400" /> Commercial, Marine &amp; Fire</Link></li>
-                <li><Link href="/claim" className="hover:text-white transition-colors flex items-center gap-1.5"><FileCheck2 className="w-3.5 h-3.5 text-indigo-400" /> Complete Claim Tracker</Link></li>
-              </ul>
-            </div>
-
-            {/* Col 3: Key Features (2.5 Cols) */}
-            <div className="lg:col-span-2 space-y-4">
-              <h4 className="text-xs font-medium text-white uppercase tracking-wider border-l-2 border-[#2D3591] pl-2.5">
-                Key Features
-              </h4>
-              <ul className="space-y-2.5 text-xs font-normal">
-                <li><a href="#features" className="hover:text-white transition-colors">AI Policy OCR Reader</a></li>
-                <li><Link href="/manage-leads" className="hover:text-white transition-colors">Visual Lead Kanban</Link></li>
-                <li><Link href="/quotation/health" className="hover:text-white transition-colors">Instant Health Quotes</Link></li>
-                <li><Link href="/quotation/motor" className="hover:text-white transition-colors">Instant Motor Quotes</Link></li>
-                <li><Link href="/customers" className="hover:text-white transition-colors">Customer 360° Directory</Link></li>
-                <li><Link href="/staff" className="hover:text-white transition-colors">Staff Roles &amp; Permissions</Link></li>
-              </ul>
-            </div>
-
-            {/* Col 4: Contact & Portal Login (3 Cols) */}
-            <div className="lg:col-span-3 space-y-4">
-              <h4 className="text-xs font-medium text-white uppercase tracking-wider border-l-2 border-[#2BBF8C] pl-2.5">
-                Surat Headquarters
+            {/* Column 2: Header Navigation Links (4 cols) */}
+            <div className="lg:col-span-4 space-y-5">
+              <h4 className="text-lg sm:text-xl font-bold text-white mb-6 tracking-wide">
+                Quick Links
               </h4>
 
-              <div className="space-y-2 text-xs text-slate-400 font-normal">
-                <p className="flex items-start gap-2">
-                  <MapPin className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                  <span>2nd Floor, Shreenathji Bungalow, Peddar Rd, Mota Varachha, Surat, Gujarat 394101</span>
-                </p>
-                <p className="flex items-center gap-2">
-                  <Phone className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <a href="tel:+918866779008" className="hover:text-white font-medium text-slate-300">+91 8866779008</a>
-                </p>
-                <p className="flex items-center gap-2">
-                  <Mail className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <a href="mailto:contact@insuraa.in" className="hover:text-white text-slate-300">contact@insuraa.in</a>
-                </p>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-3.5 text-sm sm:text-[15px]">
+                <a href="#about" className="text-slate-300 hover:text-[#5275e6] transition-colors">
+                  About Insuraa
+                </a>
+                <a href="#solutions" className="text-slate-300 hover:text-[#5275e6] transition-colors">
+                  Solutions
+                </a>
+                <a href="#with-vs-without" className="text-slate-300 hover:text-[#5275e6] transition-colors">
+                  With vs Without
+                </a>
+                <a href="#pricing" className="text-slate-300 hover:text-[#5275e6] transition-colors">
+                  Pricing
+                </a>
+                <a href="#software-features" className="text-slate-300 hover:text-[#5275e6] transition-colors">
+                  Features
+                </a>
+                <a href="#contact" className="text-slate-300 hover:text-[#5275e6] transition-colors">
+                  Contact Us
+                </a>
               </div>
 
-              {/* Login CTA Button in Footer */}
+              {/* Portal Login Button in Brand #27439C */}
               <div className="pt-2">
                 <button
                   onClick={handleLoginClick}
-                  className="w-full py-2.5 px-4 rounded-xl text-xs font-medium text-white bg-gradient-to-r from-[#2D3591] to-[#3B49B8] hover:from-[#242b78] hover:to-[#2D3591] shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  className="inline-flex items-center gap-2 bg-[#27439C] hover:bg-[#1e347b] text-white px-5 py-2.5 rounded-xl font-medium text-sm shadow-md hover:shadow-indigo-950/50 transition-all hover:scale-105 active:scale-95 cursor-pointer"
                 >
-                  <LogIn className="w-4 h-4 text-emerald-300" />
                   <span>Login to Agency Portal</span>
+                  <LogIn className="w-4 h-4" />
                 </button>
               </div>
             </div>
+
+            {/* Column 3: Contact Details in Brand #27439C (4 cols) */}
+            <div className="lg:col-span-4">
+              <h4 className="text-lg sm:text-xl font-bold text-white mb-6 tracking-wide">
+                Contact
+              </h4>
+
+              <div className="space-y-4">
+                <div className="flex items-center gap-3.5 group">
+                  <div className="w-10 h-10 rounded-full border border-[#27439C] bg-[#27439C]/20 flex items-center justify-center text-white shrink-0 group-hover:scale-110 group-hover:bg-[#27439C] transition-all shadow-xs">
+                    <Phone className="w-4 h-4 text-[#5275e6] group-hover:text-white" />
+                  </div>
+                  <a href="tel:+918866779008" className="text-slate-200 hover:text-white font-medium text-sm sm:text-[15px] tracking-wide transition-colors">
+                    +91 88667 79008
+                  </a>
+                </div>
+
+                <div className="flex items-center gap-3.5 group">
+                  <div className="w-10 h-10 rounded-full border border-[#27439C] bg-[#27439C]/20 flex items-center justify-center text-white shrink-0 group-hover:scale-110 group-hover:bg-[#27439C] transition-all shadow-xs">
+                    <Phone className="w-4 h-4 text-[#5275e6] group-hover:text-white" />
+                  </div>
+                  <a href="tel:+917016268071" className="text-slate-200 hover:text-white font-medium text-sm sm:text-[15px] tracking-wide transition-colors">
+                    +91 70162 68071
+                  </a>
+                </div>
+
+                <div className="flex items-center gap-3.5 group">
+                  <div className="w-10 h-10 rounded-full border border-[#27439C] bg-[#27439C]/20 flex items-center justify-center text-white shrink-0 group-hover:scale-110 group-hover:bg-[#27439C] transition-all shadow-xs">
+                    <Mail className="w-4 h-4 text-[#5275e6] group-hover:text-white" />
+                  </div>
+                  <a href="mailto:Contact@Shopno.In" className="text-slate-200 hover:text-white font-medium text-sm sm:text-[15px] transition-colors">
+                    Contact@Shopno.In
+                  </a>
+                </div>
+
+                <div className="flex items-start gap-3.5 group">
+                  <div className="w-10 h-10 rounded-full border border-[#27439C] bg-[#27439C]/20 flex items-center justify-center text-white shrink-0 mt-0.5 group-hover:scale-110 group-hover:bg-[#27439C] transition-all shadow-xs">
+                    <MapPin className="w-4 h-4 text-[#5275e6] group-hover:text-white" />
+                  </div>
+                  <span className="text-slate-300 text-xs sm:text-[13.5px] leading-relaxed">
+                    2nd Floor, C1, Above Adarsh Farsan Mart, Baroda Prestige, Ganesh Colony, Varachha, Surat, Gujarat 395010
+                  </span>
+                </div>
+              </div>
+            </div>
+
           </div>
 
           {/* Bottom Copyright & Legal Strip */}
-          <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-slate-500 font-normal">
-            <p>© {new Date().getFullYear()} Insuraa. Powered by Shopno Ecommerce Pvt Ltd. All rights reserved.</p>
-            <div className="flex items-center gap-5 text-slate-400">
-              <Link href="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link>
-              <Link href="/terms-conditions" className="hover:text-white transition-colors">Terms &amp; Conditions</Link>
-              <a href="#hero" className="hover:text-white transition-colors">Back to top ↑</a>
+          <div className="mt-12 pt-6 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-4 text-xs sm:text-sm text-slate-300">
+            <p className="text-center md:text-left">
+              Copyright © 2026 <span className="font-semibold text-white">SHOPNO ECOMMERCE PVT.LTD.</span> Designed By{' '}
+              <span className="text-[#5275e6] font-semibold">All Rights Reserved</span>
+            </p>
+            <div className="flex items-center gap-6 text-slate-300 text-xs sm:text-sm flex-wrap justify-center">
+              <Link href="/help-support" className="hover:text-white transition-colors">
+                Help &amp; Support
+              </Link>
+              <Link href="/privacy-policy" className="hover:text-white transition-colors">
+                Privacy Policy
+              </Link>
+              <Link href="/terms-conditions" className="hover:text-white transition-colors">
+                Terms &amp; Conditions
+              </Link>
             </div>
           </div>
 
         </div>
+
+        {/* Vertical Enquiry Now Tab on Left Screen Edge */}
+        <button
+          type="button"
+          onClick={() => setEnquiryModalOpen(true)}
+          className="fixed left-0 top-1/2 -translate-y-1/2 z-40 bg-[#27439C] hover:bg-[#1e347b] text-white font-black text-xs tracking-widest px-2 py-4 rounded-r-md shadow-xl uppercase [writing-mode:vertical-lr] rotate-180 transition-all hover:pl-3 cursor-pointer"
+          aria-label="Enquiry Now"
+        >
+          ENQUIRY NOW
+        </button>
+
+
+        {/* Floating WhatsApp Quick Connect with Hover / Click Speed-Dial Pills */}
+        <div
+          onMouseEnter={handleWhatsappMouseEnter}
+          onMouseLeave={handleWhatsappMouseLeave}
+          className="fixed bottom-6 right-6 z-50 flex flex-col items-end group/whatsapp"
+        >
+          {/* Compact Box Container around WhatsApp Contacts */}
+          {whatsappWidgetOpen && (
+            <div
+              className="mb-3 p-3 bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/90 shadow-[0_12px_36px_rgba(0,0,0,0.14)] flex flex-col gap-2.5 animate-in fade-in slide-in-from-bottom-3 duration-200 w-[275px] sm:w-[285px]"
+              role="region"
+              aria-label="Direct WhatsApp Contacts"
+            >
+              {/* Header inside box */}
+              <div className="flex items-center justify-between pb-1.5 px-0.5 border-b border-slate-100 select-none">
+                <span className="text-[11px] font-bold text-slate-800 tracking-tight flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-[#25D366] animate-pulse" />
+                  Direct WhatsApp
+                </span>
+                <span className="px-2 py-0.5 bg-slate-900/90 text-white text-[9.5px] font-medium rounded-full flex items-center gap-1 shadow-2xs">
+                  Replies in minutes
+                </span>
+              </div>
+
+              {/* Contact 1: Bhavik Vala */}
+              <a
+                href={`https://api.whatsapp.com/send?phone=918866779008&text=${encodeURIComponent('Hi Bhavik, I have an inquiry regarding Insuraa.')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex items-center justify-between p-2.5 bg-slate-50/80 hover:bg-emerald-50/80 text-slate-800 rounded-xl border border-slate-200/80 hover:border-[#25D366] shadow-2xs hover:shadow-xs transition-all hover:-translate-x-0.5 duration-200 cursor-pointer group"
+                title="Chat with Bhavik Vala on WhatsApp"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="relative shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-white font-bold text-xs flex items-center justify-center shadow-xs">
+                      BV
+                    </div>
+                    <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 border-2 border-white rounded-full animate-pulse" />
+                  </div>
+                  <div className="text-left">
+                    <div className="flex items-center gap-1.5 leading-none">
+                      <span className="font-bold text-slate-800 group-hover:text-emerald-700 text-xs transition-colors">
+                        Bhavik Vala
+                      </span>
+                      <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 leading-none">
+                        Support
+                      </span>
+                    </div>
+                    <span className="text-[11px] text-slate-500 font-mono font-medium block leading-none mt-1">
+                      +91 88667 79008
+                    </span>
+                  </div>
+                </div>
+
+                <div className="w-7 h-7 rounded-full bg-emerald-50 group-hover:bg-[#25D366] text-emerald-600 group-hover:text-white flex items-center justify-center transition-all shadow-xs group-hover:scale-110 shrink-0">
+                  <Send className="w-3.5 h-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                </div>
+              </a>
+
+              {/* Contact 2: Ravi Chovatiya */}
+              <a
+                href={`https://api.whatsapp.com/send?phone=917016268071&text=${encodeURIComponent('Hi Ravi, I have an inquiry regarding Insuraa.')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex items-center justify-between p-2.5 bg-slate-50/80 hover:bg-emerald-50/80 text-slate-800 rounded-xl border border-slate-200/80 hover:border-[#25D366] shadow-2xs hover:shadow-xs transition-all hover:-translate-x-0.5 duration-200 cursor-pointer group"
+                title="Chat with Ravi Chovatiya on WhatsApp"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="relative shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#27439C] to-[#1e347b] text-white font-bold text-xs flex items-center justify-center shadow-xs">
+                      RC
+                    </div>
+                    <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 border-2 border-white rounded-full animate-pulse" />
+                  </div>
+                  <div className="text-left">
+                    <div className="flex items-center gap-1.5 leading-none">
+                      <span className="font-bold text-slate-800 group-hover:text-emerald-700 text-xs transition-colors">
+                        Ravi Chovatiya
+                      </span>
+                      <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-full bg-blue-100 text-[#27439C] leading-none">
+                        Sales
+                      </span>
+                    </div>
+                    <span className="text-[11px] text-slate-500 font-mono font-medium block leading-none mt-1">
+                      +91 70162 68071
+                    </span>
+                  </div>
+                </div>
+
+                <div className="w-7 h-7 rounded-full bg-emerald-50 group-hover:bg-[#25D366] text-emerald-600 group-hover:text-white flex items-center justify-center transition-all shadow-xs group-hover:scale-110 shrink-0">
+                  <Send className="w-3.5 h-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                </div>
+              </a>
+            </div>
+          )}
+
+          {/* Floating WhatsApp Trigger Button with Continuous Pulse/Ping Animation */}
+          <div className="relative">
+            {/* Continuous Ripple Animation Rings */}
+            <span className="absolute -inset-2.5 rounded-full bg-[#25D366]/40 animate-ping pointer-events-none" />
+            <span className="absolute -inset-1.5 rounded-full bg-[#25D366]/30 animate-pulse pointer-events-none" />
+
+            <button
+              type="button"
+              id="floating-whatsapp-btn"
+              onClick={() => {
+                if (whatsappHoverTimeoutRef.current) {
+                  clearTimeout(whatsappHoverTimeoutRef.current);
+                  whatsappHoverTimeoutRef.current = null;
+                }
+                setWhatsappWidgetOpen((prev) => !prev);
+              }}
+              className="relative w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-[#25D366] hover:bg-[#20ba59] text-white flex items-center justify-center shadow-[0_10px_30px_rgba(37,211,102,0.45)] hover:scale-105 active:scale-95 transition-all cursor-pointer animate-whatsapp-pulse animate-whatsapp-float"
+              title={whatsappWidgetOpen ? "Close menu" : "Chat with us on WhatsApp"}
+              aria-label="Chat with us on WhatsApp"
+            >
+              {whatsappWidgetOpen ? (
+                <X className="w-6 h-6 stroke-[2.5]" />
+              ) : (
+                <svg className="w-6 h-6 sm:w-7 sm:h-7 fill-current" viewBox="0 0 24 24">
+                  <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z" />
+                </svg>
+              )}
+            </button>
+          </div>
+        </div>
+
+
       </footer>
+
+      {/* ENQUIRY MODAL (Matching User Uploaded WhatsApp Connect Card Image) */}
+      {enquiryModalOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200"
+          onClick={() => setEnquiryModalOpen(false)}
+        >
+          <div
+            className="bg-white rounded-[28px] max-w-lg w-full p-6 sm:p-8 shadow-2xl relative border border-slate-200/90 my-auto text-slate-800"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <button
+              type="button"
+              onClick={() => setEnquiryModalOpen(false)}
+              className="absolute top-5 right-5 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-all cursor-pointer"
+              aria-label="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Header Badge */}
+            <div className="mb-6">
+              <span className="text-xs font-bold text-[#2BBF8C] uppercase tracking-wider bg-emerald-50 border border-emerald-200/60 px-3.5 py-1.5 rounded-full inline-flex items-center gap-1.5">
+                <MessageCircle className="w-3.5 h-3.5" /> Instant WhatsApp Connect
+              </span>
+              <h3 className="text-2xl font-bold text-slate-900 mt-2.5">Send Us a Message</h3>
+              <p className="text-slate-500 text-xs sm:text-sm mt-1">
+                Fill in your details below and we will connect with you directly on WhatsApp.
+              </p>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleEnquirySubmit} className="space-y-4">
+              {/* Full Name */}
+              <div>
+                <label htmlFor="modal-enquiry-fullname" className="block text-sm font-bold text-slate-700 tracking-wider mb-1.5">
+                  Full Name <span className="text-rose-500">*</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <User className="w-4 h-4" />
+                  </div>
+                  <input
+                    id="modal-enquiry-fullname"
+                    type="text"
+                    required
+                    placeholder="Enter your full name"
+                    value={enquiryForm.fullName}
+                    onChange={(e) => setEnquiryForm((prev) => ({ ...prev, fullName: e.target.value }))}
+                    className="w-full pl-10 pr-4 py-3 bg-slate-50/70 hover:bg-slate-50 text-sm font-medium text-slate-800 rounded-xl border border-slate-200 focus:border-[#2D3591] focus:bg-white focus:ring-4 focus:ring-[#2D3591]/10 outline-none transition-all placeholder:text-slate-400"
+                  />
+                </div>
+              </div>
+
+              {/* Mobile Number */}
+              <div>
+                <label htmlFor="modal-enquiry-mobile" className="block text-sm font-bold text-slate-700 tracking-wider mb-1.5">
+                  Mobile Number <span className="text-rose-500">*</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <Phone className="w-4 h-4" />
+                  </div>
+                  <input
+                    id="modal-enquiry-mobile"
+                    type="tel"
+                    required
+                    maxLength={10}
+                    placeholder="Enter 10-digit mobile number"
+                    value={enquiryForm.mobileNumber}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                      setEnquiryForm((prev) => ({ ...prev, mobileNumber: val }));
+                    }}
+                    className="w-full pl-10 pr-4 py-3 bg-slate-50/70 hover:bg-slate-50 text-sm font-medium text-slate-800 rounded-xl border border-slate-200 focus:border-[#2D3591] focus:bg-white focus:ring-4 focus:ring-[#2D3591]/10 outline-none transition-all placeholder:text-slate-400 font-mono"
+                  />
+                </div>
+              </div>
+
+              {/* Message */}
+              <div>
+                <label htmlFor="modal-enquiry-message" className="block text-sm font-bold text-slate-700 tracking-wider mb-1.5">
+                  Message <span className="text-rose-500">*</span>
+                </label>
+                <textarea
+                  id="modal-enquiry-message"
+                  required
+                  rows={4}
+                  placeholder="Write your message or inquiry here..."
+                  value={enquiryForm.message}
+                  onChange={(e) => setEnquiryForm((prev) => ({ ...prev, message: e.target.value }))}
+                  className="w-full px-4 py-3 bg-slate-50/70 hover:bg-slate-50 text-sm font-medium text-slate-800 rounded-xl border border-slate-200 focus:border-[#2D3591] focus:bg-white focus:ring-4 focus:ring-[#2D3591]/10 outline-none transition-all placeholder:text-slate-400 resize-none"
+                />
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                id="modal-enquiry-submit-btn"
+                className="w-full py-3.5 px-6 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-[#2BBF8C] to-[#1EA376] hover:from-[#24aa7c] hover:to-[#1a8e67] shadow-md hover:shadow-emerald-500/25 transition-all flex items-center justify-center gap-2.5 active:scale-[0.99] cursor-pointer"
+              >
+                <MessageCircle className="w-4 h-4 fill-current" />
+                <span>Send Message via WhatsApp</span>
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* PAYMENT & CHECKOUT MODAL (Matching User Uploaded Image with Insuraa Brand Colors) */}
       {pricingModalOpen && (

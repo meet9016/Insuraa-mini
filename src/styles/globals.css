@@ -979,37 +979,49 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 
 /* Unique Landing Page Keyframe Animations */
 @keyframes heroFloat {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0px) rotate(0deg);
   }
+
   50% {
     transform: translateY(-12px) rotate(0.5deg);
   }
 }
 
 @keyframes badgeFloatSlow {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0px);
   }
+
   50% {
     transform: translateY(-8px);
   }
 }
 
 @keyframes badgeFloatReverse {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0px);
   }
+
   50% {
     transform: translateY(8px);
   }
 }
 
 @keyframes glowPulseSlow {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 0.4;
     transform: scale(1);
   }
+
   50% {
     opacity: 0.75;
     transform: scale(1.08);
@@ -1020,9 +1032,11 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   0% {
     background-position: 0% 50%;
   }
+
   50% {
     background-position: 100% 50%;
   }
+
   100% {
     background-position: 0% 50%;
   }
@@ -1048,3 +1062,32 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   background-size: 200% auto;
   animation: gradientShift 4s ease infinite;
 }
+
+@keyframes whatsappPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 16px rgba(37, 211, 102, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(37, 211, 102, 0);
+  }
+}
+
+@keyframes whatsappFloatBounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.animate-whatsapp-pulse {
+  animation: whatsappPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-whatsapp-float {
+  animation: whatsappFloatBounce 2.8s ease-in-out infinite;
+}
