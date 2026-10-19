@@ -11,6 +11,7 @@ export interface EndPointApi {
     INVOICE_LIST: string;
     POLICY_ADDON_PURCHASE: string;
     POLICY_ADDON_HISTORY: string;
+    POLICY_ADDON_QUOTE: string;
   };
   CUSTOMER: {
     CUSTOMER_LIST_DROP_DOWN: string;
@@ -204,6 +205,7 @@ export interface EndPointApi {
     POLICY_PLAN_PURCHASE: string;
     POLICY_ADDON_PURCHASE: string;
     POLICY_ADDON_HISTORY: string;
+    POLICY_ADDON_QUOTE: string;
   };
 }
 
@@ -233,6 +235,7 @@ const endPointApi: EndPointApi = {
     INVOICE_LIST: 'invoice_list',
     POLICY_ADDON_PURCHASE: 'policy_addon_purchase',
     POLICY_ADDON_HISTORY: 'policy_addon_history',
+    POLICY_ADDON_QUOTE: 'policy_addon_quote',
   },
   CUSTOMER: {
     CUSTOMER_LIST_DROP_DOWN: 'customer_list_drop_down',
@@ -414,6 +417,7 @@ const endPointApi: EndPointApi = {
     POLICY_PLAN_PURCHASE: 'policy_plan_purchase',
     POLICY_ADDON_PURCHASE: 'policy_addon_purchase',
     POLICY_ADDON_HISTORY: 'policy_addon_history',
+    POLICY_ADDON_QUOTE: 'policy_addon_quote',
   },
 };
 

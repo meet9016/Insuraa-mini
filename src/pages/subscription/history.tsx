@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import {
@@ -36,7 +36,9 @@ import {
   InvoiceItem,
   useFetchPolicyAddonHistory,
   usePurchasePolicyAddon,
-  PolicyAddonItem
+  useGetPolicyAddonQuote,
+  PolicyAddonItem,
+  PolicyAddonQuoteData
 } from '@/hooks/usePricingApi';
 import { Monitor, Calculator, ExternalLink, Plus, Minus, Coins, Gift, LayoutList } from 'lucide-react';
 
@@ -458,12 +460,7 @@ function AllHistoryTab() {
                       <span>{item.created_at || 'N/A'}</span>
                     </div>
 
-                    {/* Type badge showing item.type */}
-                    <div>
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${getTypeBadgeStyle(item.type)}`}>
-                        {item.type || 'Standard'}
-                      </span>
-                    </div>
+
 
                     {/* Amount - exact amount from API */}
                     <div className="text-right min-w-[80px]">
@@ -541,10 +538,27 @@ function PolicyCreditHistoryTab() {
   const totalRecords = historyRes?.pagination_arr?.total_records ?? historyList.length ?? 0;
   const totalPages = Math.ceil(totalRecords / limit) || 1;
 
-  // Add policies purchase functionality
+  // Add policies purchase & quote functionality
+  const { mutate: getPolicyQuote, isPending: isGettingQuote } = useGetPolicyAddonQuote();
   const { mutate: purchasePolicyAddon, isPending: isPurchasing } = usePurchasePolicyAddon();
   const [isAddonModalOpen, setIsAddonModalOpen] = useState(false);
   const [policiesInput, setPoliciesInput] = useState<number | ''>('');
+  const [quoteResult, setQuoteResult] = useState<PolicyAddonQuoteData | any>(null);
+  const addonModalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (addonModalRef.current && !addonModalRef.current.contains(event.target as Node)) {
+        setIsAddonModalOpen(false);
+      }
+    }
+    if (isAddonModalOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isAddonModalOpen]);
 
   const handleCopy = (text?: string) => {
     if (!text) return;
@@ -554,14 +568,44 @@ function PolicyCreditHistoryTab() {
     setTimeout(() => setCopiedInvoice(null), 2000);
   };
 
-  const handleBuyPolicies = () => {
+  const handleGetQuote = () => {
     if (!policiesInput || Number(policiesInput) <= 0) {
+      toast.error('Please enter a valid number of policies');
+      return;
+    }
+    setQuoteResult(null);
+    getPolicyQuote(
+      { addon_policies: Number(policiesInput) },
+      {
+        onSuccess: (res: any) => {
+          if (res && (res.status === 400 || res.status === 500 || res.status === 'error')) {
+            toast.error(res?.message || 'Failed to fetch policy addon quote');
+            return;
+          }
+          if (res && res.data && Object.keys(res.data).length > 0) {
+            setQuoteResult(res.data);
+          } else if (res && res.addon_policies) {
+            setQuoteResult(res);
+          } else {
+            toast.error(res?.message || 'Invalid quote response');
+          }
+        },
+        onError: (err: any) => {
+          toast.error(err?.response?.data?.message || err?.message || 'Failed to fetch policy addon quote');
+        },
+      }
+    );
+  };
+
+  const handleBuyPolicies = () => {
+    const policiesToBuy = quoteResult?.addon_policies || Number(policiesInput);
+    if (!policiesToBuy || policiesToBuy <= 0) {
       toast.error('Please enter a valid number of policies');
       return;
     }
 
     purchasePolicyAddon(
-      { addon_policies: Number(policiesInput) },
+      { addon_policies: Number(policiesToBuy) },
       {
         onSuccess: (res: any) => {
           if (res && (res.status === 400 || res.status === 500 || res.status === 'error')) {
@@ -621,7 +665,7 @@ function PolicyCreditHistoryTab() {
           </button>
 
           {/* Add Policies Button */}
-          <div className="relative ml-auto lg:ml-0">
+          <div className="relative ml-auto lg:ml-0" ref={addonModalRef}>
             <button
               onClick={() => setIsAddonModalOpen(!isAddonModalOpen)}
               className="flex items-center gap-2 px-5 py-2.5 bg-[#2E3192] hover:bg-[#232569] text-white rounded-xl font-bold text-sm shadow-[0_4px_12px_-2px_rgba(46,49,146,0.3)] hover:shadow-[0_6px_16px_-2px_rgba(46,49,146,0.4)] transition-all active:scale-[0.98]"
@@ -632,19 +676,19 @@ function PolicyCreditHistoryTab() {
 
             {isAddonModalOpen && (
               <div className="absolute right-0 mt-3 w-80 bg-white/95 backdrop-blur-2xl rounded-3xl shadow-[0_20px_60px_-15px_rgba(45,53,145,0.3)] border border-gray-200 z-50 overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300">
-                <div className="bg-gradient-to-r from-[#2E3192] to-[#1B75BC] p-4 relative overflow-hidden">
+                <div className="bg-gradient-to-r from-[#2F439D] to-[#2BBF8C] p-4 relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
                   <div className="relative z-10 flex items-center gap-2 text-white">
-                    <Shield size={18} />
+                    <Shield size={18} className="animate-[pulse_2s_infinite]" />
                     <h4 className="font-bold text-lg tracking-tight">Add Policies</h4>
                   </div>
-                  <p className="relative z-10 text-white/80 text-xs mt-1 font-medium">Add extra policy limit to your current plan</p>
+                  <p className="relative z-10 text-white/80 text-xs mt-1 font-medium">Power up your workflow with extra policies</p>
                 </div>
 
                 <div className="p-5 space-y-4">
                   <div className="relative group/input">
                     <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                      <FileCheck size={16} className="text-[#2E3192]/50 group-focus-within/input:text-[#2E3192] transition-colors" />
+                      <Calculator size={16} className="text-[#2F439D]/50 group-focus-within/input:text-[#2F439D] transition-colors" />
                     </div>
                     <input
                       type="number"
@@ -652,22 +696,72 @@ function PolicyCreditHistoryTab() {
                       value={policiesInput}
                       onChange={(e) => {
                         setPoliciesInput(e.target.value ? Number(e.target.value) : '');
+                        setQuoteResult(null);
                       }}
-                      className="w-full pl-10 pr-4 py-3 bg-gray-50/50 border border-gray-200/80 rounded-xl text-sm font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#2E3192]/20 focus:border-[#2E3192] focus:bg-white transition-all shadow-inner"
-                      placeholder="Enter policy count (e.g. 50)"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleGetQuote();
+                        }
+                      }}
+                      className="w-full pl-10 pr-4 py-3 bg-gray-50/50 border border-gray-200/80 rounded-xl text-sm font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#2F439D]/20 focus:border-[#2F439D] focus:bg-white transition-all shadow-inner"
+                      placeholder="Enter policies (e.g. 100)"
                     />
                   </div>
 
                   <button
-                    onClick={handleBuyPolicies}
-                    disabled={isPurchasing || !policiesInput || Number(policiesInput) <= 0}
-                    className="relative w-full py-3.5 group overflow-hidden rounded-xl text-white font-bold text-sm shadow-[0_8px_20px_-6px_rgba(46,49,146,0.4)] hover:shadow-[0_12px_25px_-6px_rgba(46,49,146,0.5)] transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed disabled:active:scale-100"
+                    onClick={handleGetQuote}
+                    disabled={isGettingQuote || !policiesInput || Number(policiesInput) <= 0}
+                    className="w-full py-2.5 bg-[#2F439D]/5 text-[#2F439D] font-bold rounded-xl text-sm border border-[#2F439D]/10 hover:bg-[#2F439D]/10 hover:border-[#2F439D]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-[#2E3192] via-[#3B54C4] to-[#1B75BC] transition-transform duration-500 group-hover:scale-105"></div>
-                    <span className="relative flex items-center justify-center gap-2">
-                      {isPurchasing ? 'Processing...' : <>Proceed to Pay <ExternalLink size={14} className="opacity-70" /></>}
-                    </span>
+                    {isGettingQuote ? 'Fetching...' : 'Calculate Quote'}
                   </button>
+
+                  {quoteResult && quoteResult.final_amount !== undefined && (
+                    <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                      <div className="p-4 bg-gradient-to-br from-blue-50/50 to-indigo-50/50 rounded-2xl border border-blue-100/50 relative overflow-hidden">
+                        <div className="space-y-2 relative z-10">
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-gray-500 font-medium">Policies Requested</span>
+                            <span className="font-bold text-gray-800 bg-white px-2 py-0.5 rounded-md shadow-sm">{quoteResult.addon_policies}</span>
+                          </div>
+                          {quoteResult.rate_per_policy !== undefined && (
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="text-gray-500 font-medium">Price per policy</span>
+                              <span className="font-bold text-gray-700">₹{quoteResult.rate_per_policy}</span>
+                            </div>
+                          )}
+                          {quoteResult.total_price !== undefined && (
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="text-gray-500 font-medium">Subtotal</span>
+                              <span className="font-bold text-gray-700">₹{quoteResult.total_price}</span>
+                            </div>
+                          )}
+                          {quoteResult.gst_percentage !== undefined && (
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="text-gray-500 font-medium">GST ({quoteResult.gst_percentage}%)</span>
+                              <span className="font-bold text-gray-700">₹{quoteResult.gst_amount}</span>
+                            </div>
+                          )}
+                          <div className="h-px bg-gradient-to-r from-transparent via-blue-200/50 to-transparent my-3"></div>
+                          <div className="flex justify-between items-end">
+                            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Final Amount</span>
+                            <span className="text-xl font-black text-[#2F439D] leading-none">₹{quoteResult.final_amount}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        onClick={handleBuyPolicies}
+                        disabled={isPurchasing}
+                        className="relative w-full py-3.5 mt-3 group overflow-hidden rounded-xl text-white font-bold text-sm shadow-[0_8px_20px_-6px_rgba(46,49,146,0.4)] hover:shadow-[0_12px_25px_-6px_rgba(46,49,146,0.5)] transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed disabled:active:scale-100"
+                      >
+                        <div className="absolute inset-0 bg-gradient-to-r from-[#2F439D] via-[#3B54C4] to-[#2BBF8C] transition-transform duration-500 group-hover:scale-105"></div>
+                        <span className="relative flex items-center justify-center gap-2">
+                          {isPurchasing ? 'Processing...' : <>Proceed to Pay <ExternalLink size={14} className="opacity-70" /></>}
+                        </span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -719,11 +813,10 @@ function PolicyCreditHistoryTab() {
                             </span>
                           )}
                           <span
-                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
-                              isActive
+                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${isActive
                                 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60'
                                 : 'bg-slate-100 text-slate-700 border border-slate-200'
-                            }`}
+                              }`}
                           >
                             <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500' : 'bg-slate-400'}`}></span>
                             {item.status_name || (isActive ? 'Active' : 'Inactive')}

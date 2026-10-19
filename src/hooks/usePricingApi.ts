@@ -546,5 +546,53 @@ export const usePurchasePolicyAddon = () => {
   });
 };
 
+export interface PolicyAddonQuoteData {
+  subscription_id?: number;
+  addon_policies: number;
+  plan_limit?: number;
+  existing_addon?: number;
+  new_total_limit?: number;
+  tier?: string;
+  rate_per_policy?: number;
+  billing_cycle?: any;
+  cycle_months?: number;
+  starting_date?: string;
+  ending_date?: string;
+  days_total?: number;
+  days_remaining?: number;
+  prorated?: boolean;
+  full_cycle_price?: number;
+  plan_name?: string;
+  total_price?: number;
+  coupon_per?: number;
+  coupon_amount?: number;
+  price_after_discount?: number;
+  gst_percentage?: number;
+  gst_amount?: number;
+  final_amount?: number;
+  [key: string]: any;
+}
+
+export interface PolicyAddonQuoteResponse {
+  status: number | string | boolean;
+  message?: string;
+  data: PolicyAddonQuoteData;
+}
+
+/**
+ * Hook to fetch policy addon quote with addon_policies via FormData
+ */
+export const useGetPolicyAddonQuote = () => {
+  return useMutation<PolicyAddonQuoteResponse | null, any, { addon_policies: number }>({
+    mutationFn: async (payload: { addon_policies: number }) => {
+      const formData = new FormData();
+      formData.append('addon_policies', payload.addon_policies.toString());
+
+      const response = await api.post(endPointApi.AUTH.POLICY_ADDON_QUOTE, formData);
+      return response?.data;
+    },
+  });
+};
+
 
 
