@@ -108,8 +108,9 @@ function AppContent({ Component, pageProps }: AppProps) {
         draggable
         pauseOnHover
         theme="colored"
+        style={{ zIndex: 99999999 }}
       />
-      <Toaster position="top-right" reverseOrder={false} />
+      <Toaster position="top-right" reverseOrder={false} containerStyle={{ zIndex: 99999999 }} />
       <SkippedRecordsModal />
     </div>
     </>

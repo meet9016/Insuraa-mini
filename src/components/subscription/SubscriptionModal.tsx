@@ -66,6 +66,7 @@ export default function SubscriptionModal({
   const [isApplyingCoupon, setIsApplyingCoupon] = useState<boolean>(false);
   const [isFetchingQuote, setIsFetchingQuote] = useState<boolean>(false);
   const [quoteData, setQuoteData] = useState<DirectPlanQuoteData | null>(null);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
   const [isProcessingPayment, setIsProcessingPayment] = useState<boolean>(false);
 
   // Sync ref with policiesCount
@@ -74,11 +75,8 @@ export default function SubscriptionModal({
   }, [policiesCount]);
 
   // Minimum and maximum policies determined dynamically from policy_plan_info API
-  // Uses min_policies_for_renew when > 0 (for renewal), otherwise min_policies
+  // Decrement (-) can go down to min_policies; initial/renew count is shown from min_policies_for_renew
   const minAllowedPolicies = useMemo(() => {
-    if (planData?.min_policies_for_renew && planData.min_policies_for_renew > 0) {
-      return planData.min_policies_for_renew;
-    }
     return planData?.min_policies || 50;
   }, [planData]);
 
@@ -121,6 +119,8 @@ export default function SubscriptionModal({
           !Array.isArray(res.data)
         ) {
           setQuoteData(res.data);
+          setQuoteError(null);
+          toast.dismiss('quote-error');
           if (isCouponAction) {
             if (Number(res.data.coupon_amount) > 0 || Number(res.data.coupon_per) > 0) {
               setIsCouponApplied(true);
@@ -134,11 +134,10 @@ export default function SubscriptionModal({
             }
           }
         } else {
-          // Dynamic error toast directly from API response
-          const dynamicMsg = res?.message || res?.data?.message;
-          if (dynamicMsg) {
-            toast.error(dynamicMsg);
-          }
+          // Dynamic error handling - display error strictly via toast notification
+          const dynamicMsg = res?.message || res?.data?.message || 'Failed to calculate quote for selected policies';
+          setQuoteError(dynamicMsg);
+          toast.error(dynamicMsg, { toastId: 'quote-error' });
           if (isCouponAction) {
             setIsCouponApplied(false);
             setAppliedCouponCode('');
@@ -146,10 +145,9 @@ export default function SubscriptionModal({
         }
       } catch (err: any) {
         console.error('Error fetching policy plan quote:', err);
-        const dynamicMsg = err?.response?.data?.message || err?.data?.message || err?.message;
-        if (dynamicMsg) {
-          toast.error(dynamicMsg);
-        }
+        const dynamicMsg = err?.response?.data?.message || err?.data?.message || err?.message || 'Failed to calculate quote';
+        setQuoteError(dynamicMsg);
+        toast.error(dynamicMsg, { toastId: 'quote-error' });
         if (isCouponAction) {
           setIsCouponApplied(false);
           setAppliedCouponCode('');
@@ -168,6 +166,8 @@ export default function SubscriptionModal({
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
+      toast.dismiss();
+      setQuoteError(null);
       refetchPlanInfo();
     } else {
       document.body.style.overflow = 'unset';
@@ -336,6 +336,10 @@ export default function SubscriptionModal({
   };
 
   const handleProceedPayment = async () => {
+    if (quoteError) {
+      toast.error(quoteError, { toastId: 'quote-error' });
+      return;
+    }
     setIsProcessingPayment(true);
     try {
       const res = await fetchPolicyPlanPurchase({
@@ -518,7 +522,8 @@ export default function SubscriptionModal({
                             const step = policiesCount > 1000 ? 100 : 50;
                             handlePoliciesStep(-step);
                           }}
-                          className="w-10 h-10 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 flex items-center justify-center font-bold text-base transition-colors cursor-pointer"
+                          disabled={policiesCount <= minAllowedPolicies}
+                          className="w-10 h-10 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center font-bold text-base transition-colors cursor-pointer"
                         >
                           <Minus className="w-4 h-4" />
                         </button>
@@ -539,7 +544,8 @@ export default function SubscriptionModal({
                             const step = policiesCount >= 1000 ? 100 : 50;
                             handlePoliciesStep(step);
                           }}
-                          className="w-10 h-10 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 flex items-center justify-center font-bold text-base transition-colors cursor-pointer"
+                          disabled={policiesCount >= maxAllowedPolicies}
+                          className="w-10 h-10 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center font-bold text-base transition-colors cursor-pointer"
                         >
                           <Plus className="w-4 h-4" />
                         </button>

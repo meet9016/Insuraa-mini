@@ -1090,4 +1090,9 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 
 .animate-whatsapp-float {
   animation: whatsappFloatBounce 2.8s ease-in-out infinite;
-}
+}
+
+.Toastify__toast-container {
+  z-index: 99999999 !important;
+}
+
