@@ -99,11 +99,12 @@ const SOFTWARE_FEATURES = [
     iconBg: 'bg-indigo-50 text-indigo-600 border-indigo-200/60 group-hover:bg-indigo-600 group-hover:text-white',
   },
   {
-    title: 'Policy Management',
-    desc: 'Issue, manage and track all insurance policies in one secure place.',
-    icon: FileText,
-    iconBg: 'bg-sky-50 text-sky-600 border-sky-200/60 group-hover:bg-sky-600 group-hover:text-white',
+    title: 'AI Policy Upload',
+    desc: 'Upload policy PDFs to auto-extract customer, policy and vehicle details in seconds.',
+    icon: Sparkles,
+    iconBg: 'bg-emerald-50 text-[#2BBF8C] border-emerald-200/60 group-hover:bg-[#2BBF8C] group-hover:text-white',
   },
+
   {
     title: 'Renewal Reminders',
     desc: 'Never miss a renewal with automated alerts and notifications.',
@@ -129,19 +130,21 @@ const SOFTWARE_FEATURES = [
     iconBg: 'bg-purple-50 text-purple-600 border-purple-200/60 group-hover:bg-purple-600 group-hover:text-white',
   },
   {
-    title: 'WhatsApp Automation',
-    desc: 'Send messages, updates and alerts automatically via WhatsApp.',
-    icon: MessageCircle,
-    iconBg: 'bg-emerald-50 text-[#2BBF8C] border-emerald-200/60 group-hover:bg-[#2BBF8C] group-hover:text-white',
+    title: 'Policy Management',
+    desc: 'Issue, manage and track all insurance policies in one secure place.',
+    icon: FileText,
+    iconBg: 'bg-sky-50 text-sky-600 border-sky-200/60 group-hover:bg-sky-600 group-hover:text-white',
   },
 ];
 
 const showcaseImages = [
-  { src: '/images/landing/software_dashboard.png', alt: 'Insuraa Dashboard' },
-  { src: '/images/landing/software_policies.png', alt: 'Insuraa Policy Management' },
-  { src: '/images/landing/software_customer.png', alt: 'Insuraa Customer Management' },
-  { src: '/images/landing/software_calendar.png', alt: 'Insuraa Renewal Calendar' },
-  { src: '/images/landing/dashboard.png', alt: 'Insuraa Executive Analytics' },
+  { src: '/landing/img1.png', alt: 'Insuraa Showcase 1' },
+  { src: '/landing/img2.png', alt: 'Insuraa Showcase 2' },
+  { src: '/landing/img3.png', alt: 'Insuraa Showcase 3' },
+  { src: '/landing/img4.png', alt: 'Insuraa Showcase 4' },
+  { src: '/landing/img5.png', alt: 'Insuraa Showcase 5' },
+  { src: '/landing/img6.png', alt: 'Insuraa Showcase 6' },
+  { src: '/landing/img7.png', alt: 'Insuraa Showcase 7' },
 ];
 
 export default function LandingPage() {
@@ -205,23 +208,6 @@ export default function LandingPage() {
     message: '',
   });
 
-  // Floating WhatsApp Direct Contact Widget State (Hover & Click support)
-  const [whatsappWidgetOpen, setWhatsappWidgetOpen] = useState(false);
-  const whatsappHoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const handleWhatsappMouseEnter = () => {
-    if (whatsappHoverTimeoutRef.current) {
-      clearTimeout(whatsappHoverTimeoutRef.current);
-      whatsappHoverTimeoutRef.current = null;
-    }
-    setWhatsappWidgetOpen(true);
-  };
-
-  const handleWhatsappMouseLeave = () => {
-    whatsappHoverTimeoutRef.current = setTimeout(() => {
-      setWhatsappWidgetOpen(false);
-    }, 280);
-  };
 
   // Pricing & Payment Flow States (Powered purely by dynamic useDirectPlanInfo hook)
   const { data: planData, isLoading: isLoadingPlans } = useDirectPlanInfo();
@@ -1531,10 +1517,10 @@ export default function LandingPage() {
           <div className="absolute w-[92%] max-w-7xl h-80 bg-gradient-to-tr from-[#2D3591]/15 via-[#2BBF8C]/15 to-transparent rounded-full blur-3xl -z-10 pointer-events-none" />
 
           {/* Main Full-Width Image Stage */}
-          <div className="w-full max-w-[1480px] xl:max-w-[1560px] mx-auto relative flex flex-col items-center">
+          <div className="w-full max-w-[1380px] xl:max-w-[1440px] mx-auto relative flex flex-col items-center">
 
             {/* The Glassmorphic / Premium Image Frame */}
-            <div className="w-full bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200/90 overflow-hidden ring-1 ring-slate-900/5 relative aspect-[2.05/1] max-h-[68vh] sm:max-h-[70vh]">
+            <div className="w-full bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200/90 overflow-hidden ring-1 ring-slate-900/5 relative aspect-[1.95/1] sm:aspect-[2.02/1] max-h-[72vh] sm:max-h-[75vh]">
 
               {/* Subtle Window Bar */}
               <div className="h-8 sm:h-9 bg-slate-50/90 border-b border-slate-100 px-3 sm:px-4 flex items-center justify-between select-none">
@@ -1552,7 +1538,7 @@ export default function LandingPage() {
               </div>
 
               {/* Stacked Images with Smooth Slide & Opacity Transitions */}
-              <div className="relative w-full h-[calc(100%-2rem)] sm:h-[calc(100%-2.25rem)] bg-slate-50 overflow-hidden">
+              <div className="relative w-full h-[calc(100%-2rem)] sm:h-[calc(100%-2.25rem)] bg-white flex items-center justify-center overflow-hidden">
                 {showcaseImages.map((img, idx) => {
                   const isActive = idx === showcaseActiveIndex;
                   const isPast = idx < showcaseActiveIndex;
@@ -1569,7 +1555,7 @@ export default function LandingPage() {
                       <img
                         src={img.src}
                         alt={img.alt}
-                        className="w-full h-full object-cover object-top select-none"
+                        className="w-full h-full object-fill select-none"
                       />
                     </div>
                   );
@@ -1800,12 +1786,7 @@ export default function LandingPage() {
               </div>
 
               <div className="space-y-5">
-                <div>
-                  <h3 className="text-lg font-bold text-slate-900">
-                    {appSettings?.company_name ? `${appSettings.company_name} (Shopno Ecommerce Pvt Ltd)` : 'Shopno Ecommerce Pvt Ltd'}
-                  </h3>
-                  <p className="text-xs font-medium text-[#2D3591] mt-0.5">Creators &amp; Operators of Insuraa OS</p>
-                </div>
+
 
                 <div className="space-y-3.5 text-xs sm:text-[13px] text-slate-700">
                   {/* Address */}
@@ -1816,7 +1797,7 @@ export default function LandingPage() {
                     <div>
                       <span className="text-slate-900 block font-semibold text-xs">Office Address:</span>
                       <span className="text-slate-600 leading-relaxed block mt-0.5 font-normal text-xs">
-                        2nd Floor, Shreenathji Bungalow, 6, Peddar Rd, near Raghuvir Shoppers, Mota Varachha, Surat, Gujarat 394101
+                        2nd floor, C1, above Adarsh Farsan Mart, Baroda Prestige, Ganesh Colony, Varachha, Surat, Gujarat 395010
                       </span>
                     </div>
                   </div>
@@ -1965,7 +1946,7 @@ export default function LandingPage() {
       <div className="w-full relative z-10 -mb-[2px] flex justify-center pointer-events-none select-none overflow-hidden !bg-[#ffffff]">
         <div className="w-full max-w-5xl xl:max-w-7xl mx-auto px-4 sm:px-6 flex justify-center items-end">
           <img
-            src="/images/landing/footer_img.png"
+            src="/images/landing/footer_imgs.png"
             alt="Insuraa Insurance"
             className="w-full h-auto object-contain block align-bottom"
           />
@@ -1996,7 +1977,7 @@ export default function LandingPage() {
               </Link>
 
               <p className="text-sm sm:text-[14.5px] text-slate-300 leading-relaxed font-normal max-w-sm">
-                SHOPNO ECOMMERCE PVT LTD, Located In Surat, Gujarat, Specializes In Top-Tier Insurance Agency Management Software &amp; CRM, Ensuring A Seamless Online Shopping &amp; Agency Experience For Your Customers.
+                DIGITALKS, Located In Surat, Gujarat, Specializes In Top-Tier Insurance Agency Management Software &amp; CRM, Ensuring A Seamless Online Shopping &amp; Agency Experience For Your Customers.
               </p>
 
               {/* 4 Circular Social Icon Buttons */}
@@ -2113,14 +2094,20 @@ export default function LandingPage() {
                   </a>
                 </div>
 
-                <div className="flex items-start gap-3.5 group">
+                <a
+                  href="https://maps.app.goo.gl/KYFUtLChkxdEScUq7"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-start gap-3.5 group cursor-pointer"
+                  title="Open location in Google Maps"
+                >
                   <div className="w-10 h-10 rounded-full border border-[#27439C] bg-[#27439C]/20 flex items-center justify-center text-white shrink-0 mt-0.5 group-hover:scale-110 group-hover:bg-[#27439C] transition-all shadow-xs">
                     <MapPin className="w-4 h-4 text-[#5275e6] group-hover:text-white" />
                   </div>
-                  <span className="text-slate-300 text-xs sm:text-[13.5px] leading-relaxed">
+                  <span className="text-slate-300 group-hover:text-white text-xs sm:text-[13.5px] leading-relaxed transition-colors">
                     2nd Floor, C1, Above Adarsh Farsan Mart, Baroda Prestige, Ganesh Colony, Varachha, Surat, Gujarat 395010
                   </span>
-                </div>
+                </a>
               </div>
             </div>
 
@@ -2147,142 +2134,46 @@ export default function LandingPage() {
 
         </div>
 
-        {/* Vertical Enquiry Now Tab on Left Screen Edge */}
+        {/* Vertical Inquiry Now Tab on Left Screen Edge */}
         <button
           type="button"
           onClick={() => setEnquiryModalOpen(true)}
-          className="fixed left-0 top-1/2 -translate-y-1/2 z-40 bg-[#27439C] hover:bg-[#1e347b] text-white font-black text-xs tracking-widest px-2 py-4 rounded-r-md shadow-xl uppercase [writing-mode:vertical-lr] rotate-180 transition-all hover:pl-3 cursor-pointer"
-          aria-label="Enquiry Now"
+          className="fixed left-0 top-1/2 -translate-y-1/2 z-40 bg-gradient-to-b from-[#2D3591] via-[#24357D] to-[#1E2568] hover:from-[#353ea8] hover:to-[#242c78] text-white font-semibold text-[13px] tracking-wide px-2.5 py-4 rounded-r-xl shadow-[3px_6px_20px_rgba(45,53,145,0.4)] hover:shadow-[4px_8px_26px_rgba(45,53,145,0.55)] border-y border-r border-white/20 transition-all hover:translate-x-0.5 cursor-pointer flex flex-col items-center gap-2.5 group"
+          aria-label="Inquiry Now"
         >
-          ENQUIRY NOW
+          <div className="w-5 h-5 rounded-full bg-emerald-400/20 text-[#2BBF8C] group-hover:bg-[#2BBF8C] group-hover:text-white flex items-center justify-center transition-all shadow-xs">
+            <MessageCircle className="w-3 h-3" />
+          </div>
+          <span className="[writing-mode:vertical-lr] rotate-180 select-none">
+            Inquiry Now
+          </span>
         </button>
 
+        {/* Floating WhatsApp Quick Connect Button - Direct Chat with Bhavik Vala (+91 88667 79008) */}
+        <div className="fixed bottom-6 right-6 z-50 flex items-center group/whatsapp">
+          {/* Continuous Ripple Animation Rings */}
+          <span className="absolute -inset-2.5 rounded-full bg-[#25D366]/40 animate-ping pointer-events-none" />
+          <span className="absolute -inset-1.5 rounded-full bg-[#25D366]/30 animate-pulse pointer-events-none" />
 
-        {/* Floating WhatsApp Quick Connect with Hover / Click Speed-Dial Pills */}
-        <div
-          onMouseEnter={handleWhatsappMouseEnter}
-          onMouseLeave={handleWhatsappMouseLeave}
-          className="fixed bottom-6 right-6 z-50 flex flex-col items-end group/whatsapp"
-        >
-          {/* Compact Box Container around WhatsApp Contacts */}
-          {whatsappWidgetOpen && (
-            <div
-              className="mb-3 p-3 bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/90 shadow-[0_12px_36px_rgba(0,0,0,0.14)] flex flex-col gap-2.5 animate-in fade-in slide-in-from-bottom-3 duration-200 w-[275px] sm:w-[285px]"
-              role="region"
-              aria-label="Direct WhatsApp Contacts"
-            >
-              {/* Header inside box */}
-              <div className="flex items-center justify-between pb-1.5 px-0.5 border-b border-slate-100 select-none">
-                <span className="text-[11px] font-bold text-slate-800 tracking-tight flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-[#25D366] animate-pulse" />
-                  Direct WhatsApp
-                </span>
-                <span className="px-2 py-0.5 bg-slate-900/90 text-white text-[9.5px] font-medium rounded-full flex items-center gap-1 shadow-2xs">
-                  Replies in minutes
-                </span>
-              </div>
-
-              {/* Contact 1: Bhavik Vala */}
-              <a
-                href={`https://api.whatsapp.com/send?phone=918866779008&text=${encodeURIComponent('Hi Bhavik, I have an inquiry regarding Insuraa.')}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full flex items-center justify-between p-2.5 bg-slate-50/80 hover:bg-emerald-50/80 text-slate-800 rounded-xl border border-slate-200/80 hover:border-[#25D366] shadow-2xs hover:shadow-xs transition-all hover:-translate-x-0.5 duration-200 cursor-pointer group"
-                title="Chat with Bhavik Vala on WhatsApp"
-              >
-                <div className="flex items-center gap-2.5">
-                  <div className="relative shrink-0">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-white font-bold text-xs flex items-center justify-center shadow-xs">
-                      BV
-                    </div>
-                    <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 border-2 border-white rounded-full animate-pulse" />
-                  </div>
-                  <div className="text-left">
-                    <div className="flex items-center gap-1.5 leading-none">
-                      <span className="font-bold text-slate-800 group-hover:text-emerald-700 text-xs transition-colors">
-                        Bhavik Vala
-                      </span>
-                      <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 leading-none">
-                        Support
-                      </span>
-                    </div>
-                    <span className="text-[11px] text-slate-500 font-mono font-medium block leading-none mt-1">
-                      +91 88667 79008
-                    </span>
-                  </div>
-                </div>
-
-                <div className="w-7 h-7 rounded-full bg-emerald-50 group-hover:bg-[#25D366] text-emerald-600 group-hover:text-white flex items-center justify-center transition-all shadow-xs group-hover:scale-110 shrink-0">
-                  <Send className="w-3.5 h-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                </div>
-              </a>
-
-              {/* Contact 2: Ravi Chovatiya */}
-              <a
-                href={`https://api.whatsapp.com/send?phone=917016268071&text=${encodeURIComponent('Hi Ravi, I have an inquiry regarding Insuraa.')}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full flex items-center justify-between p-2.5 bg-slate-50/80 hover:bg-emerald-50/80 text-slate-800 rounded-xl border border-slate-200/80 hover:border-[#25D366] shadow-2xs hover:shadow-xs transition-all hover:-translate-x-0.5 duration-200 cursor-pointer group"
-                title="Chat with Ravi Chovatiya on WhatsApp"
-              >
-                <div className="flex items-center gap-2.5">
-                  <div className="relative shrink-0">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#27439C] to-[#1e347b] text-white font-bold text-xs flex items-center justify-center shadow-xs">
-                      RC
-                    </div>
-                    <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 border-2 border-white rounded-full animate-pulse" />
-                  </div>
-                  <div className="text-left">
-                    <div className="flex items-center gap-1.5 leading-none">
-                      <span className="font-bold text-slate-800 group-hover:text-emerald-700 text-xs transition-colors">
-                        Ravi Chovatiya
-                      </span>
-                      <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-full bg-blue-100 text-[#27439C] leading-none">
-                        Sales
-                      </span>
-                    </div>
-                    <span className="text-[11px] text-slate-500 font-mono font-medium block leading-none mt-1">
-                      +91 70162 68071
-                    </span>
-                  </div>
-                </div>
-
-                <div className="w-7 h-7 rounded-full bg-emerald-50 group-hover:bg-[#25D366] text-emerald-600 group-hover:text-white flex items-center justify-center transition-all shadow-xs group-hover:scale-110 shrink-0">
-                  <Send className="w-3.5 h-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                </div>
-              </a>
-            </div>
-          )}
-
-          {/* Floating WhatsApp Trigger Button with Continuous Pulse/Ping Animation */}
-          <div className="relative">
-            {/* Continuous Ripple Animation Rings */}
-            <span className="absolute -inset-2.5 rounded-full bg-[#25D366]/40 animate-ping pointer-events-none" />
-            <span className="absolute -inset-1.5 rounded-full bg-[#25D366]/30 animate-pulse pointer-events-none" />
-
-            <button
-              type="button"
-              id="floating-whatsapp-btn"
-              onClick={() => {
-                if (whatsappHoverTimeoutRef.current) {
-                  clearTimeout(whatsappHoverTimeoutRef.current);
-                  whatsappHoverTimeoutRef.current = null;
-                }
-                setWhatsappWidgetOpen((prev) => !prev);
-              }}
-              className="relative w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-[#25D366] hover:bg-[#20ba59] text-white flex items-center justify-center shadow-[0_10px_30px_rgba(37,211,102,0.45)] hover:scale-105 active:scale-95 transition-all cursor-pointer animate-whatsapp-pulse animate-whatsapp-float"
-              title={whatsappWidgetOpen ? "Close menu" : "Chat with us on WhatsApp"}
-              aria-label="Chat with us on WhatsApp"
-            >
-              {whatsappWidgetOpen ? (
-                <X className="w-6 h-6 stroke-[2.5]" />
-              ) : (
-                <svg className="w-6 h-6 sm:w-7 sm:h-7 fill-current" viewBox="0 0 24 24">
-                  <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z" />
-                </svg>
-              )}
-            </button>
+          {/* Hover Tooltip */}
+          <div className="absolute right-full mr-3.5 px-3 py-1.5 bg-slate-900/90 backdrop-blur-xs text-white text-xs font-semibold rounded-xl shadow-lg opacity-0 group-hover/whatsapp:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-[#25D366] animate-pulse" />
+            <span>Chat on WhatsApp (+91 88667 79008)</span>
           </div>
+
+          <a
+            href={`https://api.whatsapp.com/send?phone=918866779008&text=${encodeURIComponent('Hi Bhavik, I have an inquiry regarding Insuraa.')}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            id="floating-whatsapp-btn"
+            className="relative w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-[#25D366] hover:bg-[#20ba59] text-white flex items-center justify-center shadow-[0_10px_30px_rgba(37,211,102,0.45)] hover:scale-105 active:scale-95 transition-all cursor-pointer animate-whatsapp-pulse animate-whatsapp-float"
+            title="Chat with Bhavik Vala on WhatsApp (+91 88667 79008)"
+            aria-label="Chat with Bhavik Vala on WhatsApp"
+          >
+            <svg className="w-6 h-6 sm:w-7 sm:h-7 fill-current" viewBox="0 0 24 24">
+              <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z" />
+            </svg>
+          </a>
         </div>
 
 

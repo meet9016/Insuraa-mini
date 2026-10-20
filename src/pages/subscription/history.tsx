@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Head from 'next/head';
-import Link from 'next/link';
 import {
   Sparkles,
   Receipt,
@@ -10,27 +9,40 @@ import {
   CheckCircle2,
   Clock,
   Download,
-  AlertCircle,
   ChevronLeft,
   ChevronRight,
   Shield,
-  Zap,
-  CreditCard,
   Crown,
   Tag,
   Percent,
-  Wallet,
-  CalendarDays,
   FileCheck,
   Copy,
-  Check
+  Check,
+  Calculator,
+  ExternalLink,
+  Plus,
+  Coins,
+  Gift,
+  Monitor,
+  X,
+  Zap,
+  Activity,
+  ArrowUpRight,
+  CalendarDays,
+  Layers,
+  CreditCard
 } from 'lucide-react';
 import { api } from '@/utils/axiosInstance';
 import endPointApi from '@/utils/endPointApi';
 import { toast } from 'react-toastify';
 import SubscriptionModal from '@/components/subscription/SubscriptionModal';
 import { useRouter } from 'next/router';
-import { useFetchAiCreditHistory, useFetchAiCredits, useGetAiCreditQuote, usePurchaseAiCredit } from '@/hooks/useAiCreditApi';
+import {
+  useFetchAiCreditHistory,
+  useFetchAiCredits,
+  useGetAiCreditQuote,
+  usePurchaseAiCredit
+} from '@/hooks/useAiCreditApi';
 import {
   useFetchInvoiceList,
   InvoiceItem,
@@ -40,990 +52,13 @@ import {
   PolicyAddonItem,
   PolicyAddonQuoteData
 } from '@/hooks/usePricingApi';
-import { Monitor, Calculator, ExternalLink, Plus, Minus, Coins, Gift, LayoutList } from 'lucide-react';
 
-function AiCreditHistoryTab() {
-  const [page, setPage] = useState<number>(1);
-  const [limit, setLimit] = useState<number>(10);
-  const [search, setSearch] = useState<string>('');
-  const { data: historyRes, isLoading } = useFetchAiCreditHistory(page, limit, search);
-  const historyList = historyRes?.data || [];
-  const totalRecords = historyRes?.pagination_arr?.total_records ?? historyList.length ?? 0;
-  const totalPages = Math.ceil(totalRecords / limit) || 1;
-
-  // Buy Credits functionality state
-  const { data: aiCreditsData } = useFetchAiCredits();
-  const { mutate: getCreditQuote, isPending: isGettingQuote } = useGetAiCreditQuote();
-  const { mutate: purchaseCredit, isPending: isPurchasing } = usePurchaseAiCredit();
-
-  const [isCreditQuoteOpen, setIsCreditQuoteOpen] = useState(false);
-  const [creditInput, setCreditInput] = useState<number | ''>('');
-  const [quoteResult, setQuoteResult] = useState<any>(null);
-
-  const handleGetQuote = () => {
-    if (!creditInput) return;
-    setQuoteResult(null);
-    getCreditQuote({ credits: Number(creditInput) }, {
-      onSuccess: (res) => {
-        if (res && (res.status === 400 || res.status === 500 || res.status === 'error')) {
-          toast.error(res?.message || 'Failed to fetch quote');
-          return;
-        }
-        if (res && res.data && Object.keys(res.data).length > 0) {
-          setQuoteResult(res.data);
-        } else if (res && res.credits) {
-          setQuoteResult(res);
-        } else {
-          toast.error(res?.message || 'Invalid quote response');
-        }
-      },
-      onError: (err: any) => {
-        toast.error(err?.response?.data?.message || err?.message || 'Failed to fetch quote');
-      }
-    });
-  };
-
-  const handlePay = () => {
-    if (!quoteResult?.credits) return;
-    purchaseCredit({ credits: quoteResult.credits }, {
-      onSuccess: (res) => {
-        console.log(res, 'res')
-        if (res && (res.status === 400 || res.status === 500 || res.status === 'error')) {
-          toast.error(res?.message || 'Failed to initiate payment');
-          return;
-        }
-        if (res && res.data && res.data.redirect_url) {
-          window.location.href = res.data.redirect_url;
-        } else {
-          toast.error(res?.message || 'No redirect URL found in response');
-        }
-      },
-      onError: (err: any) => {
-        toast.error(err?.response?.data?.message || err?.message || 'Failed to initiate payment');
-      }
-    });
-  };
-
-  return (
-    <div className="bg-white rounded-[24px] border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.02)] overflow-visible flex flex-col">
-      {/* Header */}
-      <div className="px-6 py-5 border-b border-slate-100 bg-white rounded-t-[24px] flex flex-col lg:flex-row items-center justify-between gap-5">
-        <div className="flex items-center gap-4 w-full lg:w-auto">
-          <div className="w-[46px] h-[46px] rounded-[14px] bg-gradient-to-tr from-slate-100 to-slate-50 text-slate-700 flex items-center justify-center border border-slate-200/60 shadow-sm shrink-0">
-            <LayoutList size={22} strokeWidth={2.5} />
-          </div>
-          <div>
-            <h2 className="text-[19px] font-extrabold text-slate-800 tracking-tight">AI Credit History</h2>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap lg:flex-nowrap items-center gap-4 w-full lg:w-auto lg:justify-end">
-          <div className="relative w-full sm:w-[320px]">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search by transaction, source..."
-              value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-              className="w-full bg-slate-50/80 hover:bg-slate-100 text-[14px] font-medium text-slate-800 pl-11 pr-4 py-2.5 rounded-xl border border-transparent focus:border-indigo-500/30 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none placeholder-slate-400"
-            />
-          </div>
-          <div className="text-[13px] font-semibold text-slate-600 whitespace-nowrap px-4 py-2.5 bg-slate-50 rounded-xl border border-slate-100">
-            Total Transactions: <span className="font-bold text-slate-900 ml-1">{totalRecords}</span>
-          </div>
-
-          {/* Buy AI Credits */}
-          <div className="relative ml-auto lg:ml-0">
-            <button
-              onClick={() => setIsCreditQuoteOpen(!isCreditQuoteOpen)}
-              className="flex items-center gap-2 px-5 py-2.5 bg-[#2E3192] hover:bg-[#232569] text-white rounded-xl font-bold text-sm shadow-[0_4px_12px_-2px_rgba(46,49,146,0.3)] hover:shadow-[0_6px_16px_-2px_rgba(46,49,146,0.4)] transition-all active:scale-[0.98]"
-            >
-              <Sparkles size={16} />
-              <span>Buy AI Credits</span>
-            </button>
-
-            {isCreditQuoteOpen && (
-              <div className="absolute right-0 mt-3 w-80 bg-white/95 backdrop-blur-2xl rounded-3xl shadow-[0_20px_60px_-15px_rgba(45,53,145,0.3)] border border-gray-200 z-50 overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300">
-                <div className="bg-gradient-to-r from-[#2F439D] to-[#2BBF8C] p-4 relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
-                  <div className="relative z-10 flex items-center gap-2 text-white">
-                    <Sparkles size={18} className="animate-[pulse_2s_infinite]" />
-                    <h4 className="font-bold text-lg tracking-tight">Buy AI Credits</h4>
-                  </div>
-                  <p className="relative z-10 text-white/80 text-xs mt-1 font-medium">Power up your workflow with AI</p>
-                </div>
-
-                <div className="p-5 space-y-4">
-                  <div className="relative group/input">
-                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                      <Calculator size={16} className="text-[#2F439D]/50 group-focus-within/input:text-[#2F439D] transition-colors" />
-                    </div>
-                    <input
-                      type="number"
-                      value={creditInput}
-                      onChange={(e) => {
-                        setCreditInput(e.target.value ? Number(e.target.value) : '');
-                        setQuoteResult(null);
-                      }}
-                      className="w-full pl-10 pr-4 py-3 bg-gray-50/50 border border-gray-200/80 rounded-xl text-sm font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#2F439D]/20 focus:border-[#2F439D] focus:bg-white transition-all shadow-inner"
-                      placeholder="Enter credits (e.g. 500)"
-                    />
-                  </div>
-
-                  <button
-                    onClick={handleGetQuote}
-                    disabled={isGettingQuote || !creditInput}
-                    className="w-full py-2.5 bg-[#2F439D]/5 text-[#2F439D] font-bold rounded-xl text-sm border border-[#2F439D]/10 hover:bg-[#2F439D]/10 hover:border-[#2F439D]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
-                  >
-                    {isGettingQuote ? 'Fetching...' : 'Calculate Quote'}
-                  </button>
-
-                  {quoteResult && quoteResult.final_amount !== undefined && (
-                    <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-                      <div className="p-4 bg-gradient-to-br from-blue-50/50 to-indigo-50/50 rounded-2xl border border-blue-100/50 relative overflow-hidden">
-                        <div className="space-y-2 relative z-10">
-                          <div className="flex justify-between items-center text-xs">
-                            <span className="text-gray-500 font-medium">Credits Requested</span>
-                            <span className="font-bold text-gray-800 bg-white px-2 py-0.5 rounded-md shadow-sm">{quoteResult.credits}</span>
-                          </div>
-                          <div className="flex justify-between items-center text-xs">
-                            <span className="text-gray-500 font-medium">Price per credit</span>
-                            <span className="font-bold text-gray-700">₹{quoteResult.price_per_credit}</span>
-                          </div>
-                          <div className="flex justify-between items-center text-xs">
-                            <span className="text-gray-500 font-medium">Subtotal</span>
-                            <span className="font-bold text-gray-700">₹{quoteResult.total_price}</span>
-                          </div>
-                          <div className="flex justify-between items-center text-xs">
-                            <span className="text-gray-500 font-medium">GST ({quoteResult.gst_percentage}%)</span>
-                            <span className="font-bold text-gray-700">₹{quoteResult.gst_amount}</span>
-                          </div>
-                          <div className="h-px bg-gradient-to-r from-transparent via-blue-200/50 to-transparent my-3"></div>
-                          <div className="flex justify-between items-end">
-                            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Final Amount</span>
-                            <span className="text-xl font-black text-[#2F439D] leading-none">₹{quoteResult.final_amount}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <button
-                        onClick={handlePay}
-                        disabled={isPurchasing}
-                        className="relative w-full py-3.5 mt-3 group overflow-hidden rounded-xl text-white font-bold text-sm shadow-[0_8px_20px_-6px_rgba(46,49,146,0.4)] hover:shadow-[0_12px_25px_-6px_rgba(46,49,146,0.5)] transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed disabled:active:scale-100"
-                      >
-                        <div className="absolute inset-0 bg-gradient-to-r from-[#2F439D] via-[#3B54C4] to-[#2BBF8C] transition-transform duration-500 group-hover:scale-105"></div>
-                        <span className="relative flex items-center justify-center gap-2">
-                          {isPurchasing ? 'Processing...' : <>Proceed to Pay <ExternalLink size={14} className="opacity-70" /></>}
-                        </span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="p-6 bg-[#f8fafc]/50">
-        {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-24 gap-4 text-slate-500">
-            <RefreshCw className="w-8 h-8 animate-spin text-indigo-500" />
-            <span className="text-sm font-semibold">Fetching history...</span>
-          </div>
-        ) : historyList.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mb-4">
-              <LayoutList size={32} />
-            </div>
-            <h3 className="text-base font-bold text-slate-800">No Transactions Found</h3>
-            <p className="text-[13px] text-slate-500 mt-1 max-w-sm">
-              You haven't used or purchased any AI credits yet.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {historyList.map((item: any, idx: number) => {
-              const isAddition = item.type === 1;
-              const isBonus = item.title?.toLowerCase().includes('bonus') || item.source?.toLowerCase().includes('bonus') || item.source?.toLowerCase().includes('free');
-              const isFree = item.amount === 0 || item.amount === '0' || !item.amount;
-
-              return (
-                <div
-                  key={item.id || idx}
-                  className="group flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 p-5 sm:px-6 sm:py-5 rounded-2xl border border-slate-200/70 bg-white hover:border-slate-300 hover:shadow-[0_4px_24px_-4px_rgba(0,0,0,0.06)] transition-all duration-300"
-                >
-                  {/* Col 1: Icon, Title, Note */}
-                  <div className="flex items-start gap-4 min-w-[280px] w-full lg:w-auto flex-1">
-                    <div className={`w-[46px] h-[46px] rounded-full flex items-center justify-center shrink-0 shadow-sm border ${isAddition ? (isBonus ? 'bg-purple-50 text-purple-600 border-purple-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100') : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
-                      {isBonus ? <Gift size={22} strokeWidth={2.5} /> : (isAddition ? <Coins size={22} strokeWidth={2.5} /> : <Monitor size={22} strokeWidth={2.5} />)}
-                    </div>
-                    <div className="flex flex-col gap-0.5 pt-0.5">
-                      <h3 className="font-bold text-slate-800 text-[15px] leading-tight tracking-tight">{item.title || 'N/A'}</h3>
-                      <div className="text-[13px] text-slate-500 font-medium">
-                        {item.source ? item.source.charAt(0).toUpperCase() + item.source.slice(1) : ''}
-                      </div>
-                      {item.note && (
-                        <div className="text-[12.5px] text-slate-400 font-medium leading-snug mt-1 whitespace-pre-wrap">
-                          {item.note}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Wrapper for right side cols */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 lg:flex items-center gap-4 lg:gap-8 w-full lg:w-auto">
-                    {/* Col 2: Date */}
-                    <div className="flex items-center gap-2 text-slate-500 text-[13px] font-medium lg:w-[150px]">
-                      <Calendar size={15} className="text-slate-400" />
-                      <span>{item.created_at || 'N/A'}</span>
-                    </div>
-
-                    {/* Col 3: Credits Badge */}
-                    <div className="lg:w-[130px] flex justify-start lg:justify-center">
-                      <span className={`inline-flex items-center px-3.5 py-1.5 rounded-full text-[12.5px] font-bold shadow-sm ${isAddition ? (isBonus ? 'bg-purple-100 text-purple-700' : 'bg-emerald-100 text-emerald-700') : 'bg-rose-100 text-rose-700'}`}>
-                        {isAddition ? '+' : '-'}{Number(item.credits || 0).toLocaleString()} {isAddition ? 'Credits' : 'Debits'}
-                      </span>
-                    </div>
-
-                    {/* Col 4: Balance After */}
-                    <div className="text-[13px] text-slate-500 font-medium lg:w-[150px]">
-                      Balance After: <span className="font-bold text-slate-700 ml-1">{Number(item.balance_after || 0).toLocaleString()}</span>
-                    </div>
-
-                    {/* Col 5: Amount */}
-                    <div className="flex flex-col items-start sm:items-end lg:w-[80px]">
-                      <div className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Amount</div>
-                      <div className="font-extrabold text-slate-800 text-[16px] leading-none">{isFree ? '1' : `₹${Number(item.amount).toLocaleString()}`}</div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {totalPages > 1 && (
-        <div className="px-6 py-4 border-t border-slate-100 bg-white flex items-center justify-end gap-4 rounded-b-[24px]">
-          <span className="text-[13px] font-semibold text-slate-600">
-            Page <span className="text-slate-900 font-bold mx-0.5">{page}</span> of{' '}
-            <span className="text-slate-900 font-bold ml-0.5">{totalPages}</span>
-          </span>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setPage((p) => Math.max(p - 1, 1))}
-              disabled={page === 1 || isLoading}
-              className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
-            >
-              <ChevronLeft size={18} />
-            </button>
-            <button
-              onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
-              disabled={page === totalPages || isLoading}
-              className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
-            >
-              <ChevronRight size={18} />
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function AllHistoryTab() {
-  const [page, setPage] = useState<number>(1);
-  const [limit, setLimit] = useState<number>(10);
-  const [search, setSearch] = useState<string>('');
-  const [copiedInvoice, setCopiedInvoice] = useState<string | null>(null);
-
-  const { data: invoiceRes, isLoading, isRefetching, refetch } = useFetchInvoiceList(page, limit, search);
-  const invoiceList: InvoiceItem[] = invoiceRes?.data || [];
-  const totalRecords = invoiceRes?.pagination_arr?.total_records ?? invoiceList.length ?? 0;
-  const totalPages = Math.ceil(totalRecords / limit) || 1;
-
-  const handleCopy = (text?: string) => {
-    if (!text) return;
-    navigator.clipboard.writeText(text);
-    setCopiedInvoice(text);
-    toast.success('Invoice number copied!');
-    setTimeout(() => setCopiedInvoice(null), 2000);
-  };
-
-  const getTypeBadgeStyle = (type?: string) => {
-    const t = String(type || '').toLowerCase();
-    if (t.includes('ai')) {
-      return 'bg-purple-50 text-[#2E3192] border border-purple-200/60';
-    }
-    if (t.includes('policy') || t.includes('addon')) {
-      return 'bg-blue-50 text-blue-700 border border-blue-200/60';
-    }
-    if (t.includes('trial') || t.includes('free')) {
-      return 'bg-amber-50 text-amber-700 border border-amber-200/60';
-    }
-    return 'bg-slate-100 text-slate-700 border border-slate-200';
-  };
-
-  return (
-    <div className="bg-white rounded-3xl border border-slate-200/90 shadow-lg overflow-hidden">
-      {/* Toolbar */}
-      <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="relative w-full sm:w-80">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-          <input
-            type="text"
-            placeholder="Search invoice number, type..."
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
-            className="w-full bg-white text-sm text-slate-800 pl-10 pr-4 py-2.5 rounded-2xl border border-slate-300 outline-none focus:border-[#2E3192] focus:ring-2 focus:ring-[#2E3192]/20 transition-all"
-          />
-        </div>
-
-        <div className="flex items-center gap-3 self-end sm:self-auto">
-          <span className="text-xs font-semibold text-slate-700">
-            Total Invoices: <span className="text-slate-900 font-bold">{totalRecords}</span>
-          </span>
-          <button
-            onClick={() => refetch()}
-            disabled={isLoading || isRefetching}
-            className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 disabled:opacity-40 transition-all"
-            title="Refresh Invoices"
-          >
-            <RefreshCw size={15} className={isLoading || isRefetching ? 'animate-spin text-[#2E3192]' : ''} />
-          </button>
-        </div>
-      </div>
-
-      {/* Invoice List */}
-      <div className="p-6">
-        {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-24 gap-4 text-slate-500">
-            <RefreshCw className="w-10 h-10 animate-spin text-[#2E3192]" />
-            <span className="text-sm font-semibold text-slate-700">Fetching invoices...</span>
-          </div>
-        ) : invoiceList.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-20 h-20 rounded-3xl bg-indigo-50 text-[#2E3192] flex items-center justify-center mb-4 shadow-inner">
-              <Receipt size={40} />
-            </div>
-            <h3 className="text-lg font-bold text-slate-800">No Invoices Found</h3>
-            <p className="text-xs text-slate-600 mt-1 max-w-md font-normal">
-              {search ? 'No invoice records matched your criteria.' : 'You have not made any purchases yet.'}
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {invoiceList.map((item: InvoiceItem, idx: number) => {
-              const downloadLink = item.pdf_link || item.invoice_url || item.download_link;
-
-              return (
-                <div
-                  key={item.invoice_no || idx}
-                  className="bg-white rounded-2xl p-5 border border-slate-200 hover:border-slate-300 hover:shadow-md transition-all duration-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
-                >
-                  {/* Left: Invoice info */}
-                  <div className="flex items-center gap-4">
-                    <div className="w-11 h-11 rounded-2xl bg-indigo-50 text-[#2E3192] flex items-center justify-center shrink-0">
-                      <Receipt size={22} />
-                    </div>
-
-                    <div>
-                      <h4 className="font-bold text-slate-800 text-sm">
-                        {item.type_name || item.type || 'Invoice'}
-                      </h4>
-                      <div className="flex items-center gap-2 mt-1">
-                        <button
-                          type="button"
-                          onClick={() => handleCopy(item.invoice_no)}
-                          className="group inline-flex items-center gap-1 font-mono text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded-md transition-all cursor-pointer"
-                          title="Click to copy invoice number"
-                        >
-                          <span>{item.invoice_no}</span>
-                          {copiedInvoice === item.invoice_no ? (
-                            <Check size={12} className="text-emerald-600" />
-                          ) : (
-                            <Copy size={12} className="opacity-0 group-hover:opacity-100 text-slate-400" />
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Middle & Right: Date, Type, Amount, PDF */}
-                  <div className="flex flex-wrap md:flex-nowrap items-center gap-4 md:gap-6 w-full md:w-auto justify-between md:justify-end">
-                    {/* Date */}
-                    <div className="flex items-center gap-1.5 text-slate-500 text-xs">
-                      <Calendar size={14} className="text-slate-400 shrink-0" />
-                      <span>{item.created_at || 'N/A'}</span>
-                    </div>
-
-
-
-                    {/* Amount - exact amount from API */}
-                    <div className="text-right min-w-[80px]">
-                      <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Amount</div>
-                      <div className="font-extrabold text-base text-slate-900">
-                        ₹{item.amount ?? 0}
-                      </div>
-                    </div>
-
-                    {/* Download PDF button if link available */}
-                    <div>
-                      {downloadLink ? (
-                        <a
-                          href={downloadLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-[#2E3192] text-white text-xs font-semibold transition-all shadow-sm active:scale-95"
-                        >
-                          <Download size={13} />
-                          <span>PDF</span>
-                        </a>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-xs text-slate-400 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-100">
-                          <CheckCircle2 size={13} className="text-emerald-500" />
-                          <span>Recorded</span>
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="p-5 border-t border-slate-100 bg-slate-50/60 flex items-center justify-between gap-4">
-          <span className="text-xs font-semibold text-slate-700">
-            Page <span className="text-slate-900 font-bold">{page}</span> of{' '}
-            <span className="text-slate-900 font-bold">{totalPages}</span>
-          </span>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setPage((p) => Math.max(p - 1, 1))}
-              disabled={page === 1 || isLoading}
-              className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-            >
-              <ChevronLeft size={18} />
-            </button>
-            <button
-              onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
-              disabled={page === totalPages || isLoading}
-              className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-            >
-              <ChevronRight size={18} />
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function PolicyCreditHistoryTab() {
-  const [page, setPage] = useState<number>(1);
-  const [limit, setLimit] = useState<number>(10);
-  const [search, setSearch] = useState<string>('');
-  const [copiedInvoice, setCopiedInvoice] = useState<string | null>(null);
-
-  const { data: historyRes, isLoading, isRefetching, refetch } = useFetchPolicyAddonHistory(page, limit, search);
-  const historyList: PolicyAddonItem[] = historyRes?.data || [];
-  const totalRecords = historyRes?.pagination_arr?.total_records ?? historyList.length ?? 0;
-  const totalPages = Math.ceil(totalRecords / limit) || 1;
-
-  // Add policies purchase & quote functionality
-  const { mutate: getPolicyQuote, isPending: isGettingQuote } = useGetPolicyAddonQuote();
-  const { mutate: purchasePolicyAddon, isPending: isPurchasing } = usePurchasePolicyAddon();
-  const [isAddonModalOpen, setIsAddonModalOpen] = useState(false);
-  const [policiesInput, setPoliciesInput] = useState<number | ''>('');
-  const [quoteResult, setQuoteResult] = useState<PolicyAddonQuoteData | any>(null);
-  const addonModalRef = useRef<HTMLDivElement>(null);
-
-  const formatPrice = (val: any) => {
-    if (val === null || val === undefined) return '0.00';
-    const num = Number(val);
-    if (isNaN(num)) return String(val);
-    return num.toFixed(2);
-  };
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (addonModalRef.current && !addonModalRef.current.contains(event.target as Node)) {
-        setIsAddonModalOpen(false);
-      }
-    }
-    if (isAddonModalOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isAddonModalOpen]);
-
-  const handleCopy = (text?: string) => {
-    if (!text) return;
-    navigator.clipboard.writeText(text);
-    setCopiedInvoice(text);
-    toast.success('Invoice number copied!');
-    setTimeout(() => setCopiedInvoice(null), 2000);
-  };
-
-  const handleGetQuote = () => {
-    if (!policiesInput || Number(policiesInput) <= 0) {
-      toast.error('Please enter a valid number of policies');
-      return;
-    }
-    setQuoteResult(null);
-    getPolicyQuote(
-      { addon_policies: Number(policiesInput) },
-      {
-        onSuccess: (res: any) => {
-          if (res && (res.status === 400 || res.status === 500 || res.status === 'error')) {
-            toast.error(res?.message || 'Failed to fetch policy addon quote');
-            return;
-          }
-          if (res && res.data && Object.keys(res.data).length > 0) {
-            setQuoteResult(res.data);
-          } else if (res && res.addon_policies) {
-            setQuoteResult(res);
-          } else {
-            toast.error(res?.message || 'Invalid quote response');
-          }
-        },
-        onError: (err: any) => {
-          toast.error(err?.response?.data?.message || err?.message || 'Failed to fetch policy addon quote');
-        },
-      }
-    );
-  };
-
-  const handleBuyPolicies = () => {
-    const policiesToBuy = quoteResult?.addon_policies || Number(policiesInput);
-    if (!policiesToBuy || policiesToBuy <= 0) {
-      toast.error('Please enter a valid number of policies');
-      return;
-    }
-
-    purchasePolicyAddon(
-      { addon_policies: Number(policiesToBuy) },
-      {
-        onSuccess: (res: any) => {
-          if (res && (res.status === 400 || res.status === 500 || res.status === 'error')) {
-            toast.error(res?.message || 'Failed to initiate policy purchase');
-            return;
-          }
-          const redirectUrl = res?.data?.redirect_url || res?.redirect_url;
-          if (redirectUrl) {
-            toast.success(res?.message || 'Redirecting to payment...');
-            window.location.href = redirectUrl;
-          } else {
-            toast.error(res?.message || 'No redirect URL found in response');
-          }
-        },
-        onError: (err: any) => {
-          toast.error(err?.response?.data?.message || err?.message || 'Failed to initiate policy purchase');
-        },
-      }
-    );
-  };
-
-  return (
-    <div className="bg-white rounded-[24px] border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.02)] overflow-visible flex flex-col">
-      {/* Header */}
-      <div className="px-6 py-5 border-b border-slate-100 bg-white rounded-t-[24px] flex flex-col lg:flex-row items-center justify-between gap-5">
-        <div className="flex items-center gap-4 w-full lg:w-auto">
-          <div className="w-[46px] h-[46px] rounded-[14px] bg-gradient-to-tr from-blue-100 to-indigo-50 text-[#2E3192] flex items-center justify-center border border-indigo-200/60 shadow-sm shrink-0">
-            <Shield size={22} strokeWidth={2.5} />
-          </div>
-          <div>
-            <h2 className="text-[19px] font-extrabold text-slate-800 tracking-tight">Policy Credit History</h2>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap lg:flex-nowrap items-center gap-4 w-full lg:w-auto lg:justify-end">
-          <div className="relative w-full sm:w-[320px]">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search by invoice number..."
-              value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-              className="w-full bg-slate-50/80 hover:bg-slate-100 text-[14px] font-medium text-slate-800 pl-11 pr-4 py-2.5 rounded-xl border border-transparent focus:border-indigo-500/30 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none placeholder-slate-400"
-            />
-          </div>
-          <div className="text-[13px] font-semibold text-slate-600 whitespace-nowrap px-4 py-2.5 bg-slate-50 rounded-xl border border-slate-100">
-            Total Records: <span className="font-bold text-slate-900 ml-1">{totalRecords}</span>
-          </div>
-
-          <button
-            onClick={() => refetch()}
-            disabled={isLoading || isRefetching}
-            className="p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 disabled:opacity-40 transition-all shadow-sm active:scale-95"
-            title="Refresh Policy History"
-          >
-            <RefreshCw size={17} className={isLoading || isRefetching ? 'animate-spin text-[#2E3192]' : ''} />
-          </button>
-
-          {/* Add Policies Button */}
-          <div className="relative ml-auto lg:ml-0" ref={addonModalRef}>
-            <button
-              onClick={() => setIsAddonModalOpen(!isAddonModalOpen)}
-              className="flex items-center gap-2 px-5 py-2.5 bg-[#2E3192] hover:bg-[#232569] text-white rounded-xl font-bold text-sm shadow-[0_4px_12px_-2px_rgba(46,49,146,0.3)] hover:shadow-[0_6px_16px_-2px_rgba(46,49,146,0.4)] transition-all active:scale-[0.98]"
-            >
-              <Shield size={16} />
-              <span>Add Policies</span>
-            </button>
-
-            {isAddonModalOpen && (
-              <div className="absolute right-0 mt-3 w-[360px] sm:w-[410px] max-w-[calc(100vw-2rem)] bg-white/95 backdrop-blur-2xl rounded-3xl shadow-[0_20px_60px_-15px_rgba(45,53,145,0.3)] border border-gray-200 z-50 overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300">
-                <div className="bg-gradient-to-r from-[#2F439D] to-[#2BBF8C] p-4 relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
-                  <div className="relative z-10 flex items-center gap-2 text-white">
-                    <Shield size={18} className="animate-[pulse_2s_infinite]" />
-                    <h4 className="font-bold text-lg tracking-tight">Add Policies</h4>
-                  </div>
-                  <p className="relative z-10 text-white/80 text-xs mt-1 font-medium">Power up your workflow with extra policies</p>
-                </div>
-
-                <div className="p-5 space-y-4">
-                  <div className="relative group/input">
-                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                      <Calculator size={16} className="text-[#2F439D]/50 group-focus-within/input:text-[#2F439D] transition-colors" />
-                    </div>
-                    <input
-                      type="number"
-                      min="1"
-                      value={policiesInput}
-                      onChange={(e) => {
-                        setPoliciesInput(e.target.value ? Number(e.target.value) : '');
-                        setQuoteResult(null);
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleGetQuote();
-                        }
-                      }}
-                      className="w-full pl-10 pr-4 py-3 bg-gray-50/50 border border-gray-200/80 rounded-xl text-sm font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#2F439D]/20 focus:border-[#2F439D] focus:bg-white transition-all shadow-inner"
-                      placeholder="Enter policies (e.g. 100)"
-                    />
-                  </div>
-
-                  <button
-                    onClick={handleGetQuote}
-                    disabled={isGettingQuote || !policiesInput || Number(policiesInput) <= 0}
-                    className="w-full py-2.5 bg-[#2F439D]/5 text-[#2F439D] font-bold rounded-xl text-sm border border-[#2F439D]/10 hover:bg-[#2F439D]/10 hover:border-[#2F439D]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
-                  >
-                    {isGettingQuote ? 'Fetching...' : 'Calculate Quote'}
-                  </button>
-
-                  {quoteResult && quoteResult.final_amount !== undefined && (
-                    <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 space-y-3">
-                      <div className="p-4 bg-slate-50/90 rounded-2xl border border-slate-200 text-xs text-slate-800 space-y-2.5">
-                        <div className="font-bold text-slate-900 text-[13px] border-b border-slate-200/80 pb-2 flex items-center justify-between">
-                          <span>Policy Add-on Price Calculation</span>
-                          {quoteResult.tier && (
-                            <span className="text-[11px] font-bold text-[#2F439D] bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">
-                              {quoteResult.tier}
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <div className="flex justify-between items-center text-xs">
-                            <span className="text-slate-600 flex items-center gap-1.5">
-                              <span className="text-slate-400 font-bold">•</span> Additional Policies:
-                            </span>
-                            <span className="font-bold text-slate-900 bg-white px-2 py-0.5 rounded-md border border-slate-200/80 shadow-2xs">
-                              {quoteResult.addon_policies ?? 0}
-                            </span>
-                          </div>
-
-                          <div className="flex justify-between items-center text-xs">
-                            <span className="text-slate-600 flex items-center gap-1.5">
-                              <span className="text-slate-400 font-bold">•</span> Rate per Policy:
-                            </span>
-                            <span className="font-semibold text-slate-900">
-                              ₹{formatPrice(quoteResult.rate_per_policy)}
-                            </span>
-                          </div>
-
-                          <div className="flex justify-between items-center text-xs">
-                            <span className="text-slate-600 flex items-center gap-1.5">
-                              <span className="text-slate-400 font-bold">•</span> Full Cycle Price:
-                            </span>
-                            <span className="font-semibold text-slate-900">
-                              ₹{formatPrice(quoteResult.full_cycle_price)}
-                            </span>
-                          </div>
-
-                          <div className="flex justify-between items-center text-xs">
-                            <span className="text-slate-600 flex items-center gap-1.5">
-                              <span className="text-slate-400 font-bold">•</span> Total Days:
-                            </span>
-                            <span className="font-semibold text-slate-900">
-                              {quoteResult.days_total ?? 0}
-                            </span>
-                          </div>
-
-                          <div className="flex justify-between items-center text-xs">
-                            <span className="text-slate-600 flex items-center gap-1.5">
-                              <span className="text-slate-400 font-bold">•</span> Remaining Days:
-                            </span>
-                            <span className="font-semibold text-slate-900">
-                              {quoteResult.days_remaining ?? 0}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="pt-2 border-t border-slate-200/80 space-y-1.5 text-xs">
-                          <div className="flex justify-between items-center">
-                            <span className="font-bold text-slate-900">Prorated Amount:</span>
-                            <span className="font-bold text-slate-900">
-                              ₹{formatPrice(quoteResult.total_price)}
-                            </span>
-                          </div>
-
-                          <div className="flex justify-between items-center text-slate-600">
-                            <span>Discount:</span>
-                            <span className="font-semibold text-slate-900">
-                              ₹{formatPrice(quoteResult.coupon_amount ?? 0)}
-                            </span>
-                          </div>
-
-                          <div className="flex justify-between items-center text-slate-600">
-                            <span>Price After Discount:</span>
-                            <span className="font-semibold text-slate-900">
-                              ₹{formatPrice(quoteResult.price_after_discount ?? quoteResult.total_price)}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="pt-2 border-t border-slate-200/80 space-y-1.5 text-xs">
-                          <div className="font-bold text-slate-900">
-                            GST ({quoteResult.gst_percentage ?? 18}%):
-                          </div>
-                          <div className="space-y-1 pl-2 text-slate-600">
-                            <div className="flex justify-between items-center">
-                              <span className="flex items-center gap-1.5">
-                                <span className="text-slate-400 font-bold">•</span> GST Percentage:
-                              </span>
-                              <span className="font-semibold text-slate-900">{quoteResult.gst_percentage ?? 18}%</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="flex items-center gap-1.5">
-                                <span className="text-slate-400 font-bold">•</span> GST Amount:
-                              </span>
-                              <span className="font-semibold text-slate-900">₹{formatPrice(quoteResult.gst_amount)}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="pt-2.5 border-t border-slate-200/80 flex justify-between items-baseline font-bold text-slate-900">
-                          <span className="text-xs uppercase tracking-wider text-slate-700">Final Amount:</span>
-                          <span className="text-slate-900 font-extrabold text-base">₹{formatPrice(quoteResult.final_amount)}</span>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={handleBuyPolicies}
-                        disabled={isPurchasing}
-                        className="relative w-full py-3.5 group overflow-hidden rounded-xl text-white font-bold text-sm shadow-[0_8px_20px_-6px_rgba(46,49,146,0.4)] hover:shadow-[0_12px_25px_-6px_rgba(46,49,146,0.5)] transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed disabled:active:scale-100"
-                      >
-                        <div className="absolute inset-0 bg-gradient-to-r from-[#2F439D] via-[#3B54C4] to-[#2BBF8C] transition-transform duration-500 group-hover:scale-105"></div>
-                        <span className="relative flex items-center justify-center gap-2">
-                          {isPurchasing ? (
-                            'Processing...'
-                          ) : (
-                            <>
-                              Proceed to Pay — ₹{formatPrice(quoteResult.final_amount)}{' '}
-                              <ExternalLink size={14} className="opacity-70" />
-                            </>
-                          )}
-                        </span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* List Container */}
-      <div className="p-6 bg-[#f8fafc]/50">
-        {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-24 gap-4 text-slate-500">
-            <RefreshCw className="w-10 h-10 animate-spin text-[#2E3192]" />
-            <span className="text-sm font-semibold text-slate-700">Fetching policy addon history...</span>
-          </div>
-        ) : historyList.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="w-20 h-20 rounded-3xl bg-indigo-50 text-[#2E3192] flex items-center justify-center mb-4 shadow-inner">
-              <Shield size={40} />
-            </div>
-            <h3 className="text-lg font-bold text-slate-800">No Policy Addons Found</h3>
-            <p className="text-xs text-slate-600 mt-1 max-w-md font-normal">
-              {search ? 'No policy addon records matched your search.' : 'You have not purchased any policy addons yet.'}
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {historyList.map((item: PolicyAddonItem, idx: number) => {
-              const isActive = item.status === 1 || String(item.status_name).toLowerCase() === 'active';
-
-              return (
-                <div
-                  key={item.addon_id || item.invoice_no || idx}
-                  className="bg-white rounded-3xl p-6 border border-slate-200/80 hover:border-slate-300 hover:shadow-md transition-all duration-300 flex flex-col gap-5 relative overflow-hidden"
-                >
-                  {/* Top Bar: Icon, Addon Policies, Invoice No, Status */}
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-50 to-indigo-100/70 text-[#2E3192] flex items-center justify-center shrink-0 border border-blue-200/50 shadow-sm">
-                        <FileCheck size={24} />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2.5">
-                          <h3 className="text-base font-extrabold text-slate-900">
-                            +{item.addon_policies} Policies
-                          </h3>
-                          {item.tier_name && (
-                            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200/60">
-                              {item.tier_name} Tier
-                            </span>
-                          )}
-                          <span
-                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${isActive
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60'
-                              : 'bg-slate-100 text-slate-700 border border-slate-200'
-                              }`}
-                          >
-                            <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500' : 'bg-slate-400'}`}></span>
-                            {item.status_name || (isActive ? 'Active' : 'Inactive')}
-                          </span>
-                        </div>
-                        {item.invoice_no && (
-                          <div className="flex items-center gap-2 mt-1">
-                            <button
-                              type="button"
-                              onClick={() => handleCopy(item.invoice_no)}
-                              className="group inline-flex items-center gap-1 font-mono text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded-md transition-all cursor-pointer"
-                              title="Click to copy invoice number"
-                            >
-                              <span>Invoice: {item.invoice_no}</span>
-                              {copiedInvoice === item.invoice_no ? (
-                                <Check size={12} className="text-emerald-600" />
-                              ) : (
-                                <Copy size={12} className="opacity-0 group-hover:opacity-100 text-slate-400" />
-                              )}
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {item.created_at && (
-                      <div className="flex items-center gap-2 text-slate-500 text-xs">
-                        <Calendar size={14} className="text-slate-400" />
-                        <span>Purchased: {item.created_at}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Attributes Grid */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3.5 text-xs">
-                    {/* Rate per policy */}
-                    <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 flex flex-col justify-between">
-                      <span className="text-slate-500 font-medium block text-[11px] mb-1">Rate / Policy</span>
-                      <span className="font-bold text-slate-900">₹{item.rate_per_policy ?? 0}</span>
-                    </div>
-
-                    {/* Starting date */}
-                    <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 flex flex-col justify-between">
-                      <span className="text-slate-500 font-medium block text-[11px] mb-1">Starting Date</span>
-                      <span className="font-semibold text-slate-800">{item.starting_date || 'N/A'}</span>
-                    </div>
-
-                    {/* Ending date */}
-                    <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 flex flex-col justify-between">
-                      <span className="text-slate-500 font-medium block text-[11px] mb-1">Ending Date</span>
-                      <span className="font-semibold text-slate-800">{item.ending_date || 'N/A'}</span>
-                    </div>
-
-                    {/* Days remaining */}
-                    <div className="bg-amber-50/60 p-3 rounded-2xl border border-amber-100 flex flex-col justify-between">
-                      <span className="text-amber-900/80 font-medium block text-[11px] mb-1">Days Remaining</span>
-                      <span className="font-bold text-amber-950 flex items-center gap-1">
-                        <Clock size={13} className="text-amber-600" />
-                        {item.days_remaining ?? 0} Days
-                      </span>
-                    </div>
-
-                    {/* Base amount */}
-                    <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 flex flex-col justify-between">
-                      <span className="text-slate-500 font-medium block text-[11px] mb-1">Base Amount</span>
-                      <span className="font-semibold text-slate-800">₹{item.amount ?? 0}</span>
-                    </div>
-
-                    {/* GST amount */}
-                    <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 flex flex-col justify-between">
-                      <span className="text-slate-500 font-medium block text-[11px] mb-1">GST</span>
-                      <span className="font-semibold text-slate-800">₹{item.gst_amount ?? 0}</span>
-                    </div>
-                  </div>
-
-                  {/* Footer with Final Amount */}
-                  <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-100 flex items-center justify-between text-xs">
-                    <span className="text-slate-600 font-medium">Total Paid Amount:</span>
-                    <span className="text-lg font-black text-slate-900">
-                      ₹{item.final_amount ?? item.amount ?? 0}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="p-5 border-t border-slate-100 bg-slate-50/60 flex items-center justify-between gap-4">
-          <span className="text-xs font-semibold text-slate-700">
-            Page <span className="text-slate-900 font-bold">{page}</span> of{' '}
-            <span className="text-slate-900 font-bold">{totalPages}</span>
-          </span>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setPage((p) => Math.max(p - 1, 1))}
-              disabled={page === 1 || isLoading}
-              className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-            >
-              <ChevronLeft size={18} />
-            </button>
-            <button
-              onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
-              disabled={page === totalPages || isLoading}
-              className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-            >
-              <ChevronRight size={18} />
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+const formatPrice = (val: any) => {
+  if (val === null || val === undefined) return '0.00';
+  const num = Number(val);
+  if (isNaN(num)) return String(val);
+  return num.toFixed(2);
+};
 
 export interface SubscriptionItem {
   subscription_id: number;
@@ -1056,12 +91,488 @@ export interface SubscriptionItem {
   [key: string]: any;
 }
 
+// ============================================================================
+// MODAL: BUY AI CREDITS (Quote Calculator)
+// ============================================================================
+interface BuyAiCreditsModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+function BuyAiCreditsModal({ isOpen, onClose }: BuyAiCreditsModalProps) {
+  const [creditInput, setCreditInput] = useState<number | ''>('');
+  const [quoteResult, setQuoteResult] = useState<any>(null);
+  const { mutate: getCreditQuote, isPending: isGettingQuote } = useGetAiCreditQuote();
+  const { mutate: purchaseCredit, isPending: isPurchasing } = usePurchaseAiCredit();
+
+  useEffect(() => {
+    if (!isOpen) {
+      setCreditInput('');
+      setQuoteResult(null);
+    }
+  }, [isOpen]);
+
+  // Handle ESC key to close
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  const handleGetQuote = () => {
+    if (!creditInput || Number(creditInput) <= 0) {
+      toast.error('Please enter a valid credit amount');
+      return;
+    }
+    setQuoteResult(null);
+    getCreditQuote(
+      { credits: Number(creditInput) },
+      {
+        onSuccess: (res: any) => {
+          if (res && (res.status === 400 || res.status === 500 || res.status === 'error')) {
+            toast.error(res?.message || 'Failed to fetch quote');
+            return;
+          }
+          if (res && res.data && Object.keys(res.data).length > 0) {
+            setQuoteResult(res.data);
+          } else if (res && res.credits) {
+            setQuoteResult(res);
+          } else {
+            toast.error(res?.message || 'Invalid quote response');
+          }
+        },
+        onError: (err: any) => {
+          toast.error(err?.response?.data?.message || err?.message || 'Failed to fetch quote');
+        }
+      }
+    );
+  };
+
+  const handlePay = () => {
+    if (!quoteResult?.credits) return;
+    purchaseCredit(
+      { credits: quoteResult.credits },
+      {
+        onSuccess: (res: any) => {
+          if (res && (res.status === 400 || res.status === 500 || res.status === 'error')) {
+            toast.error(res?.message || 'Failed to initiate payment');
+            return;
+          }
+          if (res && res.data && res.data.redirect_url) {
+            window.location.href = res.data.redirect_url;
+          } else {
+            toast.error(res?.message || 'No redirect URL found in response');
+          }
+        },
+        onError: (err: any) => {
+          toast.error(err?.response?.data?.message || err?.message || 'Failed to initiate payment');
+        }
+      }
+    );
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200"
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-200"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header with Insuraa Logo Color (#2F439D) */}
+        <div className="bg-gradient-to-r from-[#2F439D] to-[#24357D] text-white p-5 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-[#2BBF8C]/15 rounded-full blur-2xl pointer-events-none" />
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onClose();
+            }}
+            className="absolute top-3.5 right-3.5 z-30 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-white flex items-center justify-center transition-all cursor-pointer"
+            title="Close"
+            aria-label="Close"
+          >
+            <X size={18} />
+          </button>
+          <div className="flex items-center gap-2.5 relative z-10">
+            <div className="w-8 h-8 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center text-[#2BBF8C]">
+              <Sparkles size={16} />
+            </div>
+            <div>
+              <h3 className="font-semibold text-base text-white">Buy Ai credits</h3>
+              <p className="text-blue-100/80 text-xs font-normal">Instant document scanning quota</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Body */}
+        <div className="p-5 space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-slate-700 mb-1.5">Number of credits</label>
+            <div className="relative">
+              <Calculator size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="number"
+                min="1"
+                value={creditInput}
+                onChange={(e) => {
+                  setCreditInput(e.target.value ? Number(e.target.value) : '');
+                  setQuoteResult(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleGetQuote();
+                  }
+                }}
+                className="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2F439D]/20 focus:border-[#2F439D] focus:bg-white transition-all"
+                placeholder="Enter credits (e.g. 500)"
+              />
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleGetQuote}
+            disabled={isGettingQuote || !creditInput || Number(creditInput) <= 0}
+            className="w-full py-2.5 bg-indigo-50 hover:bg-indigo-100 text-[#2F439D] font-medium rounded-xl text-xs border border-indigo-200 transition-all disabled:opacity-50 cursor-pointer shadow-2xs"
+          >
+            {isGettingQuote ? 'Calculating...' : 'Calculate quote'}
+          </button>
+
+          {/* Dynamic Breakdown */}
+          {quoteResult && quoteResult.final_amount !== undefined && (
+            <div className="space-y-3 pt-1 animate-in fade-in duration-200">
+              <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-700 space-y-2">
+                <div className="font-semibold text-slate-900 text-xs border-b border-slate-200 pb-1.5 flex justify-between items-center">
+                  <span>Price calculation</span>
+                  <span className="text-[11px] font-medium text-[#2F439D] bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200">
+                    Ai scan quota
+                  </span>
+                </div>
+                <div className="space-y-1.5 text-xs font-normal">
+                  <div className="flex justify-between items-center text-slate-600">
+                    <span>Credits requested:</span>
+                    <span className="font-semibold text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200">
+                      {quoteResult.credits}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-slate-600">
+                    <span>Rate per credit:</span>
+                    <span className="font-medium text-slate-900">₹{formatPrice(quoteResult.price_per_credit)}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-slate-600">
+                    <span>Subtotal:</span>
+                    <span className="font-medium text-slate-900">₹{formatPrice(quoteResult.total_price)}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-slate-600">
+                    <span>Gst ({quoteResult.gst_percentage ?? 18}%):</span>
+                    <span className="font-medium text-slate-900">₹{formatPrice(quoteResult.gst_amount)}</span>
+                  </div>
+                </div>
+                <div className="pt-2 border-t border-slate-200 flex justify-between items-baseline">
+                  <span className="text-xs text-slate-600 font-medium">Final amount:</span>
+                  <span className="text-base font-semibold text-[#2F439D]">₹{formatPrice(quoteResult.final_amount)}</span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handlePay}
+                disabled={isPurchasing}
+                className="w-full py-2.5 rounded-xl text-white font-medium text-xs bg-[#2F439D] hover:bg-[#24357D] shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                {isPurchasing ? 'Processing...' : <>Proceed to pay — ₹{formatPrice(quoteResult.final_amount)} <ExternalLink size={13} /></>}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// MODAL: ADD POLICIES (Quote Calculator)
+// ============================================================================
+interface AddPoliciesModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+function AddPoliciesModal({ isOpen, onClose }: AddPoliciesModalProps) {
+  const [policiesInput, setPoliciesInput] = useState<number | ''>('');
+  const [quoteResult, setQuoteResult] = useState<PolicyAddonQuoteData | any>(null);
+  const { mutate: getPolicyQuote, isPending: isGettingQuote } = useGetPolicyAddonQuote();
+  const { mutate: purchasePolicyAddon, isPending: isPurchasing } = usePurchasePolicyAddon();
+
+  useEffect(() => {
+    if (!isOpen) {
+      setPoliciesInput('');
+      setQuoteResult(null);
+    }
+  }, [isOpen]);
+
+  // Handle ESC key to close
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  const handleGetQuote = () => {
+    if (!policiesInput || Number(policiesInput) <= 0) {
+      toast.error('Please enter a valid number of policies');
+      return;
+    }
+    setQuoteResult(null);
+    getPolicyQuote(
+      { addon_policies: Number(policiesInput) },
+      {
+        onSuccess: (res: any) => {
+          if (res && (res.status === 400 || res.status === 500 || res.status === 'error')) {
+            toast.error(res?.message || 'Failed to fetch policy quote');
+            return;
+          }
+          if (res && res.data && Object.keys(res.data).length > 0) {
+            setQuoteResult(res.data);
+          } else if (res && res.addon_policies) {
+            setQuoteResult(res);
+          } else {
+            toast.error(res?.message || 'Invalid quote response');
+          }
+        },
+        onError: (err: any) => {
+          toast.error(err?.response?.data?.message || err?.message || 'Failed to fetch policy quote');
+        }
+      }
+    );
+  };
+
+  const handlePay = () => {
+    const policiesToBuy = quoteResult?.addon_policies || Number(policiesInput);
+    if (!policiesToBuy || policiesToBuy <= 0) {
+      toast.error('Please enter a valid number of policies');
+      return;
+    }
+
+    purchasePolicyAddon(
+      { addon_policies: Number(policiesToBuy) },
+      {
+        onSuccess: (res: any) => {
+          if (res && (res.status === 400 || res.status === 500 || res.status === 'error')) {
+            toast.error(res?.message || 'Failed to initiate policy purchase');
+            return;
+          }
+          const redirectUrl = res?.data?.redirect_url || res?.redirect_url;
+          if (redirectUrl) {
+            toast.success(res?.message || 'Redirecting to payment...');
+            window.location.href = redirectUrl;
+          } else {
+            toast.error(res?.message || 'No redirect URL found in response');
+          }
+        },
+        onError: (err: any) => {
+          toast.error(err?.response?.data?.message || err?.message || 'Failed to initiate policy purchase');
+        }
+      }
+    );
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200"
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header with Insuraa Logo Blue */}
+        <div className="bg-gradient-to-r from-[#2F439D] to-[#24357D] text-white p-5 relative overflow-hidden shrink-0">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-[#2BBF8C]/15 rounded-full blur-2xl pointer-events-none" />
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onClose();
+            }}
+            className="absolute top-3.5 right-3.5 z-30 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-white flex items-center justify-center transition-all cursor-pointer"
+            title="Close"
+            aria-label="Close"
+          >
+            <X size={18} />
+          </button>
+          <div className="flex items-center gap-2.5 relative z-10">
+            <div className="w-8 h-8 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center text-[#2BBF8C]">
+              <Shield size={16} />
+            </div>
+            <div>
+              <h3 className="font-semibold text-base text-white">Add policies</h3>
+              <p className="text-blue-100/80 text-xs font-normal">Extend policy quota in your current cycle</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Body */}
+        <div className="p-5 space-y-4 overflow-y-auto">
+          <div>
+            <label className="block text-xs font-medium text-slate-700 mb-1.5">Number of additional policies</label>
+            <div className="relative">
+              <Calculator size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="number"
+                min="1"
+                value={policiesInput}
+                onChange={(e) => {
+                  setPoliciesInput(e.target.value ? Number(e.target.value) : '');
+                  setQuoteResult(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleGetQuote();
+                  }
+                }}
+                className="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#2BBF8C]/30 focus:border-[#2BBF8C] focus:bg-white transition-all"
+                placeholder="Enter policies (e.g. 100)"
+              />
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleGetQuote}
+            disabled={isGettingQuote || !policiesInput || Number(policiesInput) <= 0}
+            className="w-full py-2.5 bg-[#2BBF8C]/10 hover:bg-[#2BBF8C]/20 text-[#197a56] font-medium rounded-xl text-xs border border-[#2BBF8C]/30 transition-all disabled:opacity-50 cursor-pointer shadow-2xs"
+          >
+            {isGettingQuote ? 'Calculating...' : 'Calculate quote'}
+          </button>
+
+          {/* Dynamic Breakdown */}
+          {quoteResult && quoteResult.final_amount !== undefined && (
+            <div className="space-y-3 pt-1 animate-in fade-in duration-200">
+              <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-700 space-y-2">
+                <div className="font-semibold text-slate-900 text-xs border-b border-slate-200 pb-1.5 flex justify-between items-center">
+                  <span>Policy price breakdown</span>
+                  {quoteResult.tier && (
+                    <span className="text-[11px] font-medium text-[#197a56] bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                      {quoteResult.tier} tier
+                    </span>
+                  )}
+                </div>
+
+                <div className="space-y-1.5 text-xs font-normal">
+                  <div className="flex justify-between items-center text-slate-600">
+                    <span>Additional policies:</span>
+                    <span className="font-semibold text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200">
+                      {quoteResult.addon_policies ?? 0}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-slate-600">
+                    <span>Rate per policy:</span>
+                    <span className="font-medium text-slate-900">₹{formatPrice(quoteResult.rate_per_policy)}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-slate-600">
+                    <span>Full cycle price:</span>
+                    <span className="font-medium text-slate-900">₹{formatPrice(quoteResult.full_cycle_price)}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-slate-600">
+                    <span>Total days:</span>
+                    <span className="font-medium text-slate-900">{quoteResult.days_total ?? 0}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-slate-600">
+                    <span>Remaining days:</span>
+                    <span className="font-medium text-slate-900">{quoteResult.days_remaining ?? 0}</span>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-slate-200 space-y-1 text-xs font-normal">
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium text-slate-800">Prorated amount:</span>
+                    <span className="font-medium text-slate-900">₹{formatPrice(quoteResult.total_price)}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-slate-600">
+                    <span>Discount:</span>
+                    <span className="font-medium text-slate-900">₹{formatPrice(quoteResult.coupon_amount ?? 0)}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-slate-600">
+                    <span>Price after discount:</span>
+                    <span className="font-medium text-slate-900">
+                      ₹{formatPrice(quoteResult.price_after_discount ?? quoteResult.total_price)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-slate-200 space-y-1 text-xs font-normal">
+                  <div className="font-medium text-slate-800">Gst ({quoteResult.gst_percentage ?? 18}%):</div>
+                  <div className="flex justify-between items-center pl-2 text-slate-600">
+                    <span>Gst amount:</span>
+                    <span className="font-medium text-slate-900">₹{formatPrice(quoteResult.gst_amount)}</span>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-slate-200 flex justify-between items-baseline">
+                  <span className="text-xs text-slate-600 font-medium">Final amount:</span>
+                  <span className="text-base font-semibold text-[#197a56]">₹{formatPrice(quoteResult.final_amount)}</span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handlePay}
+                disabled={isPurchasing}
+                className="w-full py-2.5 rounded-xl text-white font-medium text-xs bg-[#2BBF8C] hover:bg-[#24a87b] shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                {isPurchasing ? 'Processing...' : <>Proceed to pay — ₹{formatPrice(quoteResult.final_amount)} <ExternalLink size={13} /></>}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// MAIN PAGE COMPONENT: SUBSCRIPTION DASHBOARD
+// ============================================================================
 export default function SubscriptionHistoryPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<string>('all');
   const [subscriptions, setSubscriptions] = useState<SubscriptionItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [page, setPage] = useState<number>(1);
+  const [limit, setLimit] = useState<number>(10);
+  const [search, setSearch] = useState<string>('');
+  const [totalRecords, setTotalRecords] = useState<number>(0);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState<boolean>(false);
+  const [isExpired, setIsExpired] = useState<boolean>(false);
+  const [popupInfo, setPopupInfo] = useState<any>(null);
+  const [copiedInvoice, setCopiedInvoice] = useState<string | null>(null);
 
+  // Modals
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+  const [isPolicyModalOpen, setIsPolicyModalOpen] = useState(false);
+
+  // Sync tab with URL
   useEffect(() => {
     if (router.query.tab === 'ai') {
       setActiveTab('ai');
@@ -1074,14 +585,29 @@ export default function SubscriptionHistoryPage() {
     }
   }, [router.query]);
 
-  const [page, setPage] = useState<number>(1);
-  const [limit] = useState<number>(10);
-  const [search, setSearch] = useState<string>('');
-  const [totalRecords, setTotalRecords] = useState<number>(0);
-  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState<boolean>(false);
-  const [isExpired, setIsExpired] = useState<boolean>(false);
-  const [popupInfo, setPopupInfo] = useState<any>(null);
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    setSearch('');
+    setPage(1);
+    router.replace(
+      {
+        pathname: router.pathname,
+        query: tab === 'all' ? {} : { tab },
+      },
+      undefined,
+      { shallow: true }
+    );
+  };
 
+  const handleCopy = (text?: string) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setCopiedInvoice(text);
+    toast.success('Invoice number copied!');
+    setTimeout(() => setCopiedInvoice(null), 2000);
+  };
+
+  // Popup & Expiry details
   const fetchPopupInfo = useCallback(async () => {
     try {
       const res = await api.post(endPointApi.AUTH.SUBSCRIPTION_POPUP);
@@ -1090,7 +616,6 @@ export default function SubscriptionHistoryPage() {
 
       if (popupData) {
         setPopupInfo(popupData);
-
         const expired =
           popupData.is_expired === 1 ||
           popupData.is_expired === '1' ||
@@ -1104,29 +629,22 @@ export default function SubscriptionHistoryPage() {
           popupData.show_popup === '1';
 
         if (expired) {
-          // Condition 1: is_expired: 1 -> Popup shows & CANNOT be closed
           setIsExpired(true);
           setIsUpgradeModalOpen(true);
         } else if (showPopup) {
-          // Condition 2: show_popup: true, is_expired: 0 -> Popup shows & CAN be closed
           setIsExpired(false);
           setIsUpgradeModalOpen(true);
         } else {
-          // Condition 3: show_popup: false, is_expired: 0 -> Do NOT show popup
           setIsExpired(false);
           setIsUpgradeModalOpen(false);
         }
-      } else {
-        setIsExpired(false);
-        setIsUpgradeModalOpen(false);
       }
     } catch (err) {
       console.error('Error fetching subscription popup info:', err);
-      setIsExpired(false);
-      setIsUpgradeModalOpen(false);
     }
   }, []);
 
+  // Fetch subscriptions
   const fetchSubscriptions = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -1164,419 +682,1001 @@ export default function SubscriptionHistoryPage() {
     fetchPopupInfo();
   }, [fetchSubscriptions, fetchPopupInfo]);
 
-  const activeSubscription = subscriptions.find(
-    (s) => s.status === 1 || String(s.status_name).toLowerCase() === 'active'
-  ) || subscriptions[0];
+  // Invoice Query for Tab 1
+  const {
+    data: invoiceRes,
+    isLoading: isInvoiceLoading,
+    refetch: refetchInvoices
+  } = useFetchInvoiceList(page, limit, search);
+  const invoiceList: InvoiceItem[] = invoiceRes?.data || [];
+  const totalInvoices = invoiceRes?.pagination_arr?.total_records ?? invoiceList.length ?? 0;
 
-  const displayPlanName = popupInfo?.plan_name || activeSubscription?.plan_name || 'N/A';
-  const displayDaysLeft = popupInfo?.days_left ?? activeSubscription?.days_left ?? 0;
+  // AI Credit History Query for Tab 3 & Sidebar
+  const {
+    data: aiHistoryRes,
+    isLoading: isAiHistoryLoading,
+    refetch: refetchAiHistory
+  } = useFetchAiCreditHistory(page, limit, search);
+  const aiHistoryList = aiHistoryRes?.data || [];
+  const totalAiRecords = aiHistoryRes?.pagination_arr?.total_records ?? aiHistoryList.length ?? 0;
 
-  const totalPages = Math.ceil(totalRecords / limit) || 1;
+  // AI Credits balance
+  const { data: aiCreditsBalance } = useFetchAiCredits();
+
+  // Policy Addon History Query for Tab 4
+  const {
+    data: policyHistoryRes,
+    isLoading: isPolicyHistoryLoading,
+    refetch: refetchPolicyHistory
+  } = useFetchPolicyAddonHistory(page, limit, search);
+  const policyHistoryList: PolicyAddonItem[] = policyHistoryRes?.data || [];
+  const totalPolicyRecords = policyHistoryRes?.pagination_arr?.total_records ?? policyHistoryList.length ?? 0;
+
+  // Active Subscription
+  const activeSubscription =
+    subscriptions.find((s) => s.status === 1 || String(s.status_name).toLowerCase() === 'active') ||
+    subscriptions[0];
+
+  const displayPlanName = activeSubscription?.plan_name || popupInfo?.plan_name || '—';
+  const displayDaysLeft = activeSubscription?.days_left !== undefined && activeSubscription?.days_left !== null
+    ? activeSubscription.days_left
+    : (popupInfo?.days_left ?? 0);
+  const activeInvoiceNo = activeSubscription?.invoice_no || '—';
+  const activeStartDate = activeSubscription?.starting_date || '—';
+  const activeEndDate = activeSubscription?.ending_date || '—';
+
+  const totalPolicies = Number(activeSubscription?.total_policy_limit ?? activeSubscription?.policy_limit ?? 0);
+  const aiCredits = Number(aiCreditsBalance?.credits ?? activeSubscription?.ai_limit ?? 0);
+
+  const handleSyncAll = () => {
+    fetchSubscriptions();
+    fetchPopupInfo();
+    refetchInvoices();
+    refetchAiHistory();
+    refetchPolicyHistory();
+    toast.success('Subscription data synced!');
+  };
+
+  const getInvoiceTypeBadge = (type?: string) => {
+    const t = String(type || '').toLowerCase();
+    if (t.includes('ai')) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200">
+          <Sparkles size={11} className="text-purple-500" />
+          <span>Ai credits</span>
+        </span>
+      );
+    }
+    if (t.includes('policy') || t.includes('addon') || t.includes('extra')) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-[#2F439D] border border-blue-200">
+          <Shield size={11} className="text-[#2F439D]" />
+          <span>Extra policies</span>
+        </span>
+      );
+    }
+    if (t.includes('trial') || t.includes('free')) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-800 border border-amber-200">
+          <Crown size={11} className="text-amber-500" />
+          <span>Free trial</span>
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-[#2F439D] border border-indigo-200">
+        <Zap size={11} className="text-[#2F439D]" />
+        <span>Subscription</span>
+      </span>
+    );
+  };
+
+  const currentTotal =
+    activeTab === 'all'
+      ? totalInvoices
+      : activeTab === 'subscription'
+        ? totalRecords
+        : activeTab === 'ai'
+          ? totalAiRecords
+          : totalPolicyRecords;
+  const totalPages = Math.ceil(currentTotal / limit) || 1;
 
   return (
     <>
       <Head>
-        <title>Subscription List & History | Insuraa</title>
+        <title>Subscription &amp; Licensing | Insuraa</title>
       </Head>
 
-      <div className="max-w-7xl mx-auto space-y-8 pb-12">
-        {/* Hero Header */}
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#2E3192] via-[#232569] to-[#191B47] text-white p-8 md:p-10 shadow-xl border border-white/10">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none -translate-y-1/3 translate-x-1/3" />
-          <div className="absolute bottom-0 left-1/3 w-64 h-64 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
+      {/* Spacious Full-width Container with Proper Margins (Max-w 1680px for Elegant Viewing) */}
+      <div className="w-full max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 space-y-5 pb-12 pt-2">
+        {/* ================================================================= */}
+        {/* 1. TOP HEADER BANNER (Insuraa Logo Colors: #2F439D & #2BBF8C)     */}
+        {/* ================================================================= */}
+        <div className="relative rounded-2xl bg-gradient-to-r from-[#2F439D] via-[#24357D] to-[#1A265E] text-white p-6 sm:p-7 shadow-lg border border-indigo-900/30 overflow-hidden">
+          {/* Subtle Ambient Logo Color Glows */}
+          <div className="absolute top-0 right-1/4 w-80 h-80 bg-[#2BBF8C]/15 rounded-full blur-3xl pointer-events-none -translate-y-1/2" />
+          <div className="absolute bottom-0 right-10 w-48 h-48 bg-white/5 rounded-full blur-2xl pointer-events-none" />
 
-          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="space-y-3">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/20 text-xs font-semibold tracking-wide text-blue-100 backdrop-blur-md">
-                <Sparkles size={14} className="text-[#2BBF8C]" />
-                Subscription & Billing Center
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
+            {/* Title & Badge (Natural Font Weight, Clean Sentence Casing) */}
+            <div className="space-y-1.5">
+              <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-white/10 border border-white/20 text-blue-100 text-xs font-medium backdrop-blur-xs">
+                <Crown size={12} className="text-[#2BBF8C]" />
+                <span>Billing &amp; membership</span>
               </div>
-              <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">
-                Subscription List
+              <h1 className="text-2xl md:text-3xl font-semibold text-white">
+                Subscription &amp; licensing
               </h1>
-              <p className="text-blue-100/90 text-sm max-w-xl font-normal leading-relaxed">
-                View your complete subscription history, active plans, AI credit limits, GST details, and billing invoices.
+              <p className="text-blue-100/85 text-xs sm:text-sm font-normal max-w-xl">
+                Manage agency policy limits, Ai scanning credits, and download tax invoices.
               </p>
             </div>
 
+            {/* Actions & Plan Capsule */}
             <div className="flex items-center gap-3 flex-wrap">
+
+              {/* Sync Button */}
               <button
                 type="button"
-                onClick={fetchSubscriptions}
+                onClick={handleSyncAll}
                 disabled={isLoading}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-sm font-semibold text-white transition-all shadow-sm active:scale-95 disabled:opacity-50"
+                className="bg-white/10 hover:bg-white/20 active:scale-95 text-white text-xs font-medium px-4 py-2.5 rounded-xl border border-white/20 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs disabled:opacity-50"
+                title="Sync all data"
               >
-                <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
-                <span>Refresh Data</span>
+                <RefreshCw size={12} className={isLoading ? 'animate-spin' : ''} />
+                <span>Sync</span>
               </button>
 
+              {/* Renew / Upgrade Button (Insuraa Mint Green Accent #2BBF8C) */}
               <button
                 type="button"
                 onClick={() => setIsUpgradeModalOpen(true)}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white font-bold text-sm shadow-lg hover:shadow-xl transition-all"
+                className="bg-[#2BBF8C] hover:bg-[#24a87b] text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition-all shadow-md active:scale-95 cursor-pointer whitespace-nowrap flex items-center gap-1.5"
               >
-                <Crown size={18} className="fill-current" />
-                <span>Upgrade / Renew Plan</span>
+                <Crown size={14} className="fill-current" />
+                <span>Renew / upgrade plan</span>
               </button>
             </div>
           </div>
         </div>
 
+        {/* ================================================================= */}
+        {/* 2. 4 TOP METRIC CARDS (Compact, Sleek Height)                    */}
+        {/* ================================================================= */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          {/* Card 1: Active Plan */}
+          <div className="bg-white rounded-xl border border-slate-200/90 p-3.5 sm:p-4 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between">
+            <div className="flex items-start justify-between">
+              <div className="min-w-0 pr-2">
+                <span className="text-[11px] font-medium text-slate-500 block">Active plan</span>
+                <div className="text-sm sm:text-base font-semibold text-slate-900 mt-0.5 truncate">{displayPlanName}</div>
+                <div className="text-[11px] text-slate-400 mt-0.5 truncate flex items-center gap-1 font-normal">
+                  <span>{activeInvoiceNo}</span>
+                  <span>•</span>
+                  <span>Started {activeStartDate}</span>
+                </div>
+              </div>
+              <div className="w-7 h-7 rounded-lg bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center shrink-0">
+                <Crown size={14} />
+              </div>
+            </div>
+            <div className="mt-2.5 flex items-center justify-between">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span>Active</span>
+              </span>
+              <span className="text-[11px] text-slate-400 font-normal truncate">{activeSubscription?.tier_name || 'Free trial'}</span>
+            </div>
+          </div>
 
+          {/* Card 2: AI Credits */}
+          <div className="bg-white rounded-xl border border-slate-200/90 p-3.5 sm:p-4 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between">
+            <div className="flex items-start justify-between">
+              <div className="w-full pr-2 min-w-0">
+                <span className="text-[11px] font-medium text-slate-500 block">Ai credits</span>
+                <div className="text-sm sm:text-base font-semibold text-slate-900 mt-0.5 truncate">{aiCredits.toLocaleString()} credits</div>
+                {/* Progress Bar with Logo Blue */}
+                <div className="w-full h-1 bg-slate-100 rounded-full mt-1.5 overflow-hidden">
+                  <div className="bg-[#2F439D] h-full rounded-full w-2/5" />
+                </div>
+              </div>
+              <div className="w-7 h-7 rounded-lg bg-indigo-50 border border-indigo-200 text-[#2F439D] flex items-center justify-center shrink-0">
+                <Sparkles size={14} />
+              </div>
+            </div>
+            <div className="mt-2.5 flex items-center">
+              <button
+                type="button"
+                onClick={() => setIsAiModalOpen(true)}
+                className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#2F439D] hover:bg-[#24357D] text-white text-[12px] font-medium rounded-md transition-all shadow-xs cursor-pointer active:scale-95"
+              >
+                <Plus size={11} />
+                <span>Buy Ai credits</span>
+              </button>
+            </div>
+          </div>
 
-        {/* Tabs */}
-        <div className="flex items-center gap-6 border-b border-slate-200 px-2 overflow-x-auto scrollbar-hide">
-          <button
-            onClick={() => setActiveTab('all')}
-            className={`pb-3 border-b-2 font-bold text-sm whitespace-nowrap transition-colors ${activeTab === 'all'
-              ? 'border-[#2E3192] text-[#2E3192]'
-              : 'border-transparent text-slate-500 hover:text-slate-700'
-              }`}
-          >
-            All History
-          </button>
-          <button
-            onClick={() => setActiveTab('subscription')}
-            className={`pb-3 border-b-2 font-bold text-sm whitespace-nowrap transition-colors ${activeTab === 'subscription'
-              ? 'border-[#2E3192] text-[#2E3192]'
-              : 'border-transparent text-slate-500 hover:text-slate-700'
-              }`}
-          >
-            Subscription History
-          </button>
-          <button
-            onClick={() => setActiveTab('ai')}
-            className={`pb-3 border-b-2 font-bold text-sm whitespace-nowrap transition-colors ${activeTab === 'ai'
-              ? 'border-[#2E3192] text-[#2E3192]'
-              : 'border-transparent text-slate-500 hover:text-slate-700'
-              }`}
-          >
-            AI Credit History
-          </button>
-          <button
-            onClick={() => setActiveTab('policy')}
-            className={`pb-3 border-b-2 font-bold text-sm whitespace-nowrap transition-colors ${activeTab === 'policy'
-              ? 'border-[#2E3192] text-[#2E3192]'
-              : 'border-transparent text-slate-500 hover:text-slate-700'
-              }`}
-          >
-            Policy Credit History
-          </button>
+          {/* Card 3: Policy Credits */}
+          <div className="bg-white rounded-xl border border-slate-200/90 p-3.5 sm:p-4 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between">
+            <div className="flex items-start justify-between">
+              <div className="w-full pr-2 min-w-0">
+                <span className="text-[11px] font-medium text-slate-500 block">Policy credits</span>
+                <div className="text-sm sm:text-base font-semibold text-slate-900 mt-0.5 truncate">{totalPolicies.toLocaleString()} policies</div>
+                {/* Progress Bar with Logo Mint Green */}
+                <div className="w-full h-1 bg-slate-100 rounded-full mt-1.5 overflow-hidden">
+                  <div className="bg-[#2BBF8C] h-full rounded-full w-3/5" />
+                </div>
+              </div>
+              <div className="w-7 h-7 rounded-lg bg-teal-50 border border-teal-200 text-[#197a56] flex items-center justify-center shrink-0">
+                <Shield size={14} />
+              </div>
+            </div>
+            <div className="mt-2.5 flex items-center">
+              <button
+                type="button"
+                onClick={() => setIsPolicyModalOpen(true)}
+                className="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-emerald-50 text-[#197a56] border border-[#2BBF8C] text-[12px] font-medium rounded-md transition-all shadow-xs cursor-pointer active:scale-95"
+              >
+                <Plus size={11} />
+                <span>Add policies</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Card 4: Invoices (100% Dynamic from invoice_list API) */}
+          <div className="bg-white rounded-xl border border-slate-200/90 p-3.5 sm:p-4 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between">
+            <div className="flex items-start justify-between">
+              <div className="min-w-0 pr-2">
+                <span className="text-[11px] font-medium text-slate-500 block">Invoices</span>
+                <div className="text-sm sm:text-base font-semibold text-slate-900 mt-0.5 truncate">{totalInvoices} total</div>
+                <p className="text-[11px] text-slate-400 mt-0.5 font-normal truncate">All billing history &amp; tax invoices</p>
+              </div>
+              <div className="w-7 h-7 rounded-lg bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center shrink-0">
+                <Receipt size={14} />
+              </div>
+            </div>
+            <div className="mt-2.5 flex items-center justify-between text-[11px] text-slate-400 font-normal">
+              <span className="truncate">{totalInvoices > 0 ? `${totalInvoices} invoices recorded` : 'No invoices recorded'}</span>
+            </div>
+          </div>
         </div>
 
-        {activeTab === 'all' ? (
-          <AllHistoryTab />
-        ) : activeTab === 'subscription' ? (
-          <div className="bg-white rounded-3xl border border-slate-200/90 shadow-lg overflow-hidden">
-            {/* Search, Filter & Main Table Container */}
-            {/* Toolbar */}
-            <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="relative w-full sm:w-80">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                <input
-                  type="text"
-                  placeholder="Search by invoice number or plan..."
-                  value={search}
-                  onChange={(e) => {
-                    setSearch(e.target.value);
-                    setPage(1);
-                  }}
-                  className="w-full bg-white text-sm text-slate-800 pl-10 pr-4 py-2.5 rounded-2xl border border-slate-300 outline-none focus:border-[#2E3192] focus:ring-2 focus:ring-[#2E3192]/20 transition-all"
-                />
+        {/* ================================================================= */}
+        {/* 3. TWO-COLUMN WORKSPACE: LEFT LIST (8 cols) & RIGHT SIDEBAR (4)   */}
+        {/* ================================================================= */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+          {/* --------------------------------------------------------------- */}
+          {/* LEFT: MAIN WORKSPACE WITH 4 TABS & ALL ORIGINAL CONTENT        */}
+          {/* --------------------------------------------------------------- */}
+          <div className="lg:col-span-8 bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-2xs flex flex-col">
+            {/* Header: Title, Search & Navigation Tabs with Round Record Counts */}
+            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3.5 border-b border-slate-100 pb-3.5">
+              <div>
+                <h2 className="text-base sm:text-lg font-semibold text-slate-900">
+                  {activeTab === 'all'
+                    ? 'Recent invoices'
+                    : activeTab === 'subscription'
+                      ? 'Subscription history'
+                      : activeTab === 'ai'
+                        ? 'Ai credit ledger'
+                        : 'Policy credit history'}
+                </h2>
+                <p className="text-xs text-slate-400 mt-0.5 font-normal">
+                  {activeTab === 'all'
+                    ? 'Official tax invoices & payment records'
+                    : activeTab === 'subscription'
+                      ? 'Plan history, policy limits, and purchase dates'
+                      : activeTab === 'ai'
+                        ? 'Ai scan debits & credit top-up history'
+                        : 'Purchased addon policies & validity'}
+                </p>
               </div>
 
-              <div className="flex items-center gap-3 self-end sm:self-auto text-xs font-semibold text-slate-700">
-                <span>Total Subscriptions: <span className="text-slate-900 font-bold">{totalRecords}</span></span>
+              {/* Right side controls: Search input & Tab pills with Round Count Badges */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+                {/* Search Bar moved UP */}
+                <div className="relative w-full sm:w-52 md:w-60 shrink-0">
+                  <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Search records..."
+                    value={search}
+                    onChange={(e) => {
+                      setSearch(e.target.value);
+                      setPage(1);
+                    }}
+                    className="w-full bg-slate-50 hover:bg-slate-50 focus:bg-white text-xs font-normal text-slate-900 pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 outline-none focus:border-[#2F439D] focus:ring-1 focus:ring-[#2F439D]/20 transition-all placeholder-slate-400"
+                  />
+                </div>
+
+                {/* Navigation Tabs (Insuraa Logo Navy & White Styling with Round Record Counts) */}
+                <div className="flex items-center gap-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden bg-slate-100 p-1 rounded-xl border border-slate-200/60 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange('all')}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${activeTab === 'all'
+                      ? 'bg-[#2F439D] text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                  >
+                    <span>All invoices</span>
+                    <span
+                      className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold transition-colors ${activeTab === 'all'
+                        ? 'bg-white/20 text-white'
+                        : 'bg-slate-200/80 text-slate-700'
+                        }`}
+                    >
+                      {totalInvoices}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange('subscription')}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${activeTab === 'subscription'
+                      ? 'bg-[#2F439D] text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                  >
+                    <span>Subscriptions</span>
+                    <span
+                      className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold transition-colors ${activeTab === 'subscription'
+                        ? 'bg-white/20 text-white'
+                        : 'bg-slate-200/80 text-slate-700'
+                        }`}
+                    >
+                      {totalRecords}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange('ai')}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${activeTab === 'ai'
+                      ? 'bg-[#2F439D] text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                  >
+                    <span>Ai credits</span>
+                    <span
+                      className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold transition-colors ${activeTab === 'ai'
+                        ? 'bg-white/20 text-white'
+                        : 'bg-slate-200/80 text-slate-700'
+                        }`}
+                    >
+                      {totalAiRecords}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange('policy')}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${activeTab === 'policy'
+                      ? 'bg-[#2F439D] text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                  >
+                    <span>Policy credits</span>
+                    <span
+                      className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold transition-colors ${activeTab === 'policy'
+                        ? 'bg-white/20 text-white'
+                        : 'bg-slate-200/80 text-slate-700'
+                        }`}
+                    >
+                      {totalPolicyRecords}
+                    </span>
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* Subscription Items List */}
-            <div className="p-6">
-              {isLoading ? (
-                <div className="flex flex-col items-center justify-center py-24 gap-4 text-slate-500">
-                  <RefreshCw className="w-10 h-10 animate-spin text-[#2E3192]" />
-                  <span className="text-sm font-semibold text-slate-700">Fetching subscription list...</span>
-                </div>
-              ) : subscriptions.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 text-center">
-                  <div className="w-20 h-20 rounded-3xl bg-indigo-50 text-[#2E3192] flex items-center justify-center mb-4 shadow-inner">
-                    <Receipt size={40} />
-                  </div>
-                  <h3 className="text-lg font-bold text-slate-800">No Subscriptions Found</h3>
-                  <p className="text-xs text-slate-600 mt-1 max-w-md font-normal">
-                    There are no subscription records matching your current filter criteria.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  {subscriptions.map((item, idx) => {
-                    const isActive = item.status === 1 || String(item.status_name).toLowerCase() === 'active';
-                    const baseAmt = item.amount ?? '0';
-                    const finalAmt = item.final_amount ?? item.amount ?? '0';
+            {/* Content List for Active Tab */}
+            <div className="space-y-3 pt-1 min-h-[320px]">
+              {/* TAB 1: ALL INVOICES */}
+              {activeTab === 'all' && (
+                <>
+                  {isInvoiceLoading ? (
+                    <div className="flex flex-col items-center justify-center py-24 text-slate-400 gap-2">
+                      <RefreshCw size={22} className="animate-spin text-[#2F439D]" />
+                      <span className="text-xs font-medium text-slate-600">Loading invoices...</span>
+                    </div>
+                  ) : invoiceList.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-16 text-center">
+                      <div className="w-12 h-12 rounded-xl bg-indigo-50 text-[#2F439D] flex items-center justify-center mb-2 shadow-inner">
+                        <Receipt size={22} />
+                      </div>
+                      <span className="font-medium text-slate-800 text-sm">No invoices found</span>
+                      <span className="text-xs text-slate-400 mt-0.5 font-normal">
+                        {search ? 'Try adjusting your search criteria.' : 'Your invoice records will appear here.'}
+                      </span>
+                    </div>
+                  ) : (
+                    invoiceList.map((item, idx) => {
+                      const downloadLink = item.pdf_link || item.invoice_url || item.download_link;
+                      const isFirst = idx === 0;
 
-                    return (
-                      <div
-                        key={item.subscription_id || idx}
-                        className={`bg-white rounded-3xl p-6 border transition-all duration-300 flex flex-col gap-6 relative overflow-hidden group hover:shadow-md ${isActive
-                          ? 'border-[#2E3192]/40 bg-gradient-to-r from-blue-50/20 via-white to-emerald-50/20'
-                          : 'border-slate-200 hover:border-slate-300'
-                          }`}
-                      >
-                        {/* Left Accent Bar */}
+                      return (
                         <div
-                          className={`absolute left-0 top-0 bottom-0 w-2 ${isActive ? 'bg-[#2E3192]' : 'bg-slate-300'
+                          key={item.invoice_no || idx}
+                          className={`rounded-xl p-3.5 sm:px-4 sm:py-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 transition-all ${isFirst
+                            ? 'border border-indigo-200 bg-indigo-50/20 shadow-2xs'
+                            : 'border border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/40'
                             }`}
-                        />
-
-                        {/* Header Row: Plan Name, Status, Invoice No */}
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pl-3 border-b border-slate-100 pb-4">
-                          <div className="flex items-center gap-4">
-                            <div
-                              className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${isActive
-                                ? 'bg-gradient-to-tr from-[#2E3192] to-[#2BBF8C] text-white'
-                                : 'bg-slate-100 text-slate-600 border border-slate-200'
-                                }`}
-                            >
-                              {isActive ? <Crown size={26} /> : <Receipt size={26} />}
+                        >
+                          {/* Left: Invoice # + Badge + Date */}
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <button
+                                type="button"
+                                onClick={() => handleCopy(item.invoice_no)}
+                                className="font-semibold text-slate-900 text-sm hover:text-[#2F439D] transition-colors cursor-pointer inline-flex items-center gap-1 group font-mono"
+                                title="Click to copy invoice number"
+                              >
+                                <span>{item.invoice_no}</span>
+                                {copiedInvoice === item.invoice_no ? (
+                                  <Check size={13} className="text-emerald-600" />
+                                ) : (
+                                  <Copy size={11} className="text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                )}
+                              </button>
+                              {getInvoiceTypeBadge(item.type_name || item.type)}
                             </div>
-
-                            <div>
-                              <div className="flex items-center gap-3 flex-wrap">
-                                <h2 className="font-bold text-slate-900 text-lg">
-                                  {item.plan_name}
-                                </h2>
-
-                                {/* Status Badge */}
-                                <span
-                                  className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full tracking-wide ${isActive
-                                    ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
-                                    : 'bg-slate-100 text-slate-700 border border-slate-200'
-                                    }`}
-                                >
-                                  {isActive ? (
-                                    <>
-                                      <CheckCircle2 size={13} className="text-emerald-600" />
-                                      {item.status_name || 'Active'}
-                                    </>
-                                  ) : (
-                                    <>
-                                      <AlertCircle size={13} className="text-slate-500" />
-                                      {item.status_name || 'Expired'}
-                                    </>
-                                  )}
-                                </span>
-
-                                {/* Tier Name Badge */}
-                                {item.tier_name && (
-                                  <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-indigo-50 text-[#2E3192] border border-indigo-200">
-                                    <Shield size={12} />
-                                    {item.tier_name}
-                                  </span>
-                                )}
-
-                                {/* Billing Cycle Badge */}
-                                {item.billing_cycle && (
-                                  <span className="capitalize text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
-                                    {item.billing_cycle}
-                                  </span>
-                                )}
-
-                                {item.invoice_no && (
-                                  <span className="text-xs font-mono font-semibold px-3 py-1 rounded-lg bg-indigo-50 text-[#2E3192] border border-indigo-100">
-                                    Invoice: {item.invoice_no}
-                                  </span>
-                                )}
-                              </div>
-
-                              {item.created_at && (
-                                <p className="text-xs text-slate-600 font-normal mt-1">
-                                  Purchased On: {item.created_at}
-                                </p>
-                              )}
+                            <div className="text-xs text-slate-400 flex items-center gap-1 font-normal">
+                              <Calendar size={11} />
+                              <span>{item.created_at || '—'}</span>
                             </div>
                           </div>
 
-                          {/* Invoice Download Action */}
-                          <div>
-                            {item.pdf_link ? (
+                          {/* Right: Amount + Dynamic Status badge + PDF button (Zero Static Badges) */}
+                          <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+                            <span className="font-semibold text-slate-900 text-sm sm:text-base">₹{item.amount ?? 0}</span>
+
+                            {(item.status_name || item.status !== undefined) && (
+                              <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                {item.status_name || (item.status === 1 ? 'Paid' : String(item.status))}
+                              </span>
+                            )}
+
+                            {downloadLink && (
                               <a
-                                href={item.pdf_link}
+                                href={downloadLink}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 hover:bg-[#2E3192] text-white text-xs font-semibold transition-all shadow-sm active:scale-95"
+                                className="border border-slate-300 hover:border-[#2F439D] bg-white hover:bg-indigo-50/40 text-slate-800 hover:text-[#2F439D] text-xs font-medium px-3 py-1.5 rounded-lg transition-all shadow-2xs cursor-pointer inline-flex items-center gap-1"
                               >
-                                <Download size={15} />
-                                <span>Download Invoice PDF</span>
+                                <Download size={12} />
+                                <span>Download invoice</span>
                               </a>
-                            ) : (
-                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-500 text-xs font-medium border border-slate-200">
-                                <Download size={14} />
-                                <span>Invoice PDF N/A</span>
-                              </span>
                             )}
                           </div>
                         </div>
+                      );
+                    })
+                  )}
+                </>
+              )}
 
-                        {/* Detailed API Data Attributes Grid */}
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3.5 pl-3 text-xs">
-                          {/* Policy Limit */}
-                          <div className="bg-blue-50/70 p-3 rounded-2xl border border-blue-100 flex flex-col justify-between">
-                            <div>
-                              <span className="text-blue-900/80 font-medium block text-[11px] mb-1">Policy Limit</span>
-                              <span className="font-bold text-blue-950 flex items-center gap-1.5">
-                                <FileCheck size={14} className="text-blue-600 shrink-0" />
-                                <span>{Number(item.total_policy_limit ?? item.policy_limit ?? 0).toLocaleString()} Policies</span>
-                              </span>
+              {/* TAB 2: SUBSCRIPTIONS (Showing All Original Attributes Cleanly) */}
+              {activeTab === 'subscription' && (
+                <>
+                  {isLoading ? (
+                    <div className="flex flex-col items-center justify-center py-24 text-slate-400 gap-2">
+                      <RefreshCw size={22} className="animate-spin text-[#2F439D]" />
+                      <span className="text-xs font-medium text-slate-600">Loading subscriptions...</span>
+                    </div>
+                  ) : subscriptions.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-16 text-center">
+                      <div className="w-12 h-12 rounded-xl bg-slate-100 text-slate-400 flex items-center justify-center mb-2">
+                        <Crown size={22} />
+                      </div>
+                      <span className="font-medium text-slate-800 text-sm">No subscriptions found</span>
+                      <span className="text-xs text-slate-400 mt-0.5 font-normal">Your subscription plans will appear here.</span>
+                    </div>
+                  ) : (
+                    subscriptions.map((item, idx) => {
+                      const isActive = item.status === 1 || String(item.status_name).toLowerCase() === 'active';
+                      const baseAmt = item.amount ?? '0';
+                      const finalAmt = item.final_amount ?? item.amount ?? '0';
+
+                      return (
+                        <div
+                          key={item.subscription_id || idx}
+                          className="border border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/30 rounded-2xl p-4 sm:p-5 flex flex-col gap-3.5 transition-all shadow-2xs"
+                        >
+                          {/* Top Row: Plan Name, Tier, Cycle, Invoice No, Status, PDF */}
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-semibold text-slate-900 text-sm sm:text-base">{item.plan_name}</span>
+                              {item.tier_name && (
+                                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-[#2F439D] border border-indigo-200">
+                                  {item.tier_name}
+                                </span>
+                              )}
+                              {item.billing_cycle && (
+                                <span className="capitalize px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
+                                  {item.billing_cycle}
+                                </span>
+                              )}
+                              {item.invoice_no && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopy(item.invoice_no)}
+                                  className="text-xs font-mono font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded transition-colors cursor-pointer inline-flex items-center gap-1"
+                                  title="Copy invoice #"
+                                >
+                                  <span>Invoice: {item.invoice_no}</span>
+                                  {copiedInvoice === item.invoice_no ? (
+                                    <Check size={11} className="text-emerald-600" />
+                                  ) : (
+                                    <Copy size={10} className="text-slate-400" />
+                                  )}
+                                </button>
+                              )}
                             </div>
-                            {item.addon_policies !== undefined && Number(item.addon_policies) > 0 ? (
-                              <span className="text-[10px] text-blue-700/80 font-medium block mt-1 truncate" title={`Base: ${item.policy_limit ?? 0} + Addon: ${item.addon_policies}`}>
-                                Base: {item.policy_limit ?? 0} + Addon: {item.addon_policies}
+
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${isActive
+                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                  : 'bg-slate-100 text-slate-600 border border-slate-200'
+                                  }`}
+                              >
+                                {isActive ? 'Active' : 'Expired'}
                               </span>
-                            ) : null}
+
+                              {item.pdf_link ? (
+                                <a
+                                  href={item.pdf_link}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="border border-slate-300 hover:border-[#2F439D] bg-white hover:bg-indigo-50/40 text-slate-800 text-xs font-medium px-3 py-1 rounded-lg transition-all shadow-2xs inline-flex items-center gap-1"
+                                >
+                                  <Download size={11} />
+                                  <span>Download invoice</span>
+                                </a>
+                              ) : null}
+                            </div>
                           </div>
 
-                          {/* AI OCR Limit */}
-                          <div className="bg-emerald-50/70 p-3 rounded-2xl border border-emerald-100 flex flex-col justify-between">
-                            <div>
-                              <span className="text-emerald-900/80 font-medium block text-[11px] mb-1">AI OCR Credits</span>
-                              <span className="font-bold text-emerald-950 flex items-center gap-1.5">
-                                <Sparkles size={14} className="text-emerald-600 shrink-0" />
-                                <span>{Number(item.ai_limit ?? 0).toLocaleString()} Credits</span>
+                          {/* Attributes Grid: Preserving All Original Fields From User's Previous Screen */}
+                          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 text-xs pt-1 border-t border-slate-100">
+                            {/* 1. Policy Limit */}
+                            <div className="bg-slate-50/80 p-2.5 rounded-xl border border-slate-100 flex flex-col justify-between">
+                              <span className="text-slate-400 block text-[11px] mb-0.5">Policy limit</span>
+                              <span className="font-semibold text-slate-800 flex items-center gap-1">
+                                <Shield size={12} className="text-[#2F439D] shrink-0" />
+                                {Number(item.total_policy_limit ?? item.policy_limit ?? 0).toLocaleString()}
                               </span>
                             </div>
-                            {item.rate_per_policy !== undefined && Number(item.rate_per_policy) > 0 ? (
-                              <span className="text-[10px] text-emerald-700/80 font-medium block mt-1">
-                                ₹{item.rate_per_policy}/policy
-                              </span>
-                            ) : null}
-                          </div>
 
-                          {/* Start Date */}
-                          <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 flex flex-col justify-between">
-                            <div>
-                              <span className="text-slate-700 font-medium block text-[11px] mb-1">Start Date</span>
-                              <span className="font-semibold text-slate-900 flex items-center gap-1.5">
-                                <Calendar size={14} className="text-indigo-600 shrink-0" />
-                                {item.starting_date || 'N/A'}
+                            {/* 2. AI Credits */}
+                            <div className="bg-slate-50/80 p-2.5 rounded-xl border border-slate-100 flex flex-col justify-between">
+                              <span className="text-slate-400 block text-[11px] mb-0.5">Ai credits</span>
+                              <span className="font-semibold text-slate-800 flex items-center gap-1">
+                                <Sparkles size={12} className="text-[#2BBF8C] shrink-0" />
+                                {Number(item.ai_limit ?? 0).toLocaleString()}
                               </span>
                             </div>
-                          </div>
 
-                          {/* End Date */}
-                          <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 flex flex-col justify-between">
-                            <div>
-                              <span className="text-slate-700 font-medium block text-[11px] mb-1">End Date</span>
-                              <span className="font-semibold text-slate-900 flex items-center gap-1.5">
-                                <CalendarDays size={14} className="text-indigo-600 shrink-0" />
-                                {item.ending_date || 'N/A'}
+                            {/* 3. Start Date */}
+                            <div className="bg-slate-50/80 p-2.5 rounded-xl border border-slate-100 flex flex-col justify-between">
+                              <span className="text-slate-400 block text-[11px] mb-0.5">Start date</span>
+                              <span className="font-medium text-slate-800 flex items-center gap-1">
+                                <Calendar size={12} className="text-indigo-500 shrink-0" />
+                                {item.starting_date || '—'}
                               </span>
                             </div>
-                          </div>
 
-                          {/* Days Left */}
-                          <div className="bg-amber-50/60 p-3 rounded-2xl border border-amber-100 flex flex-col justify-between">
-                            <div>
-                              <span className="text-amber-900/80 font-medium block text-[11px] mb-1">Days Left</span>
-                              <span className="font-semibold text-amber-950 flex items-center gap-1.5">
-                                <Clock size={14} className="text-amber-600 shrink-0" />
-                                {item.days_left ?? 0} Days
+                            {/* 4. End Date */}
+                            <div className="bg-slate-50/80 p-2.5 rounded-xl border border-slate-100 flex flex-col justify-between">
+                              <span className="text-slate-400 block text-[11px] mb-0.5">End date</span>
+                              <span className="font-medium text-slate-800 flex items-center gap-1">
+                                <CalendarDays size={12} className="text-indigo-500 shrink-0" />
+                                {item.ending_date || '—'}
                               </span>
                             </div>
-                          </div>
 
-                          {/* Coupon / Discount */}
-                          <div className="bg-purple-50/60 p-3 rounded-2xl border border-purple-100 flex flex-col justify-between">
-                            <div>
-                              <span className="text-purple-900/80 font-medium block text-[11px] mb-1">Coupon Discount</span>
-                              <span className="font-semibold text-purple-950 flex items-center gap-1.5 truncate">
-                                <Tag size={14} className="text-purple-600 shrink-0" />
-                                {item.coupon_code ? `${item.coupon_code} (${item.coupon_per}% off)` : `₹${item.discount_amount ?? 0}`}
+                            {/* 5. Days Left */}
+                            <div className="bg-amber-50/60 p-2.5 rounded-xl border border-amber-100 flex flex-col justify-between">
+                              <span className="text-amber-900/80 block text-[11px] mb-0.5 font-medium">Days left</span>
+                              <span className="font-semibold text-amber-950 flex items-center gap-1">
+                                <Clock size={12} className="text-amber-600 shrink-0" />
+                                {item.days_left ?? 0} days
                               </span>
                             </div>
-                          </div>
 
-                          {/* GST Amount */}
-                          <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 flex flex-col justify-between">
-                            <div>
-                              <span className="text-slate-700 font-medium block text-[11px] mb-1">GST ({item.gst_percentage ?? 0}%)</span>
-                              <span className="font-semibold text-slate-950 flex items-center gap-1.5">
-                                <Percent size={14} className="text-blue-600 shrink-0" />
+                            {/* 6. GST Amount */}
+                            <div className="bg-slate-50/80 p-2.5 rounded-xl border border-slate-100 flex flex-col justify-between">
+                              <span className="text-slate-400 block text-[11px] mb-0.5">Gst ({item.gst_percentage ?? 0}%)</span>
+                              <span className="font-medium text-slate-800 flex items-center gap-1">
+                                <Percent size={12} className="text-blue-500 shrink-0" />
                                 ₹{item.gst_amount ?? 0}
                               </span>
                             </div>
                           </div>
-                        </div>
 
-                        {/* Payment Financial Details Footer */}
-                        <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs ml-3">
-                          <div className="flex items-center gap-4 flex-wrap text-slate-700 font-normal">
-                            <div>
-                              <span className="text-slate-600 font-medium">Base Amount: </span>
-                              <span className="font-semibold text-slate-900">₹{baseAmt}</span>
-                            </div>
-                            {item.wallet_amount_used !== undefined && (
+                          {/* Financial Footer: Base Amount, Wallet Used, Coupon, Payment ID, Final Amount */}
+                          <div className="bg-slate-50/90 rounded-xl p-3 border border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+                            <div className="flex items-center gap-4 flex-wrap text-slate-600 font-normal">
                               <div>
-                                <span className="text-slate-600 font-medium">Wallet Used: </span>
-                                <span className="font-semibold text-slate-900">₹{item.wallet_amount_used}</span>
+                                <span className="text-slate-400">Base amount: </span>
+                                <span className="font-medium text-slate-800">₹{baseAmt}</span>
                               </div>
-                            )}
-                            {item.razorpay_payment_id && (
-                              <div>
-                                <span className="text-slate-600 font-medium">Payment ID: </span>
-                                <span className="font-mono font-semibold text-slate-900">{item.razorpay_payment_id}</span>
+                              {item.wallet_amount_used !== undefined && Number(item.wallet_amount_used) > 0 && (
+                                <div>
+                                  <span className="text-slate-400">Wallet used: </span>
+                                  <span className="font-medium text-slate-800">₹{item.wallet_amount_used}</span>
+                                </div>
+                              )}
+                              {item.discount_amount !== undefined && Number(item.discount_amount) > 0 && (
+                                <div>
+                                  <span className="text-slate-400">Coupon discount: </span>
+                                  <span className="font-medium text-purple-700">₹{item.discount_amount}</span>
+                                </div>
+                              )}
+                              {item.razorpay_payment_id && (
+                                <div>
+                                  <span className="text-slate-400">Payment ID: </span>
+                                  <span className="font-mono text-slate-700">{item.razorpay_payment_id}</span>
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-2 self-end sm:self-auto">
+                              <span className="text-slate-500 font-medium text-xs">Total paid:</span>
+                              <span className="text-base font-semibold text-slate-900">
+                                ₹{Number(finalAmt).toLocaleString('en-IN')}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </>
+              )}
+
+              {/* TAB 3: AI CREDITS HISTORY (Showing All Original Attributes Cleanly) */}
+              {activeTab === 'ai' && (
+                <>
+                  {isAiHistoryLoading ? (
+                    <div className="flex flex-col items-center justify-center py-24 text-slate-400 gap-2">
+                      <RefreshCw size={22} className="animate-spin text-[#2F439D]" />
+                      <span className="text-xs font-medium text-slate-600">Loading Ai credit ledger...</span>
+                    </div>
+                  ) : aiHistoryList.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-16 text-center">
+                      <div className="w-12 h-12 rounded-xl bg-slate-100 text-slate-400 flex items-center justify-center mb-2">
+                        <Sparkles size={22} />
+                      </div>
+                      <span className="font-medium text-slate-800 text-sm">No transactions found</span>
+                      <span className="text-xs text-slate-400 mt-0.5 font-normal">Your Ai credit usage history will appear here.</span>
+                    </div>
+                  ) : (
+                    aiHistoryList.map((item, idx) => {
+                      const isAddition = item.type === 1;
+
+                      return (
+                        <div
+                          key={item.id || idx}
+                          className="border border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/40 rounded-xl p-3.5 sm:px-4 sm:py-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 transition-all"
+                        >
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-semibold text-slate-900 text-sm">{item.title || 'Ai document scan'}</span>
+                              {item.source && (
+                                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 capitalize">
+                                  {item.source}
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-xs text-slate-400 font-normal">
+                              {item.created_at || '—'} • Balance: {Number(item.balance_after || 0).toLocaleString()} credits
+                            </div>
+                            {item.note && (
+                              <div className="text-xs text-slate-500 font-normal mt-0.5">
+                                {item.note}
                               </div>
                             )}
                           </div>
 
-                          <div className="flex items-center gap-2 text-right self-end sm:self-auto">
-                            <span className="text-slate-700 font-medium text-xs">Final Amount:</span>
-                            <span className="text-xl font-bold text-slate-900">
-                              ₹{Number(finalAmt).toLocaleString('en-IN')}
+                          <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+                            <span className={`font-semibold text-xs sm:text-sm px-2.5 py-1 rounded-full ${isAddition ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
+                              {isAddition ? '+' : '-'}{Number(item.credits || 0).toLocaleString()} credits
+                            </span>
+
+                            <span className="font-semibold text-slate-900 text-sm">
+                              {Number(item.amount || 0) === 0 ? (
+                                <span className="text-emerald-600 font-medium">Free</span>
+                              ) : (
+                                `₹${Number(item.amount).toLocaleString()}`
+                              )}
                             </span>
                           </div>
                         </div>
+                      );
+                    })
+                  )}
+                </>
+              )}
+
+              {/* TAB 4: POLICY CREDITS HISTORY (Preserving All Original Attributes) */}
+              {activeTab === 'policy' && (
+                <>
+                  {isPolicyHistoryLoading ? (
+                    <div className="flex flex-col items-center justify-center py-24 text-slate-400 gap-2">
+                      <RefreshCw size={22} className="animate-spin text-[#2F439D]" />
+                      <span className="text-xs font-medium text-slate-600">Loading policy addons...</span>
+                    </div>
+                  ) : policyHistoryList.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-16 text-center">
+                      <div className="w-12 h-12 rounded-xl bg-slate-100 text-slate-400 flex items-center justify-center mb-2">
+                        <Shield size={22} />
                       </div>
-                    );
-                  })}
-                </div>
+                      <span className="font-medium text-slate-800 text-sm">No policy addons found</span>
+                      <span className="text-xs text-slate-400 mt-0.5 font-normal">Purchased policy addon packages will appear here.</span>
+                    </div>
+                  ) : (
+                    policyHistoryList.map((item, idx) => {
+                      const isActive = item.status === 1 || String(item.status_name).toLowerCase() === 'active';
+
+                      return (
+                        <div
+                          key={item.addon_id || item.invoice_no || idx}
+                          className="border border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/30 rounded-2xl p-4 sm:p-5 flex flex-col gap-3.5 transition-all shadow-2xs"
+                        >
+                          {/* Top Row: Policies Count, Tier, Invoice No, Status, Purchased Date */}
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-semibold text-slate-900 text-sm sm:text-base">+{item.addon_policies} policies</span>
+                              {item.tier_name && (
+                                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
+                                  {item.tier_name}
+                                </span>
+                              )}
+                              {item.invoice_no && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopy(item.invoice_no)}
+                                  className="text-xs font-mono font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded transition-colors cursor-pointer inline-flex items-center gap-1"
+                                  title="Copy invoice #"
+                                >
+                                  <span>Invoice: {item.invoice_no}</span>
+                                  {copiedInvoice === item.invoice_no ? (
+                                    <Check size={11} className="text-emerald-600" />
+                                  ) : (
+                                    <Copy size={10} className="text-slate-400" />
+                                  )}
+                                </button>
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              {item.created_at && (
+                                <div className="text-xs text-slate-400 font-normal mr-1 hidden sm:block">
+                                  Purchased: {item.created_at}
+                                </div>
+                              )}
+
+                              <span
+                                className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${isActive
+                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                  : 'bg-slate-100 text-slate-600 border border-slate-200'
+                                  }`}
+                              >
+                                {isActive ? 'Active' : 'Inactive'}
+                              </span>
+
+                              {item.pdf_link ? (
+                                <a
+                                  href={item.pdf_link}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="border border-slate-300 hover:border-[#2F439D] bg-white hover:bg-indigo-50/40 text-slate-800 text-xs font-medium px-3 py-1 rounded-lg transition-all shadow-2xs inline-flex items-center gap-1"
+                                >
+                                  <Download size={11} />
+                                  <span>Download invoice</span>
+                                </a>
+                              ) : null}
+                            </div>
+                          </div>
+
+                          {/* Attributes Grid: Preserving All Original Fields (Rate, Starting, Ending, Days, Base, GST) */}
+                          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 text-xs pt-1 border-t border-slate-100">
+                            {/* 1. Rate per policy */}
+                            <div className="bg-slate-50/80 p-2.5 rounded-xl border border-slate-100 flex flex-col justify-between">
+                              <span className="text-slate-400 block text-[11px] mb-0.5">Rate / policy</span>
+                              <span className="font-semibold text-slate-800">₹{item.rate_per_policy ?? 0}</span>
+                            </div>
+
+                            {/* 2. Starting date */}
+                            <div className="bg-slate-50/80 p-2.5 rounded-xl border border-slate-100 flex flex-col justify-between">
+                              <span className="text-slate-400 block text-[11px] mb-0.5">Starting date</span>
+                              <span className="font-medium text-slate-800 flex items-center gap-1">
+                                <Calendar size={12} className="text-indigo-500 shrink-0" />
+                                {item.starting_date || '—'}
+                              </span>
+                            </div>
+
+                            {/* 3. Ending date */}
+                            <div className="bg-slate-50/80 p-2.5 rounded-xl border border-slate-100 flex flex-col justify-between">
+                              <span className="text-slate-400 block text-[11px] mb-0.5">Ending date</span>
+                              <span className="font-medium text-slate-800 flex items-center gap-1">
+                                <CalendarDays size={12} className="text-indigo-500 shrink-0" />
+                                {item.ending_date || '—'}
+                              </span>
+                            </div>
+
+                            {/* 4. Days remaining */}
+                            <div className="bg-amber-50/60 p-2.5 rounded-xl border border-amber-100 flex flex-col justify-between">
+                              <span className="text-amber-900/80 block text-[11px] mb-0.5 font-medium">Days remaining</span>
+                              <span className="font-semibold text-amber-950 flex items-center gap-1">
+                                <Clock size={12} className="text-amber-600 shrink-0" />
+                                {item.days_remaining ?? 0} days
+                              </span>
+                            </div>
+
+                            {/* 5. Base amount */}
+                            <div className="bg-slate-50/80 p-2.5 rounded-xl border border-slate-100 flex flex-col justify-between">
+                              <span className="text-slate-400 block text-[11px] mb-0.5">Base amount</span>
+                              <span className="font-medium text-slate-800">₹{item.amount ?? 0}</span>
+                            </div>
+
+                            {/* 6. GST amount */}
+                            <div className="bg-slate-50/80 p-2.5 rounded-xl border border-slate-100 flex flex-col justify-between">
+                              <span className="text-slate-400 block text-[11px] mb-0.5">Gst amount</span>
+                              <span className="font-medium text-slate-800">₹{item.gst_amount ?? 0}</span>
+                            </div>
+                          </div>
+
+                          {/* Footer with Final Amount */}
+                          <div className="bg-slate-50/90 rounded-xl p-3 border border-slate-100 flex items-center justify-between text-xs">
+                            <span className="text-slate-600 font-medium">Total paid amount:</span>
+                            <span className="text-base font-semibold text-slate-900">
+                              ₹{item.final_amount ?? item.amount ?? 0}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </>
               )}
             </div>
 
-            {/* Pagination */}
+            {/* Pagination Controls */}
             {totalPages > 1 && (
-              <div className="p-5 border-t border-slate-100 bg-slate-50/60 flex items-center justify-between gap-4">
-                <span className="text-xs font-semibold text-slate-700">
-                  Page <span className="text-slate-900 font-bold">{page}</span> of{' '}
-                  <span className="text-slate-900 font-bold">{totalPages}</span>
+              <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-normal">
+                <span className="text-slate-500">
+                  Page <span className="text-slate-900 font-medium">{page}</span> of <span className="text-slate-900 font-medium">{totalPages}</span>
                 </span>
-
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   <button
+                    type="button"
                     onClick={() => setPage((p) => Math.max(p - 1, 1))}
-                    disabled={page === 1 || isLoading}
-                    className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                    disabled={page === 1}
+                    className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-2xs"
                   >
-                    <ChevronLeft size={18} />
+                    <ChevronLeft size={14} />
                   </button>
                   <button
+                    type="button"
                     onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
-                    disabled={page === totalPages || isLoading}
-                    className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                    disabled={page === totalPages}
+                    className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-2xs"
                   >
-                    <ChevronRight size={18} />
+                    <ChevronRight size={14} />
                   </button>
                 </div>
               </div>
             )}
           </div>
-        ) : activeTab === 'ai' ? (
-          <AiCreditHistoryTab />
-        ) : (
-          <PolicyCreditHistoryTab />
-        )}
+
+          {/* --------------------------------------------------------------- */}
+          {/* RIGHT: SIDEBAR WIDGETS (Validity & Credit Ledger)               */}
+          {/* --------------------------------------------------------------- */}
+          <div className="lg:col-span-4 space-y-4">
+            {/* WIDGET 1: PLAN VALIDITY & FINANCIAL SNAPSHOT */}
+            <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-2xs">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-indigo-50 text-[#2F439D] flex items-center justify-center font-semibold">
+                    <Clock size={15} />
+                  </div>
+                  <h3 className="font-semibold text-slate-900 text-sm">Plan validity</h3>
+                </div>
+                <span className="px-3 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-900 border border-amber-200/60">
+                  {displayDaysLeft} days left
+                </span>
+              </div>
+
+              {/* Date Metric Grid */}
+              <div className="grid grid-cols-2 gap-3 mt-4 pt-3.5 border-t border-slate-100">
+                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                  <span className="text-[11px] text-slate-400 font-normal block">Start date</span>
+                  <span className="text-xs font-semibold text-slate-900 block mt-0.5">{activeStartDate}</span>
+                </div>
+                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 text-right">
+                  <span className="text-[11px] text-slate-400 font-normal block">Expiry date</span>
+                  <span className="text-xs font-semibold text-slate-900 block mt-0.5">{activeEndDate}</span>
+                </div>
+              </div>
+
+              {/* Financial Snapshot */}
+              <div className="mt-3.5 pt-3 border-t border-slate-100 text-xs text-slate-500 space-y-1.5 font-normal">
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Base amount:</span>
+                  <span className="font-medium text-slate-800">₹{activeSubscription?.amount ?? 0}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Wallet used:</span>
+                  <span className="font-medium text-slate-800">₹{activeSubscription?.wallet_amount_used ?? 0}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Gst percentage:</span>
+                  <span className="font-medium text-slate-800">{activeSubscription?.gst_percentage ?? 0}%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Coupon discount:</span>
+                  <span className="font-medium text-slate-800">₹{activeSubscription?.discount_amount ?? 0}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* WIDGET 2: CREDIT LEDGER SNAPSHOT */}
+            <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-2xs">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-emerald-50 text-[#197a56] flex items-center justify-center font-semibold">
+                    <Activity size={15} />
+                  </div>
+                  <h3 className="font-semibold text-slate-900 text-sm">Credit ledger</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleTabChange('ai')}
+                  className="text-xs text-[#2F439D] font-medium hover:underline cursor-pointer flex items-center gap-1"
+                >
+                  <span>View all</span>
+                  <ArrowUpRight size={12} />
+                </button>
+              </div>
+
+              <div className="divide-y divide-slate-100">
+                {aiHistoryList.length > 0 ? (
+                  aiHistoryList.slice(0, 4).map((entry, i) => {
+                    const isAddition = entry.type === 1;
+
+                    return (
+                      <div key={entry.id || i} className="py-2.5 flex items-center justify-between gap-3 text-xs">
+                        <div className="space-y-0.5">
+                          <div className="font-medium text-slate-900 truncate max-w-[170px]">
+                            {entry.title || 'Ai document scan'}
+                          </div>
+                          <div className="text-[11px] text-slate-400 font-normal">{entry.created_at || '—'}</div>
+                        </div>
+
+                        <div className={`font-medium text-xs whitespace-nowrap px-2 py-0.5 rounded-full ${isAddition ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
+                          {isAddition ? '+' : '-'}{Number(entry.credits || 0).toLocaleString()}
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="py-8 text-center text-xs text-slate-400 font-normal">
+                    No recent credit transactions
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Upgrade Modal */}
+      {/* Buy AI Credits Modal */}
+      <BuyAiCreditsModal isOpen={isAiModalOpen} onClose={() => setIsAiModalOpen(false)} />
+
+      {/* Add Policies Modal */}
+      <AddPoliciesModal isOpen={isPolicyModalOpen} onClose={() => setIsPolicyModalOpen(false)} />
+
+      {/* Upgrade & Renew Plan Modal */}
       <SubscriptionModal
         isOpen={isUpgradeModalOpen}
         isExpired={isExpired}
