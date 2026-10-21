@@ -3,7 +3,6 @@ import { X } from 'lucide-react';
 import ActionButtons from '@/components/ui/ActionButtons';
 import Input from '@/components/ui/Input';
 import { validateCompanyPlan } from '@/utils/validation';
-
 interface PlanFormModalProps {
   isOpen: boolean;
   onClose: () => void;

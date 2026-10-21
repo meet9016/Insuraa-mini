@@ -1,6 +1,6 @@
 import React from 'react';
 import DatePicker from 'react-datepicker';
-import { Calendar, RotateCcw } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 
 interface DateRangePickerProps {
   fromDate: string;
@@ -16,7 +16,6 @@ export default function DateRangePicker({
   toDate,
   onFromDateChange,
   onToDateChange,
-  onReset,
   labelType = 'top',
 }: DateRangePickerProps) {
 

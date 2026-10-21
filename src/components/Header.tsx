@@ -10,8 +10,6 @@ import {
   PhoneCall,
   User,
   Database,
-  Globe,
-  Search,
   Monitor,
   ChevronDown,
   Menu,
@@ -23,13 +21,11 @@ import {
   Stethoscope,
   Car,
   Umbrella,
-  Crown,
   Sparkles,
   Receipt,
   UserCheck,
   Mail
 } from 'lucide-react';
-
 import { useAppSelector } from '@/redux/hooks';
 import { useFetchAiCredits, useGetAiCreditQuote, usePurchaseAiCredit } from '@/hooks/useAiCreditApi';
 import { useFetchProfile } from '@/hooks/useProfileApi';
@@ -101,7 +97,6 @@ export default function Header({ onOpenSubscription, onOpenSubscriptionHistory }
 
   const displayPhone = rawNumber ? (String(rawNumber).startsWith('+') ? String(rawNumber) : `+91 ${String(rawNumber).replace(/^(\+91|91)/, '').trim()}`) : '';
   const displayEmail = profileData?.email || currentUser?.email || '';
-  const displaySubText = displayEmail || displayPhone || '+91-01234567890';
 
   // Determine effective login_type:
   // - from Redux user.login_type

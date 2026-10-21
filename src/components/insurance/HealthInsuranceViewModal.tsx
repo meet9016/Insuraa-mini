@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, FileText, Calendar, CreditCard, Building2, ShieldCheck, ExternalLink, Paperclip, Users, Layers, AlertCircle, HeartPulse } from 'lucide-react';
+import { X, FileText, Calendar, CreditCard, ExternalLink, Paperclip, Users, Layers, AlertCircle, HeartPulse } from 'lucide-react';
 import { useViewHealthInsurance } from '@/hooks/useHealthInsuranceApi';
 
 interface HealthInsuranceViewModalProps {

@@ -21,8 +21,6 @@ import {
   fetchPolicyPlanQuote,
   fetchPolicyPlanPurchase,
   DirectPlanQuoteData,
-  PlanTier,
-  BillingCycle,
 } from '@/hooks/usePricingApi';
 
 interface SubscriptionModalProps {

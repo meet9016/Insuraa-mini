@@ -7,8 +7,6 @@ import {
   Mail,
   MapPin,
   Edit,
-  Hash,
-  Calendar,
   CreditCard,
   Shield,
   HeartPulse,
@@ -20,13 +18,6 @@ import {
   Download,
   ExternalLink,
   Paperclip,
-  CheckCircle2,
-  Clock,
-  Layers,
-  GraduationCap,
-  Scale,
-  Ruler,
-  Users,
   Eye
 } from 'lucide-react';
 import { useViewCustomer } from '@/hooks/useCustomerApi';
@@ -273,8 +264,8 @@ export default function CustomerViewModal({
                     type="button"
                     onClick={() => setActiveTab('profile')}
                     className={`pb-2.5 px-3.5 text-xs font-bold transition-all relative cursor-pointer ${activeTab === 'profile'
-                        ? 'text-[#2B4399] border-b-2 border-[#2B4399]'
-                        : 'text-gray-500 hover:text-gray-700'
+                      ? 'text-[#2B4399] border-b-2 border-[#2B4399]'
+                      : 'text-gray-500 hover:text-gray-700'
                       }`}
                   >
                     Profile & KYC Details
@@ -283,8 +274,8 @@ export default function CustomerViewModal({
                     type="button"
                     onClick={() => setActiveTab('policies')}
                     className={`pb-2.5 px-3.5 text-xs font-bold transition-all relative cursor-pointer flex items-center gap-1.5 ${activeTab === 'policies'
-                        ? 'text-[#2B4399] border-b-2 border-[#2B4399]'
-                        : 'text-gray-500 hover:text-gray-700'
+                      ? 'text-[#2B4399] border-b-2 border-[#2B4399]'
+                      : 'text-gray-500 hover:text-gray-700'
                       }`}
                   >
                     <span>Policies & Coverages</span>
@@ -297,8 +288,8 @@ export default function CustomerViewModal({
                     type="button"
                     onClick={() => setActiveTab('claims')}
                     className={`pb-2.5 px-3.5 text-xs font-bold transition-all relative cursor-pointer flex items-center gap-1.5 ${activeTab === 'claims'
-                        ? 'text-[#2B4399] border-b-2 border-[#2B4399]'
-                        : 'text-gray-500 hover:text-gray-700'
+                      ? 'text-[#2B4399] border-b-2 border-[#2B4399]'
+                      : 'text-gray-500 hover:text-gray-700'
                       }`}
                   >
                     <span>Claims & Quotations</span>

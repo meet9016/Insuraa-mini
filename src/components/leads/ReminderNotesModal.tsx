@@ -1,8 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { X, FileText, Bell, Check, Trash2, Calendar, Clock, Pencil } from 'lucide-react';
+import { X, FileText, Bell, Check } from 'lucide-react';
 import DatePicker from '@/components/ui/DatePicker';
 import Input from '@/components/ui/Input';
-import { ColDef } from 'ag-grid-community';
 import AgGridTable from '@/components/ui/tableaggrid/AgGridTable';
 import DeleteConfirmationModal from '@/components/ui/DeleteConfirmationModal';
 import { useLeadNoteList, useLeadNoteActions } from '@/hooks/useLeadNoteApi';

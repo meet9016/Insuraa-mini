@@ -119,29 +119,6 @@ const FormInput: React.FC<FormInputProps> = ({
     return classes;
   };
 
-  const getCheckboxClasses = () => {
-    let classes = `
-      appearance-none w-5 h-5 rounded
-      border-2 transition-all duration-200
-      cursor-pointer relative
-      focus:outline-none focus:ring-2 focus:ring-offset-2
-    `;
-
-    if (disabled) {
-      classes += " cursor-not-allowed opacity-70";
-    }
-
-    if (hasError) {
-      classes += ` border-red-700 focus:ring-red-300`;
-    } else if (checked) {
-      classes += ` border-${checkboxColor} bg-${checkboxColor} focus:ring-${checkboxColor}`;
-    } else {
-      classes += ` border-gray-400 focus:ring-blue-300`;
-    }
-
-    return classes;
-  };
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.currentTarget.files?.[0];
     onChange({
@@ -161,8 +138,6 @@ const FormInput: React.FC<FormInputProps> = ({
       },
     });
   };
-
-
 
   if (isCheckbox) {
     return (

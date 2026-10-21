@@ -9,15 +9,12 @@ import {
   CheckCircle2,
   Clock,
   Download,
-  AlertCircle,
   ChevronLeft,
   ChevronRight,
   Shield,
   Zap,
-  CreditCard,
   Crown,
   FileCheck,
-  TrendingUp,
 } from 'lucide-react';
 import { api } from '@/utils/axiosInstance';
 import endPointApi from '@/utils/endPointApi';
@@ -84,8 +81,8 @@ export default function SubscriptionHistoryModal({
       const list: SubscriptionItem[] = Array.isArray(resData?.data)
         ? resData.data
         : Array.isArray(resData)
-        ? resData
-        : [];
+          ? resData
+          : [];
 
       setSubscriptions(list);
 
@@ -247,27 +244,24 @@ export default function SubscriptionHistoryModal({
                 return (
                   <div
                     key={item.subscription_id || idx}
-                    className={`bg-white rounded-2xl p-5 border transition-all duration-200 flex flex-col md:flex-row md:items-center justify-between gap-5 relative overflow-hidden group hover:shadow-lg ${
-                      isActive
+                    className={`bg-white rounded-2xl p-5 border transition-all duration-200 flex flex-col md:flex-row md:items-center justify-between gap-5 relative overflow-hidden group hover:shadow-lg ${isActive
                         ? 'border-[#2E3192]/40 ring-1 ring-[#2E3192]/10 shadow-sm'
                         : 'border-slate-200'
-                    }`}
+                      }`}
                   >
                     {/* Status Color Left Pill */}
                     <div
-                      className={`absolute left-0 top-0 bottom-0 w-2 ${
-                        isActive ? 'bg-gradient-to-b from-[#2E3192] to-[#2BBF8C]' : 'bg-slate-300'
-                      }`}
+                      className={`absolute left-0 top-0 bottom-0 w-2 ${isActive ? 'bg-gradient-to-b from-[#2E3192] to-[#2BBF8C]' : 'bg-slate-300'
+                        }`}
                     />
 
                     {/* Main Details */}
                     <div className="flex items-start gap-4 pl-3">
                       <div
-                        className={`w-13 h-13 p-3 rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${
-                          isActive
+                        className={`w-13 h-13 p-3 rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${isActive
                             ? 'bg-gradient-to-br from-[#2E3192] to-[#2BBF8C] text-white'
                             : 'bg-slate-100 text-slate-500 border border-slate-200'
-                        }`}
+                          }`}
                       >
                         {isActive ? <Crown size={24} /> : <Receipt size={24} />}
                       </div>
@@ -280,11 +274,10 @@ export default function SubscriptionHistoryModal({
 
                           {/* Status Badge */}
                           <span
-                            className={`inline-flex items-center gap-1 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
-                              isActive
+                            className={`inline-flex items-center gap-1 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${isActive
                                 ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                                 : 'bg-slate-100 text-slate-600 border border-slate-200'
-                            }`}
+                              }`}
                           >
                             {isActive ? (
                               <CheckCircle2 size={11} className="text-emerald-600" />

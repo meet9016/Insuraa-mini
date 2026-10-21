@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { Shield, ArrowRight, Activity, Phone, Edit2, RefreshCw, User } from 'lucide-react';
+import { Shield, ArrowRight, Phone, Edit2, RefreshCw, User } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
