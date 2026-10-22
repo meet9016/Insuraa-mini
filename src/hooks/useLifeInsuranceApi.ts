@@ -124,6 +124,8 @@ export interface LifeInsurancePayload {
   premium_overdue_days?: string | number;
   customer_payment_mode?: string | number;
   regenerate_installments?: string | number | boolean;
+  policy_date_change?: string | number | boolean;
+  mark_all_paid?: string | number | boolean;
   policy_pdf?: File | null;
   riders?: RiderItemPayload[];
   nominees?: NomineeItemPayload[];
@@ -202,7 +204,13 @@ export const useLifeInsuranceActions = () => {
       formData.append('account_holder_name', String(payload.account_holder_name ?? ''));
       formData.append('premium_overdue_days', String(payload.premium_overdue_days ?? ''));
       formData.append('customer_payment_mode', String(payload.customer_payment_mode ?? ''));
-      formData.append('regenerate_installments', payload.regenerate_installments ? '1' : '0');
+      formData.append('regenerate_installments', (payload.mark_all_paid || payload.regenerate_installments) ? '1' : '0');
+      if (payload.policy_date_change !== undefined) {
+        formData.append('policy_date_change', payload.policy_date_change ? '1' : '0');
+      }
+      if (payload.mark_all_paid !== undefined) {
+        formData.append('mark_all_paid', payload.mark_all_paid ? '1' : '0');
+      }
 
       if (payload.policy_pdf) {
         formData.append('policy_pdf', payload.policy_pdf);

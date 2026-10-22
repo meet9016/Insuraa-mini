@@ -409,6 +409,8 @@ export default function AddLifeInsurance() {
     customer_payment_mode: '',
     premium_overdue_days: '',
     regenerate_installments: false,
+    policy_date_change: false,
+    mark_all_paid: false,
     note: '',
     bank_name: '',
     account_type: '',
@@ -418,6 +420,15 @@ export default function AddLifeInsurance() {
     company_commission: '',
     company_tds: '',
   });
+
+  const isEdit = Boolean(formData.life_insurance_id || (router.isReady && router.query.id));
+  const initialLoadedRef = React.useRef(false);
+
+  useEffect(() => {
+    if (router.isReady && !router.query.id) {
+      initialLoadedRef.current = true;
+    }
+  }, [router.isReady, router.query.id]);
 
   const { data: plansAndAgencyRes } = useLifeInsuranceCompanyPlansAndAgency(formData.companies_id);
   const companyPlans = plansAndAgencyRes?.plan_list || [];
@@ -489,7 +500,7 @@ export default function AddLifeInsurance() {
 
         // Track which fields were auto-filled to highlight them
         const newAiFilledFields: string[] = [];
-        
+
         const fieldMapping: Record<string, any> = {
           companies_id: extractedData.companies_id,
           customer_id: extractedData.customer_id,
@@ -523,6 +534,9 @@ export default function AddLifeInsurance() {
               newAiFilledFields.push(key);
             }
           });
+          if (isEdit) {
+            updatedData.policy_date_change = true;
+          }
           return updatedData;
         });
 
@@ -620,7 +634,9 @@ export default function AddLifeInsurance() {
             total_premium: String(item.total_premium ?? ''),
             customer_payment_mode: String(item.customer_payment_mode || ''),
             premium_overdue_days: String(item.premium_overdue_days || ''),
-            regenerate_installments: Boolean(item.regenerate_installments),
+            regenerate_installments: Boolean(Number(item.regenerate_installments ?? item.mark_all_paid) === 1 || item.regenerate_installments === true || item.regenerate_installments === '1'),
+            policy_date_change: Boolean(Number(item.policy_date_change) === 1 || item.policy_date_change === true || item.policy_date_change === '1'),
+            mark_all_paid: Boolean(Number(item.mark_all_paid ?? item.regenerate_installments) === 1 || item.mark_all_paid === true || item.mark_all_paid === '1'),
             note: item.note || item.policy_note || item.remarks || item.remark || '',
             bank_name: item.bank_name || '',
             account_type: item.account_type || '',
@@ -660,9 +676,17 @@ export default function AddLifeInsurance() {
               existing_image_url: d.other_document_image || d.document_image || d.image || d.file || d.path || d.image_url || d.url || null
             })));
           }
+
+          setTimeout(() => {
+            initialLoadedRef.current = true;
+          }, 300);
         }
       } catch (err) {
         console.error('Error fetching life insurance details for edit:', err);
+      } finally {
+        setTimeout(() => {
+          initialLoadedRef.current = true;
+        }, 500);
       }
     };
 
@@ -798,10 +822,23 @@ export default function AddLifeInsurance() {
     });
   }, [formData.net_premium, formData.gst_amount, riders]);
 
-  const addRider = () => setRiders(prev => [...prev, { id: Date.now(), riders_id: '', riders_amount: '', riders_note: '' }]);
-  const removeRider = (id: number) => setRiders(prev => prev.filter(r => r.id !== id));
+  const addRider = () => {
+    setRiders(prev => [...prev, { id: Date.now(), riders_id: '', riders_amount: '', riders_note: '' }]);
+    if (isEdit && initialLoadedRef.current) {
+      setFormData(prev => ({ ...prev, policy_date_change: true }));
+    }
+  };
+  const removeRider = (id: number) => {
+    setRiders(prev => prev.filter(r => r.id !== id));
+    if (isEdit && initialLoadedRef.current) {
+      setFormData(prev => ({ ...prev, policy_date_change: true }));
+    }
+  };
   const updateRider = (id: number, field: string, value: string) => {
     setRiders(prev => prev.map(r => r.id === id ? { ...r, [field]: value } : r));
+    if (isEdit && initialLoadedRef.current && field === 'riders_amount') {
+      setFormData(prev => ({ ...prev, policy_date_change: true }));
+    }
   };
 
   const addNominee = () => setNominees(prev => [...prev, { id: Date.now(), nomainee_name: '', nomainee_relationship: '', nomainee_per: '' }]);
@@ -823,9 +860,31 @@ export default function AddLifeInsurance() {
     setDocuments(prev => prev.map(d => d.id === id ? { ...d, [field]: value } : d));
   };
 
+  const POLICY_DATE_CHANGE_TRIGGERS = [
+    'payment_mode',
+    'policy_premium_term',
+    'policy_term',
+    'policy_start_date',
+    'policy_maturity_date',
+    'net_premium',
+    'gst_amount',
+    'total_net_premium',
+    'total_premium',
+  ];
+
   const handleChange = (field: string, value: any) => {
-    const updatedForm = { ...formData, [field]: value };
-    setFormData(updatedForm);
+    // Once policy_date_change is checked, do not allow unchecking
+    if (field === 'policy_date_change' && formData.policy_date_change && !value) {
+      return;
+    }
+
+    let updatedForm = { ...formData, [field]: value };
+
+    if (field === 'mark_all_paid') {
+      updatedForm.regenerate_installments = value;
+    } else if (field === 'regenerate_installments') {
+      updatedForm.mark_all_paid = value;
+    }
 
     if (field === 'net_premium' || field === 'gst_amount' || field === 'total_net_premium') {
       const { computedTotalNet, computedTotal } = calculateTotals(
@@ -834,12 +893,15 @@ export default function AddLifeInsurance() {
         riders,
         field === 'total_net_premium' ? value : formData.total_net_premium
       );
-      setFormData(prev => ({
-        ...prev,
-        total_net_premium: computedTotalNet,
-        total_premium: computedTotal
-      }));
+      updatedForm.total_net_premium = computedTotalNet;
+      updatedForm.total_premium = computedTotal;
     }
+
+    if (isEdit && initialLoadedRef.current && POLICY_DATE_CHANGE_TRIGGERS.includes(field)) {
+      updatedForm.policy_date_change = true;
+    }
+
+    setFormData(updatedForm);
 
     if (errors[field]) {
       const { errors: newErrors } = validateLifeInsurance(updatedForm, nominees);
@@ -899,7 +961,9 @@ export default function AddLifeInsurance() {
       account_holder_name: formData.account_holder_name,
       premium_overdue_days: formData.premium_overdue_days,
       customer_payment_mode: formData.customer_payment_mode,
-      regenerate_installments: formData.regenerate_installments ? 1 : 0,
+      regenerate_installments: (formData.mark_all_paid || formData.regenerate_installments) ? 1 : 0,
+      policy_date_change: isEdit ? (formData.policy_date_change ? 1 : 0) : undefined,
+      mark_all_paid: (formData.mark_all_paid || formData.regenerate_installments) ? 1 : 0,
       policy_pdf: policyPdf,
       riders: riders.map(r => ({
         riders_id: r.riders_id,
@@ -1414,18 +1478,72 @@ export default function AddLifeInsurance() {
                 <div className={sectionHeaderClass}>
                   <div className="flex items-center gap-2">
                     <Settings size={18} />
-                    <span>Options</span>
+                    <span>Installment Setting</span>
                   </div>
                 </div>
-                <Input
-                  as="checkbox"
-                  name="regenerate_installments"
-                  label="Mark All Installments As Paid"
-                  helperText="Check To Mark All Installments Up To Today's Date As Paid On Save."
-                  checked={formData.regenerate_installments}
-                  onChange={(e: any) => handleChange('regenerate_installments', e.target.checked)}
-                  checkboxColor="#2B4399"
-                />
+                <div className={`grid grid-cols-1 ${isEdit ? 'md:grid-cols-2' : ''} gap-6 lg:gap-10 items-start pt-1`}>
+                  {isEdit && (
+                    <div className={`flex items-start gap-3 transition-opacity duration-200 ${formData.policy_date_change ? 'opacity-60 cursor-not-allowed select-none' : ''}`}>
+                      <div
+                        onClick={() => {
+                          if (!formData.policy_date_change) {
+                            handleChange('policy_date_change', true);
+                          }
+                        }}
+                        className={`w-5 h-5 rounded border flex items-center justify-center transition-colors shrink-0 mt-0.5 ${formData.policy_date_change
+                          ? 'bg-[#2B4399] border-[#2B4399] cursor-not-allowed'
+                          : 'border-gray-400 bg-white hover:border-[#2B4399] cursor-pointer'
+                          }`}
+                        title={formData.policy_date_change ? 'Policy Date Change is applied and cannot be unchecked' : 'Check to enable Policy Date Change'}
+                      >
+                        {formData.policy_date_change && (
+                          <Check size={14} className="text-white stroke-[3]" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <label
+                          onClick={() => {
+                            if (!formData.policy_date_change) {
+                              handleChange('policy_date_change', true);
+                            }
+                          }}
+                          className={`text-sm font-semibold text-gray-800 block ${formData.policy_date_change ? 'cursor-not-allowed' : 'cursor-pointer'
+                            }`}
+                        >
+                          Policy Date Change
+                        </label>
+                        <p className={`text-xs text-gray-500 mt-0.5 leading-normal ${formData.policy_date_change ? 'cursor-not-allowed' : ''}`}>
+                          Check To Edit Start Date, Terms & Payment Mode. Old <span className="font-semibold text-gray-700">Unpaid</span> Installments Will Be Deleted And Regenerated On Save.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-start gap-3">
+                    <div
+                      onClick={() => handleChange('mark_all_paid', !formData.mark_all_paid)}
+                      className={`w-5 h-5 rounded border flex items-center justify-center transition-colors shrink-0 mt-0.5 cursor-pointer ${formData.mark_all_paid
+                        ? 'bg-[#2B4399] border-[#2B4399]'
+                        : 'border-gray-400 bg-white hover:border-[#2B4399]'
+                        }`}
+                    >
+                      {formData.mark_all_paid && (
+                        <Check size={14} className="text-white stroke-[3]" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <label
+                        onClick={() => handleChange('mark_all_paid', !formData.mark_all_paid)}
+                        className="text-sm font-semibold text-gray-800 cursor-pointer block"
+                      >
+                        Mark All Installments As Paid
+                      </label>
+                      <p className="text-xs text-gray-500 mt-0.5 leading-normal">
+                        Check To Mark All Installments Up To Today&apos;s Date As Paid On Save.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Nominee Details (Exact 4 Columns Row with Square Icon Button) */}
