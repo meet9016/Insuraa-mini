@@ -1,7 +1,18 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { Shield, ArrowRight, Phone, Edit2, RefreshCw, User } from 'lucide-react';
+import {
+  Shield,
+  ArrowRight,
+  Phone,
+  Edit2,
+  RefreshCw,
+  User,
+  Building2,
+  CheckCircle2,
+  ArrowLeft,
+  Check,
+} from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
@@ -11,7 +22,12 @@ import { useAppDispatch, useAppSelector } from '@/redux/hooks';
 import { resetOtpState, setUser, User as ReduxUser } from '@/redux/slices/authSlice';
 
 // React Query Hooks
-import { useSendLoginOtp, useVerifyLoginOtp } from '@/hooks/useAuthOtp';
+import {
+  useSendLoginOtp,
+  useVerifyLoginOtp,
+  useStaffSelectAccount,
+  StaffAccountItem,
+} from '@/hooks/useAuthOtp';
 import { useFetchAppSettings } from '@/hooks/useSettingsApi';
 
 
@@ -41,12 +57,18 @@ export default function LoginPage() {
   // Login Role Selection State ('admin' | 'staff')
   const [loginType, setLoginType] = useState<'admin' | 'staff'>('admin');
 
+  // Staff Account Selection State (when verify_login_otp returns status: 202 / accounts array)
+  const [staffAccounts, setStaffAccounts] = useState<StaffAccountItem[]>([]);
+  const [selectToken, setSelectToken] = useState<string>('');
+  const [selectedStaffId, setSelectedStaffId] = useState<number | string | null>(null);
+
   // Redux state
   const { otpPhoneNumber, isOtpSent } = useAppSelector((state) => state.auth);
 
   // React Query Mutations
   const sendOtpMutation = useSendLoginOtp();
   const verifyOtpMutation = useVerifyLoginOtp();
+  const staffSelectAccountMutation = useStaffSelectAccount();
 
   // Formik for Mobile Number Step (Step 1)
   const sendOtpFormik = useFormik({
@@ -59,6 +81,9 @@ export default function LoginPage() {
         .required('Mobile number is required'),
     }),
     onSubmit: (values) => {
+      setStaffAccounts([]);
+      setSelectToken('');
+      setSelectedStaffId(null);
       sendOtpMutation.mutate(
         { number: values.number, login_type: loginType },
         {
@@ -111,6 +136,30 @@ export default function LoginPage() {
         { number: activeNumber, otp: values.otp, login_type: loginType },
         {
           onSuccess: (res) => {
+            // Check if account selection is required (Staff with multiple accounts)
+            const isSelectAccountRequired =
+              res?.status === 202 ||
+              res?.status === '202' ||
+              res?.data?.select_account === 1 ||
+              res?.data?.select_account === '1' ||
+              (Array.isArray(res?.data?.accounts) && res.data.accounts.length > 0);
+
+            if (isSelectAccountRequired) {
+              if (res?.message) {
+                toast.info(res.message);
+              }
+              const accounts: StaffAccountItem[] = Array.isArray(res?.data?.accounts)
+                ? res.data.accounts
+                : [];
+              const token = res?.data?.select_token || '';
+              setStaffAccounts(accounts);
+              setSelectToken(token);
+              if (accounts.length > 0) {
+                setSelectedStaffId(accounts[0].staff_id);
+              }
+              return; // Do not proceed to dashboard yet
+            }
+
             if (res?.message) {
               toast.success(res.message);
             }
@@ -137,6 +186,7 @@ export default function LoginPage() {
                 role: rawUser.user_role_id ? String(rawUser.user_role_id) : undefined,
                 username: rawUser.username || '',
                 login_type: resolvedLoginType,
+                staff_id: rawUser.staff_id,
               };
               dispatch(setUser(userPayload));
             }
@@ -156,7 +206,74 @@ export default function LoginPage() {
     },
   });
 
+  // Handler for selecting an account in Step 3
+  const handleSelectAccountSubmit = () => {
+    if (!selectedStaffId) {
+      toast.error('Please select an account to continue');
+      return;
+    }
+    if (!selectToken) {
+      toast.error('Session expired. Please request OTP again.');
+      setStaffAccounts([]);
+      dispatch(resetOtpState());
+      return;
+    }
+
+    staffSelectAccountMutation.mutate(
+      { staff_id: selectedStaffId, select_token: selectToken },
+      {
+        onSuccess: (res) => {
+          if (res?.message) {
+            toast.success(res.message);
+          }
+          const resolvedLoginType =
+            res?.data?.login_type ||
+            res?.login_type ||
+            'staff';
+
+          if (typeof window !== 'undefined' && resolvedLoginType) {
+            localStorage.setItem('login_type', resolvedLoginType);
+            localStorage.setItem('auth_login_type', resolvedLoginType);
+          }
+
+          const rawUser = res?.data?.user || res?.user;
+          if (rawUser) {
+            const userPayload: ReduxUser = {
+              id: rawUser.id ? String(rawUser.id) : undefined,
+              full_name: rawUser.full_name || '',
+              name: rawUser.full_name || rawUser.name || rawUser.username || '',
+              email: rawUser.email || '',
+              number: rawUser.number || '',
+              company_name: rawUser.company_name || '',
+              user_role_id: rawUser.user_role_id ? String(rawUser.user_role_id) : undefined,
+              role: rawUser.user_role_id ? String(rawUser.user_role_id) : undefined,
+              username: rawUser.username || '',
+              login_type: resolvedLoginType,
+              staff_id: rawUser.staff_id,
+            };
+            dispatch(setUser(userPayload));
+          }
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem('insuraa_just_logged_in', 'true');
+            sessionStorage.removeItem('insuraa_subscription_shown');
+          }
+          router.push('/dashboard');
+        },
+        onError: (err: any) => {
+          if (err?.response?.data?.message || err?.message) {
+            toast.error(err?.response?.data?.message || err?.message);
+          } else {
+            toast.error('Failed to login to account');
+          }
+        },
+      }
+    );
+  };
+
   const handleEditPhoneNumber = () => {
+    setStaffAccounts([]);
+    setSelectToken('');
+    setSelectedStaffId(null);
     dispatch(resetOtpState());
   };
 
@@ -229,7 +346,119 @@ export default function LoginPage() {
             )}
           </div>
 
-          {!isOtpSent ? (
+          {staffAccounts.length > 0 ? (
+            /* STEP 3: SELECT ACCOUNT (For Staff with multiple accounts) */
+            <div className="animate-in fade-in duration-200">
+              <div className="mb-4 text-center">
+                <h2 className="text-[22px] font-bold text-[#111827] tracking-tight">
+                  Select Account
+                </h2>
+                <p className="text-gray-500 text-xs mt-1">
+                  Choose the workspace you want to login to
+                </p>
+                <div className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-0.5 bg-slate-100 rounded-full text-[11px] font-medium text-slate-600">
+                  <Phone className="w-3 h-3 text-slate-400" />
+                  <span>{otpPhoneNumber || sendOtpFormik.values.number}</span>
+                </div>
+              </div>
+
+              {/* Accounts List (Compact & Distinctive) */}
+              <div className="space-y-2 mb-4 max-h-[250px] overflow-y-auto pr-0.5">
+                {staffAccounts.map((account, idx) => {
+                  const isSelected = String(selectedStaffId) === String(account.staff_id);
+                  const ownerName = account.owner_name || '';
+                  const initial = (ownerName || account.company_name || 'U').charAt(0).toUpperCase();
+
+                  // Distinct subtle gradients for workspace avatars
+                  const gradients = [
+                    'from-[#2E3192] to-[#4338ca]',
+                    'from-[#059669] to-[#0d9488]',
+                    'from-[#7c3aed] to-[#6366f1]',
+                    'from-[#ea580c] to-[#d97706]',
+                  ];
+                  const gradient = gradients[idx % gradients.length];
+
+                  return (
+                    <div
+                      key={account.staff_id}
+                      onClick={() => setSelectedStaffId(account.staff_id)}
+                      className={`group relative p-2.5 sm:p-3 rounded-xl border transition-all duration-150 cursor-pointer flex items-center justify-between gap-3 ${
+                        isSelected
+                          ? 'border-[#2E3192] bg-gradient-to-r from-blue-50/70 to-indigo-50/30 shadow-xs ring-1 ring-[#2E3192]/20'
+                          : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        {/* Unique Monogram Avatar */}
+                        <div
+                          className={`w-9 h-9 rounded-xl bg-gradient-to-br ${gradient} text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-2xs`}
+                        >
+                          {initial}
+                        </div>
+
+                        <div className="min-w-0 text-left">
+                          <h4 className="text-[13.5px] font-bold text-slate-900 truncate">
+                            {account.company_name}
+                          </h4>
+                          <div className="flex items-center gap-1.5 mt-0.5 text-[11px] text-slate-500">
+                            <span className="text-slate-400">Owner:</span>
+                            <span className="font-semibold text-slate-700 truncate">{account.owner_name}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Right Selection Indicator */}
+                      <div className="shrink-0 flex items-center">
+                        {isSelected ? (
+                          <div className="w-5 h-5 rounded-full bg-[#2E3192] text-white flex items-center justify-center shadow-xs animate-in zoom-in-75 duration-150">
+                            <Check className="w-3 h-3" strokeWidth={3} />
+                          </div>
+                        ) : (
+                          <div className="w-5 h-5 rounded-full border-2 border-slate-300 bg-white group-hover:border-slate-400 transition-colors" />
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Submit & Back Buttons */}
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={handleSelectAccountSubmit}
+                  disabled={!selectedStaffId || staffSelectAccountMutation.isPending}
+                  className="w-full relative flex items-center justify-center gap-2 rounded-xl bg-[#2E3192] py-3 text-[14px] font-bold text-white transition-all hover:bg-[#232569] active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed group overflow-hidden cursor-pointer shadow-xs"
+                >
+                  {staffSelectAccountMutation.isPending ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white/80 border-t-transparent rounded-full animate-spin"></div>
+                      <span>Logging in...</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span>Login to Account</span>
+                      <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                    </div>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStaffAccounts([]);
+                    setSelectToken('');
+                    setSelectedStaffId(null);
+                  }}
+                  disabled={staffSelectAccountMutation.isPending}
+                  className="w-full py-1.5 text-xs text-gray-500 hover:text-gray-800 font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Back to OTP</span>
+                </button>
+              </div>
+            </div>
+          ) : !isOtpSent ? (
             /* STEP 1: SEND OTP FORM */
             <div>
               <div className="mb-8 text-center">
@@ -249,7 +478,12 @@ export default function LoginPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
-                    onClick={() => setLoginType('admin')}
+                    onClick={() => {
+                      setLoginType('admin');
+                      setStaffAccounts([]);
+                      setSelectToken('');
+                      setSelectedStaffId(null);
+                    }}
                     className={`px-4 py-3 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 border ${loginType === 'admin'
                       ? 'bg-[#2E3192] text-white border-[#2E3192] shadow-md'
                       : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
@@ -260,7 +494,12 @@ export default function LoginPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setLoginType('staff')}
+                    onClick={() => {
+                      setLoginType('staff');
+                      setStaffAccounts([]);
+                      setSelectToken('');
+                      setSelectedStaffId(null);
+                    }}
                     className={`px-4 py-3 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 border ${loginType === 'staff'
                       ? 'bg-[#2E3192] text-white border-[#2E3192] shadow-md'
                       : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'

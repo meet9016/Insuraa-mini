@@ -118,6 +118,8 @@ export interface BirthdayEventItem {
   email?: string;
   dob?: string;
   age?: number | string;
+  whatsapp_message?: string;
+  whatsapp_url?: string;
   [key: string]: any;
 }
 
@@ -127,6 +129,8 @@ export interface AnniversaryEventItem {
   phone?: string;
   email?: string;
   anniversary_date?: string;
+  whatsapp_message?: string;
+  whatsapp_url?: string;
   [key: string]: any;
 }
 
@@ -135,6 +139,8 @@ export interface LeadEventItem {
   name?: string;
   phone?: string;
   email?: string;
+  whatsapp_message?: string;
+  whatsapp_url?: string;
   [key: string]: any;
 }
 
@@ -150,6 +156,8 @@ export interface PolicyRenewalItem {
   policy_number?: string;
   premium_amount?: string | number;
   expiry?: string;
+  whatsapp_message?: string;
+  whatsapp_url?: string;
   [key: string]: any;
 }
 
@@ -235,6 +243,8 @@ export interface PaymentPendingItem {
   gst_amount?: string | number;
   final_amount?: string | number;
   payment_status?: number | string;
+  whatsapp_message?: string;
+  whatsapp_url?: string;
   [key: string]: any;
 }
 
@@ -337,6 +347,8 @@ export interface RenewalPendingItem {
   policy_end_date?: string;
   days_left?: number | string;
   is_expired?: number | string;
+  whatsapp_message?: string;
+  whatsapp_url?: string;
   [key: string]: any;
 }
 

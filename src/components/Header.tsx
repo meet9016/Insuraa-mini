@@ -510,7 +510,11 @@ export default function Header({ onOpenSubscription, onOpenSubscriptionHistory }
                     onClick={() => {
                       setIsProfileOpen(false);
                       if (typeof window !== 'undefined') {
+                        const closedDate = localStorage.getItem('subscription_popup_closed_date');
                         localStorage.clear();
+                        if (closedDate) {
+                          localStorage.setItem('subscription_popup_closed_date', closedDate);
+                        }
                         window.location.href = '/auth/login';
                       }
                     }}

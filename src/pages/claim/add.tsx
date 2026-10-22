@@ -62,15 +62,36 @@ export default function AddClaim() {
 
     const fetchClaimDetail = async () => {
       try {
-        const formDataPayload = new FormData();
-        formDataPayload.append('page', '1');
-        formDataPayload.append('limit', '100');
-        formDataPayload.append('search', editId);
+        let item: any = null;
 
-        const response = await api.post(endPointApi.CLAIM.CLAIM_LIST, formDataPayload);
-        const resData = response?.data;
-        const list = Array.isArray(resData?.data) ? resData.data : [];
-        const item = list.find((c: any) => String(c.claim_id || c.id) === editId) || list[0];
+        // 1. Try dedicated edit/view endpoint with dynamic claim ID first
+        try {
+          const detailPayload = new FormData();
+          detailPayload.append('id', editId);
+          detailPayload.append('claim_id', editId);
+
+          const detailResponse = await api.post(endPointApi.CLAIM.EDIT_CLAIM, detailPayload);
+          const detailData = detailResponse?.data;
+          const candidate = detailData?.data?.claim_details || detailData?.data?.details || detailData?.data || detailData;
+          if (candidate && typeof candidate === 'object' && !Array.isArray(candidate) && (candidate.customer_id || candidate.claim_number || candidate.claim_id || candidate.id)) {
+            item = candidate;
+          }
+        } catch (e) {
+          // If EDIT_CLAIM is not a detail endpoint, fall back gracefully
+        }
+
+        // 2. Fallback to claim list by querying the dynamic claim ID
+        if (!item) {
+          const listPayload = new FormData();
+          listPayload.append('claim_id', editId);
+          listPayload.append('id', editId);
+          listPayload.append('search', editId);
+
+          const response = await api.post(endPointApi.CLAIM.CLAIM_LIST, listPayload);
+          const resData = response?.data;
+          const list = Array.isArray(resData?.data) ? resData.data : (Array.isArray(resData?.data?.list) ? resData.data.list : []);
+          item = list.find((c: any) => String(c.claim_id || c.id) === editId) || (list.length === 1 ? list[0] : null);
+        }
 
         if (item) {
           setFormData({

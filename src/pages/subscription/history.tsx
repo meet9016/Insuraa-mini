@@ -30,10 +30,15 @@ import {
   ArrowUpRight,
   CalendarDays,
   Layers,
-  CreditCard
+  CreditCard,
+  Info
 } from 'lucide-react';
 import { api } from '@/utils/axiosInstance';
 import endPointApi from '@/utils/endPointApi';
+import {
+  isSubscriptionPopupClosedToday,
+  setSubscriptionPopupClosedToday
+} from '@/utils/helper';
 import { toast } from 'react-toastify';
 import SubscriptionModal from '@/components/subscription/SubscriptionModal';
 import { useRouter } from 'next/router';
@@ -455,6 +460,10 @@ function AddPoliciesModal({ isOpen, onClose }: AddPoliciesModalProps) {
                 placeholder="Enter policies (e.g. 100)"
               />
             </div>
+            <p className="text-[11px] text-slate-500 mt-1.5 flex items-center gap-1.5">
+              <Info size={12} className="text-[#2BBF8C] shrink-0" />
+              <span>Prorated based on remaining days in your active billing cycle</span>
+            </p>
           </div>
 
           <button
@@ -504,11 +513,33 @@ function AddPoliciesModal({ isOpen, onClose }: AddPoliciesModalProps) {
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-slate-200 space-y-1 text-xs font-normal">
+                <div className="pt-2 border-t border-slate-200 space-y-2 text-xs font-normal">
                   <div className="flex justify-between items-center">
-                    <span className="font-medium text-slate-800">Prorated amount:</span>
-                    <span className="font-medium text-slate-900">₹{formatPrice(quoteResult.total_price)}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-semibold text-slate-900">Prorated amount:</span>
+                      <span className="text-[10px] text-[#197a56] bg-emerald-50 border border-emerald-200 font-medium px-1.5 py-0.5 rounded-md">
+                        Prorated
+                      </span>
+                    </div>
+                    <span className="font-semibold text-slate-900">₹{formatPrice(quoteResult.total_price)}</span>
                   </div>
+
+                  {/* Prorated Formula Box */}
+                  <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-xl p-2.5 text-xs space-y-1.5">
+                    <div className="flex items-center gap-1.5 text-[#197a56] font-medium text-[11px]">
+                      <Info size={13} className="shrink-0" />
+                      <span>Formula: Full cycle price × Remaining days / Total days</span>
+                    </div>
+                    <div className="bg-white/90 rounded-lg px-2.5 py-1.5 border border-emerald-100 font-mono text-[11px] text-slate-700 flex items-center justify-between">
+                      <span className="text-slate-600">
+                        (₹{formatPrice(quoteResult.full_cycle_price)} × {quoteResult.days_remaining ?? 0}) / {quoteResult.days_total ?? 1}
+                      </span>
+                      <span className="font-semibold text-[#197a56]">
+                        = ₹{formatPrice(quoteResult.total_price)}
+                      </span>
+                    </div>
+                  </div>
+
                   <div className="flex justify-between items-center text-slate-600">
                     <span>Discount:</span>
                     <span className="font-medium text-slate-900">₹{formatPrice(quoteResult.coupon_amount ?? 0)}</span>
@@ -632,8 +663,14 @@ export default function SubscriptionHistoryPage() {
           setIsExpired(true);
           setIsUpgradeModalOpen(true);
         } else if (showPopup) {
-          setIsExpired(false);
-          setIsUpgradeModalOpen(true);
+          // If closed on current date, do not open again today
+          if (isSubscriptionPopupClosedToday()) {
+            setIsExpired(false);
+            setIsUpgradeModalOpen(false);
+          } else {
+            setIsExpired(false);
+            setIsUpgradeModalOpen(true);
+          }
         } else {
           setIsExpired(false);
           setIsUpgradeModalOpen(false);
@@ -1683,6 +1720,7 @@ export default function SubscriptionHistoryPage() {
         onClose={() => {
           if (isExpired) return;
           setIsUpgradeModalOpen(false);
+          setSubscriptionPopupClosedToday();
         }}
       />
     </>

@@ -4,6 +4,10 @@ import SubscriptionModal from './subscription/SubscriptionModal';
 import SubscriptionHistoryModal from './subscription/SubscriptionHistoryModal';
 import { api } from '@/utils/axiosInstance';
 import endPointApi from '@/utils/endPointApi';
+import {
+  isSubscriptionPopupClosedToday,
+  setSubscriptionPopupClosedToday
+} from '@/utils/helper';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -42,9 +46,14 @@ export default function Layout({ children }: LayoutProps) {
             setIsExpired(true);
             setIsSubscriptionOpen(true);
           } else if (showPopup) {
-            // Condition 2: show_popup: true, is_expired: 0 -> Popup shows & CAN be closed
-            setIsExpired(false);
-            setIsSubscriptionOpen(true);
+            // Condition 2: show_popup: true, is_expired: 0 -> Check if already closed today
+            if (isSubscriptionPopupClosedToday()) {
+              setIsExpired(false);
+              setIsSubscriptionOpen(false);
+            } else {
+              setIsExpired(false);
+              setIsSubscriptionOpen(true);
+            }
           } else {
             // Condition 3: show_popup: false, is_expired: 0 -> Do NOT show popup
             setIsExpired(false);
@@ -67,6 +76,7 @@ export default function Layout({ children }: LayoutProps) {
   const handleCloseSubscription = () => {
     if (isExpired) return;
     setIsSubscriptionOpen(false);
+    setSubscriptionPopupClosedToday();
     if (typeof window !== 'undefined') {
       sessionStorage.setItem('insuraa_subscription_shown', 'true');
     }
@@ -91,6 +101,7 @@ export default function Layout({ children }: LayoutProps) {
         isExpired={isExpired}
         onClose={handleCloseSubscription}
         onSelectPlan={(planId) => {
+          setSubscriptionPopupClosedToday();
           if (typeof window !== 'undefined') {
             sessionStorage.setItem('insuraa_subscription_shown', 'true');
             localStorage.setItem('insuraa_user_plan', planId);

@@ -16,7 +16,7 @@ import {
   AreaChart,
   Area
 } from 'recharts';
-import { ChevronLeft, ChevronRight, Filter, Calendar, Shield, BarChart2, PieChart as PieChartIcon, X, Phone, Mail, User, Cake, Heart, UserCheck, Car, ChevronDown, Check, TrendingUp, FileText, RefreshCw, Users, Target, AlertTriangle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Filter, Calendar, Shield, BarChart2, PieChart as PieChartIcon, X, Phone, Mail, User, Cake, Heart, UserCheck, Car, ChevronDown, Check, TrendingUp, FileText, RefreshCw, Users, Target, AlertTriangle, Copy } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { ColDef } from 'ag-grid-community';
 import AgGridTable from '@/components/ui/tableaggrid/AgGridTable';
@@ -25,6 +25,64 @@ import DatePicker from '@/components/ui/DatePicker';
 import TableHeader from '@/components/ui/TableHeader';
 import WalkingLottieCharacter from '@/components/dashboard/WalkingLottieCharacter';
 import Stepped3DPieChart from '@/components/dashboard/Stepped3DPieChart';
+
+const WhatsAppIcon = ({ className = 'w-3.5 h-3.5' }: { className?: string }) => (
+  <svg className={`fill-current ${className}`} viewBox="0 0 24 24">
+    <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z" />
+  </svg>
+);
+
+const handleCopyWhatsappMessage = (msg?: string) => {
+  if (!msg) {
+    toast.warning('No WhatsApp message available to copy');
+    return;
+  }
+  if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(msg)
+      .then(() => toast.success('WhatsApp message copied!'))
+      .catch(() => fallbackCopyWhatsappMessage(msg));
+  } else {
+    fallbackCopyWhatsappMessage(msg);
+  }
+};
+
+const fallbackCopyWhatsappMessage = (msg: string) => {
+  try {
+    const textArea = document.createElement('textarea');
+    textArea.value = msg;
+    textArea.style.top = '0';
+    textArea.style.left = '0';
+    textArea.style.position = 'fixed';
+    textArea.style.opacity = '0';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    const successful = document.execCommand('copy');
+    document.body.removeChild(textArea);
+    if (successful) {
+      toast.success('WhatsApp message copied!');
+    } else {
+      toast.error('Failed to copy message');
+    }
+  } catch (err) {
+    toast.error('Failed to copy message');
+  }
+};
+
+const handleOpenWhatsappUrl = (url?: string, phone?: string, msg?: string) => {
+  if (url) {
+    window.open(url, '_blank', 'noopener,noreferrer');
+    return;
+  }
+  if (phone) {
+    const cleanPhone = String(phone).replace(/\D/g, '');
+    const waNumber = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
+    const fallbackUrl = `https://api.whatsapp.com/send?phone=${waNumber}${msg ? `&text=${encodeURIComponent(msg)}` : ''}`;
+    window.open(fallbackUrl, '_blank', 'noopener,noreferrer');
+    return;
+  }
+  toast.warning('No WhatsApp URL available');
+};
 
 interface CurvePoint {
   x: number;
@@ -630,6 +688,45 @@ export default function Dashboard() {
         );
       },
     },
+    {
+      headerName: 'Action',
+      field: 'actions',
+      width: 100,
+      minWidth: 100,
+      sortable: false,
+      filter: false,
+      cellRenderer: (params: any) => {
+        const message = params.data?.whatsapp_message;
+        const url = params.data?.whatsapp_url;
+        const phone = params.data?.phone;
+        return (
+          <div className="flex items-center gap-1.5 h-full">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleCopyWhatsappMessage(message);
+              }}
+              title={message ? 'Copy WhatsApp Message' : 'No message available'}
+              className="w-7 h-7 flex items-center justify-center rounded-lg border border-gray-200 bg-white hover:bg-gray-100 text-gray-600 hover:text-gray-900 transition-colors cursor-pointer shadow-xs"
+            >
+              <Copy size={13} />
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleOpenWhatsappUrl(url, phone, message);
+              }}
+              title={url ? 'Open WhatsApp' : 'Chat on WhatsApp'}
+              className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#25D366] hover:bg-[#20ba59] text-white transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-xs"
+            >
+              <WhatsAppIcon className="w-3.5 h-3.5 text-white" />
+            </button>
+          </div>
+        );
+      },
+    },
   ], []);
 
   const renewalPendingColumnDefs = React.useMemo<ColDef<RenewalPendingItem>[]>(() => [
@@ -714,6 +811,45 @@ export default function Dashboard() {
           ₹{params.value ?? 0}
         </span>
       ),
+    },
+    {
+      headerName: 'Action',
+      field: 'actions',
+      width: 100,
+      minWidth: 100,
+      sortable: false,
+      filter: false,
+      cellRenderer: (params: any) => {
+        const message = params.data?.whatsapp_message;
+        const url = params.data?.whatsapp_url;
+        const phone = params.data?.phone;
+        return (
+          <div className="flex items-center gap-1.5 h-full">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleCopyWhatsappMessage(message);
+              }}
+              title={message ? 'Copy WhatsApp Message' : 'No message available'}
+              className="w-7 h-7 flex items-center justify-center rounded-lg border border-gray-200 bg-white hover:bg-gray-100 text-gray-600 hover:text-gray-900 transition-colors cursor-pointer shadow-xs"
+            >
+              <Copy size={13} />
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleOpenWhatsappUrl(url, phone, message);
+              }}
+              title={url ? 'Open WhatsApp' : 'Chat on WhatsApp'}
+              className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#25D366] hover:bg-[#20ba59] text-white transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-xs"
+            >
+              <WhatsAppIcon className="w-3.5 h-3.5 text-white" />
+            </button>
+          </div>
+        );
+      },
     },
   ], []);
 
@@ -1945,6 +2081,11 @@ function CalendarGrid({ year, month, events = {}, colorMap, onDateClick }: Calen
           const hasEvents = dayEvents.length > 0;
           const isWeekend = idx % 7 === 0 || idx % 7 === 6;
 
+          // Limit visible dots to 5, show ... for remaining events
+          const maxDots = 5;
+          const visibleEvents = dayEvents.slice(0, maxDots);
+          const hasMoreEvents = dayEvents.length > maxDots;
+
           return (
             <div
               key={idx}
@@ -1974,16 +2115,26 @@ function CalendarGrid({ year, month, events = {}, colorMap, onDateClick }: Calen
 
                 {/* Micro Event Indicators */}
                 {hasEvents && (
-                  <div className="absolute bottom-1.5 flex gap-[3px] items-center justify-center">
-                    {dayEvents.map((evt: string, eIdx: number) => {
+                  <div
+                    className="absolute bottom-1 sm:bottom-1.5 flex gap-[2px] items-center justify-center max-w-[34px] sm:max-w-[40px] overflow-hidden"
+                    title={`${dayEvents.length} event${dayEvents.length > 1 ? 's' : ''}`}
+                  >
+                    {visibleEvents.map((evt: string, eIdx: number) => {
                       const dotColor = colorMap[evt.toLowerCase()] || 'bg-gray-400';
                       return (
                         <span
                           key={eIdx}
-                          className={`w-1 h-1 rounded-full ${dotColor} ${isToday ? 'border-[0.5px] border-white/50 bg-white' : ''}`}
+                          className={`w-1 h-1 rounded-full shrink-0 ${dotColor} ${isToday ? 'border-[0.5px] border-white/50 bg-white' : ''}`}
                         />
                       );
                     })}
+                    {hasMoreEvents && (
+                      <span
+                        className={`text-[8px] font-black leading-none tracking-[-1px] select-none shrink-0 ${isToday ? 'text-white' : 'text-gray-400'}`}
+                      >
+                        ...
+                      </span>
+                    )}
                   </div>
                 )}
               </div>
@@ -2115,37 +2266,65 @@ function DayDetailsModal({ side, date, onClose }: DayDetailsModalProps) {
                       <div className="grid grid-cols-1 gap-3">
                         {birthdayList.map((item, idx) => (
                           <div key={idx} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                            <div className="flex items-start gap-3">
-                              <div className="p-2.5 bg-amber-100/70 text-amber-700 rounded-xl mt-0.5">
+                            <div className="flex items-start gap-3 min-w-0 flex-1">
+                              <div className="p-2.5 bg-amber-100/70 text-amber-700 rounded-xl mt-0.5 shrink-0">
                                 <User size={18} />
                               </div>
-                              <div>
-                                <h4 className="font-semibold text-gray-900 text-sm capitalize">{item.name || 'N/A'}</h4>
-                                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 mt-1">
+                              <div className="min-w-0 flex-1">
+                                <h4 className="font-semibold text-gray-900 text-sm capitalize truncate">{item.name || 'N/A'}</h4>
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500 mt-1">
                                   {item.phone && (
-                                    <a href={`tel:${item.phone}`} className="flex items-center gap-1 hover:text-[#2F439D]">
-                                      <Phone size={12} /> {item.phone}
+                                    <a href={`tel:${item.phone}`} className="flex items-center gap-1 hover:text-[#2F439D] shrink-0 font-medium">
+                                      <Phone size={12} className="text-gray-400" /> {item.phone}
                                     </a>
                                   )}
                                   {item.email && (
-                                    <a href={`mailto:${item.email}`} className="flex items-center gap-1 hover:text-[#2F439D]">
-                                      <Mail size={12} /> {item.email}
+                                    <a href={`mailto:${item.email}`} className="flex items-center gap-1 hover:text-[#2F439D] truncate max-w-[200px] sm:max-w-xs" title={item.email}>
+                                      <Mail size={12} className="shrink-0 text-gray-400" /> <span className="truncate">{item.email}</span>
                                     </a>
                                   )}
                                 </div>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2 self-start sm:self-center">
+
+                            <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
                               {item.age !== undefined && item.age !== null && (
-                                <span className="bg-amber-100 text-amber-800 text-[11px] font-semibold px-2.5 py-1 rounded-md border border-amber-200">
-                                  Age: {item.age}
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200/80 whitespace-nowrap shadow-xs">
+                                  <span className="text-[10px] uppercase font-bold text-amber-600/80">Age</span>
+                                  <span className="font-bold text-amber-900">{item.age}</span>
                                 </span>
                               )}
                               {item.dob && (
-                                <span className="bg-gray-100 text-gray-600 text-[11px] font-medium px-2.5 py-1 rounded-md">
-                                  DOB: {item.dob}
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-50 text-slate-700 border border-slate-200 whitespace-nowrap shadow-xs">
+                                  <Cake size={13} className="text-amber-500 shrink-0" />
+                                  <span className="font-mono text-slate-800 font-medium">{item.dob}</span>
                                 </span>
                               )}
+
+                              <div className="flex items-center gap-1.5 pl-2 border-l border-gray-200">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleCopyWhatsappMessage(item.whatsapp_message);
+                                  }}
+                                  title={item.whatsapp_message ? 'Copy WhatsApp Message' : 'No message available'}
+                                  className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white hover:bg-gray-100 text-gray-600 hover:text-gray-900 shadow-xs transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                                >
+                                  <Copy size={14} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleOpenWhatsappUrl(item.whatsapp_url, item.phone, item.whatsapp_message);
+                                  }}
+                                  title={item.whatsapp_url ? 'Open WhatsApp Chat' : 'Chat on WhatsApp'}
+                                  className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#25D366] hover:bg-[#20ba59] text-white shadow-xs transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                                >
+                                  <WhatsAppIcon className="w-4 h-4 text-white" />
+                                </button>
+                              </div>
                             </div>
                           </div>
                         ))}
@@ -2162,31 +2341,60 @@ function DayDetailsModal({ side, date, onClose }: DayDetailsModalProps) {
                       <div className="grid grid-cols-1 gap-3">
                         {anniversaryList.map((item, idx) => (
                           <div key={idx} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                            <div className="flex items-start gap-3">
-                              <div className="p-2.5 bg-rose-100/70 text-rose-700 rounded-xl mt-0.5">
+                            <div className="flex items-start gap-3 min-w-0 flex-1">
+                              <div className="p-2.5 bg-rose-100/70 text-rose-700 rounded-xl mt-0.5 shrink-0">
                                 <Heart size={18} />
                               </div>
-                              <div>
-                                <h4 className="font-semibold text-gray-900 text-sm capitalize">{item.name || 'N/A'}</h4>
-                                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 mt-1">
+                              <div className="min-w-0 flex-1">
+                                <h4 className="font-semibold text-gray-900 text-sm capitalize truncate">{item.name || 'N/A'}</h4>
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500 mt-1">
                                   {item.phone && (
-                                    <a href={`tel:${item.phone}`} className="flex items-center gap-1 hover:text-[#2F439D]">
-                                      <Phone size={12} /> {item.phone}
+                                    <a href={`tel:${item.phone}`} className="flex items-center gap-1 hover:text-[#2F439D] shrink-0 font-medium">
+                                      <Phone size={12} className="text-gray-400" /> {item.phone}
                                     </a>
                                   )}
                                   {item.email && (
-                                    <a href={`mailto:${item.email}`} className="flex items-center gap-1 hover:text-[#2F439D]">
-                                      <Mail size={12} /> {item.email}
+                                    <a href={`mailto:${item.email}`} className="flex items-center gap-1 hover:text-[#2F439D] truncate max-w-[200px] sm:max-w-xs" title={item.email}>
+                                      <Mail size={12} className="shrink-0 text-gray-400" /> <span className="truncate">{item.email}</span>
                                     </a>
                                   )}
                                 </div>
                               </div>
                             </div>
-                            {item.anniversary_date && (
-                              <span className="bg-rose-100 text-rose-800 text-[11px] font-semibold px-2.5 py-1 rounded-md border border-rose-200 self-start sm:self-center">
-                                Date: {item.anniversary_date}
-                              </span>
-                            )}
+
+                            <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
+                              {item.anniversary_date && (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-rose-50 text-rose-800 border border-rose-200/80 whitespace-nowrap shadow-xs">
+                                  <Heart size={13} className="text-rose-500 fill-rose-500/20 shrink-0" />
+                                  <span className="font-mono text-rose-900 font-medium">{item.anniversary_date}</span>
+                                </span>
+                              )}
+
+                              <div className="flex items-center gap-1.5 pl-2 border-l border-gray-200">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleCopyWhatsappMessage(item.whatsapp_message);
+                                  }}
+                                  title={item.whatsapp_message ? 'Copy WhatsApp Message' : 'No message available'}
+                                  className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white hover:bg-gray-100 text-gray-600 hover:text-gray-900 shadow-xs transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                                >
+                                  <Copy size={14} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleOpenWhatsappUrl(item.whatsapp_url, item.phone, item.whatsapp_message);
+                                  }}
+                                  title={item.whatsapp_url ? 'Open WhatsApp Chat' : 'Chat on WhatsApp'}
+                                  className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#25D366] hover:bg-[#20ba59] text-white shadow-xs transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                                >
+                                  <WhatsAppIcon className="w-4 h-4 text-white" />
+                                </button>
+                              </div>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -2201,26 +2409,51 @@ function DayDetailsModal({ side, date, onClose }: DayDetailsModalProps) {
                       </div>
                       <div className="grid grid-cols-1 gap-3">
                         {leadList.map((item, idx) => (
-                          <div key={idx} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow flex items-center justify-between gap-3">
-                            <div className="flex items-start gap-3">
-                              <div className="p-2.5 bg-emerald-100/70 text-emerald-700 rounded-xl mt-0.5">
+                          <div key={idx} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div className="flex items-start gap-3 min-w-0 flex-1">
+                              <div className="p-2.5 bg-emerald-100/70 text-emerald-700 rounded-xl mt-0.5 shrink-0">
                                 <UserCheck size={18} />
                               </div>
-                              <div>
-                                <h4 className="font-semibold text-gray-900 text-sm capitalize">{item.name || 'N/A'}</h4>
-                                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 mt-1">
+                              <div className="min-w-0 flex-1">
+                                <h4 className="font-semibold text-gray-900 text-sm capitalize truncate">{item.name || 'N/A'}</h4>
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500 mt-1">
                                   {item.phone && (
-                                    <a href={`tel:${item.phone}`} className="flex items-center gap-1 hover:text-[#2F439D]">
-                                      <Phone size={12} /> {item.phone}
+                                    <a href={`tel:${item.phone}`} className="flex items-center gap-1 hover:text-[#2F439D] shrink-0 font-medium">
+                                      <Phone size={12} className="text-gray-400" /> {item.phone}
                                     </a>
                                   )}
                                   {item.email && (
-                                    <a href={`mailto:${item.email}`} className="flex items-center gap-1 hover:text-[#2F439D]">
-                                      <Mail size={12} /> {item.email}
+                                    <a href={`mailto:${item.email}`} className="flex items-center gap-1 hover:text-[#2F439D] truncate max-w-[200px] sm:max-w-xs" title={item.email}>
+                                      <Mail size={12} className="shrink-0 text-gray-400" /> <span className="truncate">{item.email}</span>
                                     </a>
                                   )}
                                 </div>
                               </div>
+                            </div>
+
+                            <div className="flex items-center gap-1.5 shrink-0 self-start sm:self-center">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleCopyWhatsappMessage(item.whatsapp_message);
+                                }}
+                                title={item.whatsapp_message ? 'Copy WhatsApp Message' : 'No message available'}
+                                className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white hover:bg-gray-100 text-gray-600 hover:text-gray-900 shadow-xs transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                              >
+                                <Copy size={14} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenWhatsappUrl(item.whatsapp_url, item.phone, item.whatsapp_message);
+                                }}
+                                title={item.whatsapp_url ? 'Open WhatsApp Chat' : 'Chat on WhatsApp'}
+                                className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#25D366] hover:bg-[#20ba59] text-white shadow-xs transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                              >
+                                <WhatsAppIcon className="w-4 h-4 text-white" />
+                              </button>
                             </div>
                           </div>
                         ))}
@@ -2275,28 +2508,54 @@ function renderPolicyCategory(categoryTitle: string, items: PolicyRenewalItem[],
             </div>
 
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <h4 className="font-semibold text-gray-900 text-sm capitalize">{item.name || 'N/A'}</h4>
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 mt-1">
+              <div className="min-w-0 flex-1">
+                <h4 className="font-semibold text-gray-900 text-sm capitalize truncate">{item.name || 'N/A'}</h4>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500 mt-1">
                   {item.phone && (
-                    <a href={`tel:${item.phone}`} className="flex items-center gap-1 hover:text-[#2F439D]">
-                      <Phone size={12} /> {item.phone}
+                    <a href={`tel:${item.phone}`} className="flex items-center gap-1 hover:text-[#2F439D] shrink-0 font-medium">
+                      <Phone size={12} className="text-gray-400" /> {item.phone}
                     </a>
                   )}
                   {item.email && (
-                    <a href={`mailto:${item.email}`} className="flex items-center gap-1 hover:text-[#2F439D]">
-                      <Mail size={12} /> {item.email}
+                    <a href={`mailto:${item.email}`} className="flex items-center gap-1 hover:text-[#2F439D] truncate max-w-[200px] sm:max-w-xs" title={item.email}>
+                      <Mail size={12} className="shrink-0 text-gray-400" /> <span className="truncate">{item.email}</span>
                     </a>
                   )}
                 </div>
               </div>
 
-              {item.premium_amount !== undefined && item.premium_amount !== null && (
-                <div className="bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-1.5 flex flex-col items-end self-start sm:self-center">
-                  <span className="text-[10px] uppercase font-semibold text-emerald-600">Premium</span>
-                  <span className="text-sm font-extrabold text-emerald-700">₹{item.premium_amount}</span>
+              <div className="flex items-center gap-2.5 shrink-0 self-start sm:self-center">
+                {item.premium_amount !== undefined && item.premium_amount !== null && (
+                  <div className="bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-1 flex flex-col items-end whitespace-nowrap shadow-xs">
+                    <span className="text-[10px] uppercase font-semibold text-emerald-600">Premium</span>
+                    <span className="text-sm font-extrabold text-emerald-700">₹{item.premium_amount}</span>
+                  </div>
+                )}
+                <div className="flex items-center gap-1.5 pl-2 border-l border-gray-200">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCopyWhatsappMessage(item.whatsapp_message);
+                    }}
+                    title={item.whatsapp_message ? 'Copy WhatsApp Message' : 'No message available'}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 bg-white hover:bg-gray-100 text-gray-600 hover:text-gray-900 shadow-xs transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                  >
+                    <Copy size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOpenWhatsappUrl(item.whatsapp_url, item.phone, item.whatsapp_message);
+                    }}
+                    title={item.whatsapp_url ? 'Open WhatsApp Chat' : 'Chat on WhatsApp'}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#25D366] hover:bg-[#20ba59] text-white shadow-xs transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                  >
+                    <WhatsAppIcon className="w-4 h-4 text-white" />
+                  </button>
                 </div>
-              )}
+              </div>
             </div>
           </div>
         ))}

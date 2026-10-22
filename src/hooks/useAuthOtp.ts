@@ -109,6 +109,17 @@ export const useVerifyLoginOtp = () => {
   }, []);
 
   const onSuccess = useCallback((data: OtpResponse) => {
+    // If response is 202 or requires selecting an account, don't set auth token or user yet
+    if (
+      data?.status === 202 ||
+      data?.status === '202' ||
+      data?.data?.select_account === 1 ||
+      data?.data?.select_account === '1' ||
+      (Array.isArray(data?.data?.accounts) && data.data.accounts.length > 0)
+    ) {
+      return;
+    }
+
     const token =
       data?.data?.token ||
       data?.token ||
@@ -145,6 +156,7 @@ export const useVerifyLoginOtp = () => {
         user_role_id: rawUser.user_role_id ? String(rawUser.user_role_id) : undefined,
         role: rawUser.user_role_id ? String(rawUser.user_role_id) : undefined,
         login_type: loginType,
+        staff_id: rawUser.staff_id,
       };
       dispatch(setUser(userPayload));
     }
@@ -156,6 +168,97 @@ export const useVerifyLoginOtp = () => {
   }), [mutationFn, onSuccess]);
 
   return useMutation<OtpResponse, Error, VerifyOtpPayload>(options);
+};
+
+export interface StaffAccountItem {
+  staff_id: number | string;
+  company_name: string;
+  owner_name: string;
+}
+
+export interface StaffSelectAccountPayload {
+  staff_id: number | string;
+  select_token: string;
+}
+
+// React Query Mutation Hook for staff_select_account
+export const useStaffSelectAccount = () => {
+  const dispatch = useAppDispatch();
+
+  const mutationFn = useCallback(async (payload: StaffSelectAccountPayload) => {
+    const formData = new FormData();
+    formData.append('staff_id', String(payload.staff_id));
+    formData.append('select_token', payload.select_token);
+
+    const response = await api.post(endPointApi.AUTH.STAFF_SELECT_ACCOUNT, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    const resData = response.data;
+
+    if (
+      !resData ||
+      resData.status === false ||
+      resData.status === 'Failed' ||
+      (typeof resData.status === 'number' && resData.status >= 400)
+    ) {
+      throw new Error(resData?.message || 'Failed to select account');
+    }
+
+    return resData;
+  }, []);
+
+  const onSuccess = useCallback((data: any) => {
+    const token =
+      data?.data?.token ||
+      data?.token ||
+      data?.access_token ||
+      data?.auth_token;
+
+    if (token) {
+      setAuthToken(token);
+      dispatch(setAuthTokenRedux(token));
+    } else {
+      setAuthToken('logged_in_user_token');
+    }
+
+    const rawUser = data?.data?.user || data?.user;
+    const loginType =
+      data?.data?.login_type ||
+      data?.login_type ||
+      (data?.data as any)?.user?.login_type ||
+      'staff';
+
+    if (typeof window !== 'undefined' && loginType) {
+      localStorage.setItem('login_type', loginType);
+      localStorage.setItem('auth_login_type', loginType);
+    }
+
+    if (rawUser) {
+      const userPayload: User = {
+        id: rawUser.id ? String(rawUser.id) : undefined,
+        full_name: rawUser.full_name || rawUser.name || '',
+        name: rawUser.full_name || rawUser.name || rawUser.username || '',
+        email: rawUser.email,
+        number: rawUser.number,
+        company_name: rawUser.company_name,
+        user_role_id: rawUser.user_role_id ? String(rawUser.user_role_id) : undefined,
+        role: rawUser.user_role_id ? String(rawUser.user_role_id) : undefined,
+        username: rawUser.username || '',
+        login_type: loginType,
+        staff_id: rawUser.staff_id,
+      };
+      dispatch(setUser(userPayload));
+    }
+  }, [dispatch]);
+
+  const options = useMemo(() => ({
+    mutationFn,
+    onSuccess,
+  }), [mutationFn, onSuccess]);
+
+  return useMutation<OtpResponse, Error, StaffSelectAccountPayload>(options);
 };
 
 // React Query Mutation Hook for send_sign_up_otp

@@ -12,6 +12,7 @@ export interface User {
   user_role_id?: string;
   username?: string;
   login_type?: string;
+  staff_id?: number | string;
 }
 
 export interface AuthState {

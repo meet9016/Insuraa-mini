@@ -86,3 +86,55 @@ export function formatDateToYMD(val?: string | null): string {
   return `${y}-${m}-${d}`;
 }
 
+// Subscription popup closed date helpers
+export const SUBSCRIPTION_POPUP_CLOSED_DATE_KEY = 'subscription_popup_closed_date';
+
+export function getTodayDateString(): string {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+export function isSubscriptionPopupClosedToday(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const today = getTodayDateString();
+    // const today = 2026 - 10 - 22
+    console.log(today, 'today');
+
+    // 1. Check localStorage
+    const localVal = localStorage.getItem(SUBSCRIPTION_POPUP_CLOSED_DATE_KEY);
+    if (localVal === today) return true;
+
+    // 2. Fallback: check cookie (in case localStorage was cleared on logout)
+    if (typeof document !== 'undefined') {
+      const match = document.cookie.match(new RegExp('(^|;\\s*)' + SUBSCRIPTION_POPUP_CLOSED_DATE_KEY + '=([^;]*)'));
+      if (match && decodeURIComponent(match[2]) === today) {
+        // Sync back to localStorage
+        localStorage.setItem(SUBSCRIPTION_POPUP_CLOSED_DATE_KEY, today);
+        return true;
+      }
+    }
+  } catch (e) {
+    console.error('Error checking subscription popup closed date:', e);
+  }
+  return false;
+}
+
+export function setSubscriptionPopupClosedToday(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const today = getTodayDateString();
+    localStorage.setItem(SUBSCRIPTION_POPUP_CLOSED_DATE_KEY, today);
+
+    // Save in cookie (valid for 1 day / 86400 seconds) so it survives logout / browser restart
+    if (typeof document !== 'undefined') {
+      document.cookie = `${SUBSCRIPTION_POPUP_CLOSED_DATE_KEY}=${encodeURIComponent(today)}; path=/; max-age=86400; SameSite=Lax`;
+    }
+  } catch (e) {
+    console.error('Error setting subscription popup closed date:', e);
+  }
+}
+

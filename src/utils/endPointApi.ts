@@ -12,6 +12,7 @@ export interface EndPointApi {
     POLICY_ADDON_PURCHASE: string;
     POLICY_ADDON_HISTORY: string;
     POLICY_ADDON_QUOTE: string;
+    STAFF_SELECT_ACCOUNT: string;
   };
   CUSTOMER: {
     CUSTOMER_LIST_DROP_DOWN: string;
@@ -236,6 +237,7 @@ const endPointApi: EndPointApi = {
     POLICY_ADDON_PURCHASE: 'policy_addon_purchase',
     POLICY_ADDON_HISTORY: 'policy_addon_history',
     POLICY_ADDON_QUOTE: 'policy_addon_quote',
+    STAFF_SELECT_ACCOUNT: 'staff_select_account',
   },
   CUSTOMER: {
     CUSTOMER_LIST_DROP_DOWN: 'customer_list_drop_down',
