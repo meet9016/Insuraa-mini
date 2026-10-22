@@ -98,6 +98,12 @@ const SOFTWARE_FEATURES = [
     icon: Users,
     iconBg: 'bg-indigo-50 text-indigo-600 border-indigo-200/60 group-hover:bg-indigo-600 group-hover:text-white',
   },
+   {
+    title: 'Policy Management',
+    desc: 'Issue, manage and track all insurance policies in one secure place.',
+    icon: FileText,
+    iconBg: 'bg-sky-50 text-sky-600 border-sky-200/60 group-hover:bg-sky-600 group-hover:text-white',
+  },
   {
     title: 'AI Policy Upload',
     desc: 'Upload policy PDFs to auto-extract customer, policy and vehicle details in seconds.',
@@ -117,24 +123,20 @@ const SOFTWARE_FEATURES = [
     icon: ShieldCheck,
     iconBg: 'bg-rose-50 text-rose-600 border-rose-200/60 group-hover:bg-rose-600 group-hover:text-white',
   },
-  {
-    title: 'Commission & Reports',
-    desc: 'Monitor commissions, generate reports and make better decisions.',
-    icon: TrendingUp,
-    iconBg: 'bg-violet-50 text-violet-600 border-violet-200/60 group-hover:bg-violet-600 group-hover:text-white',
-  },
-  {
+    {
     title: 'Instant Quotations',
     desc: 'Compare Health and Motor quotes side-by-side with customized IDV and add-ons.',
     icon: Calculator,
     iconBg: 'bg-purple-50 text-purple-600 border-purple-200/60 group-hover:bg-purple-600 group-hover:text-white',
   },
   {
-    title: 'Policy Management',
-    desc: 'Issue, manage and track all insurance policies in one secure place.',
-    icon: FileText,
-    iconBg: 'bg-sky-50 text-sky-600 border-sky-200/60 group-hover:bg-sky-600 group-hover:text-white',
+    title: 'Renewal & Reports',
+    desc: 'Monitor Renewal, generate reports and make better decisions.',
+    icon: TrendingUp,
+    iconBg: 'bg-violet-50 text-violet-600 border-violet-200/60 group-hover:bg-violet-600 group-hover:text-white',
   },
+
+ 
 ];
 
 const showcaseImages = [
@@ -997,11 +999,11 @@ export default function LandingPage() {
       </header>
 
       {/* HERO SECTION (Exact Match to User Reference Screenshot with Website Brand Colors) */}
-      <section className="relative pt-12 pb-16 lg:pt-16 lg:pb-12 overflow-hidden bg-gradient-to-b from-white via-indigo-50/30 to-[#F8FAFD]">
+      <section className="relative pt-12 pb-16 lg:pt-16 lg:pb-12 overflow-hidden bg-white">
 
         {/* Ambient Subtle Background Orbs */}
-        <div className="absolute top-10 left-10 w-96 h-96 bg-[#2D3591]/8 rounded-full blur-3xl animate-glow-pulse pointer-events-none" />
-        <div className="absolute top-20 right-10 w-96 h-96 bg-[#2BBF8C]/10 rounded-full blur-3xl animate-glow-pulse pointer-events-none" style={{ animationDelay: '3s' }} />
+        {/* <div className="absolute top-10 left-10 w-96 h-96 bg-[#2D3591]/8 rounded-full blur-3xl animate-glow-pulse pointer-events-none" />
+        <div className="absolute top-20 right-10 w-96 h-96 bg-[#2BBF8C]/10 rounded-full blur-3xl animate-glow-pulse pointer-events-none" style={{ animationDelay: '3s' }} /> */}
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
@@ -1012,21 +1014,21 @@ export default function LandingPage() {
               {/* Top Badge: "Insurance Management Software" */}
               <div className="inline-flex items-center px-4 py-1.5 rounded-full bg-blue-50 border border-blue-200/70 shadow-2xs">
                 <span className="text-xs font-medium text-[#2D3591] tracking-wide">
-                  Insurance Management Software
+                  Built for Insurance Agents & Brokers
                 </span>
               </div>
 
               {/* Exact Headline: "Your Entire Insurance Business. One Smart Platform." */}
               <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-semibold text-slate-900 tracking-tight leading-[1.2]">
-                <span>Your Entire Insurance Business.</span> <br />
+                <span>Never Miss a Renewal Again.</span> <br />
                 <span className="text-[#2D3591]">
-                  One Smart Platform.
+                  Grow Your Insurance Business Faster.
                 </span>
               </h1>
 
               {/* Exact Subheadline */}
               <p className="text-sm sm:text-base text-slate-600 max-w-lg mx-auto lg:mx-0 leading-relaxed font-normal">
-                Manage your customers, policies, renewals, claims and commissions — all from a single, powerful dashboard.
+                Manage customers, policies, renewals, and claims from one dashboard, and send WhatsApp reminders.
               </p>
 
               {/* CTAs */}
@@ -1058,12 +1060,12 @@ export default function LandingPage() {
             <div className="lg:col-span-6 relative flex justify-center items-center">
 
               {/* Outer Ambient Glow with Brand Colors */}
-              <div className="absolute inset-0 bg-gradient-to-tr from-[#2D3591]/15 via-[#2BBF8C]/15 to-transparent rounded-3xl blur-2xl -z-10" />
+              {/* <div className="absolute inset-0 bg-gradient-to-tr from-[#2D3591]/15 via-[#2BBF8C]/15 to-transparent rounded-3xl blur-2xl -z-10" /> */}
 
               {/* Hero Image Container with Proper Border */}
-              <div className="w-full max-w-lg lg:max-w-[530px] relative rounded-2xl sm:rounded-3xl shadow-xl border-2 border-slate-200/90 overflow-hidden bg-white/95 p-3 sm:p-4 backdrop-blur-xs group hover:border-[#2D3591]/40 hover:shadow-2xl transition-all duration-300">
+              <div className="w-full max-w-lg lg:max-w-[530px] relative rounded-2xl sm:rounded-3xl shadow-xl border-2 border-slate-200/90 overflow-hidden  p-3 sm:p-4 backdrop-blur-xs group hover:border-[#2D3591]/40 hover:shadow-2xl transition-all duration-300">
                 <img
-                  src="/images/landing/insuraa_hero_illustrator.png"
+                  src="images/landing/hero_img.png"
                   alt="Insuraa Insurance Management Platform"
                   className="w-full h-auto object-contain rounded-xl transition-transform duration-500 group-hover:scale-[1.02]"
                 />
@@ -1094,32 +1096,25 @@ export default function LandingPage() {
 
 
       {/* ABOUT / WHY CHOOSE INSURAA SECTION (Left: Device Mockup, Right: Clean Content) */}
-      <section id="about" className="py-16 sm:py-12 bg-white relative overflow-hidden">
+      {/* <section id="about" className="py-16 sm:py-12 bg-white relative overflow-hidden">
 
-        {/* Subtle Ambient Background Orbs */}
         <div className="absolute top-1/2 left-10 -translate-y-1/2 w-96 h-96 bg-[#2D3591]/5 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-10 right-10 w-80 h-80 bg-[#2BBF8C]/6 rounded-full blur-3xl pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
 
-            {/* Left Column (6 cols): Advisor Image with Unique Frame */}
             <div className="lg:col-span-6 relative flex justify-center items-center order-2 lg:order-1 py-4">
 
-              {/* Ambient Dynamic Glow */}
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[108%] h-[108%] bg-gradient-to-tr from-[#2D3591]/15 via-indigo-100/30 to-[#2BBF8C]/15 rounded-[40px] blur-2xl -z-10" />
 
-              {/* Decorative Offset Frame Wrapper */}
               <div className="relative w-full max-w-lg group">
 
-                {/* 1. Subtle Gradient Border Halo */}
                 <div className="absolute -inset-2 rounded-[32px] bg-gradient-to-tr from-[#2D3591] via-indigo-500/20 to-[#2BBF8C] opacity-30 blur-xs group-hover:opacity-55 transition-opacity duration-500" />
 
-                {/* 2. Top-Left & Bottom-Right Corner Decorative Accents */}
                 <div className="absolute -top-3 -left-3 w-20 h-20 rounded-tl-[32px] border-t-2 border-l-2 border-[#2D3591] pointer-events-none z-10 opacity-70 group-hover:scale-105 transition-transform duration-300" />
                 <div className="absolute -bottom-3 -right-3 w-20 h-20 rounded-br-[32px] border-b-2 border-r-2 border-[#2BBF8C] pointer-events-none z-10 opacity-70 group-hover:scale-105 transition-transform duration-300" />
 
-                {/* 3. Main Layered Card Container */}
                 <div className="relative rounded-[28px] overflow-hidden bg-white p-2 shadow-2xl ring-1 ring-slate-200/90">
                   <div className="rounded-[22px] overflow-hidden relative">
                     <img
@@ -1127,7 +1122,7 @@ export default function LandingPage() {
                       alt="Insuraa Insurance Advisor"
                       className="w-full h-auto object-cover rounded-[22px] transition-transform duration-700 ease-out group-hover:scale-[1.03]"
                     />
-                    {/* Subtle Inner Glass Vignette Ring */}
+                
                     <div className="absolute inset-0 rounded-[22px] ring-1 ring-inset ring-black/10 pointer-events-none" />
                   </div>
                 </div>
@@ -1136,30 +1131,25 @@ export default function LandingPage() {
 
             </div>
 
-            {/* Right Column (6 cols): Badge, Title, Subtitle, 4 Key Benefits */}
             <div className="lg:col-span-6 space-y-5 text-left order-1 lg:order-2 pl-0 lg:pl-4">
 
-              {/* Badge: "Why Choose Insuraa" */}
               <div className="inline-flex items-center px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-200/70 shadow-2xs">
                 <span className="text-xs font-medium text-[#2D3591] tracking-wide">
                   Why Choose Insuraa
                 </span>
               </div>
 
-              {/* Heading: "Built for Growth. Designed for You." */}
               <h2 className="text-2xl sm:text-3xl lg:text-[38px] font-semibold text-slate-900 tracking-tight leading-snug">
                 <span>Built for Growth.</span> <br />
                 <span className="text-[#2D3591]">Designed for You.</span>
               </h2>
 
-              {/* Subheadline */}
               <p className="text-sm sm:text-base text-slate-600 max-w-lg leading-relaxed font-normal">
                 Insuraa helps insurance professionals, agents and brokers work smarter, serve better and grow faster.
               </p>
 
-              {/* 4 Feature Items */}
               <div className="space-y-3.5 pt-1">
-                {/* 1. All-in-One Platform */}
+              
                 <div className="flex items-start gap-3.5 group">
                   <div className="w-10 h-10 rounded-xl bg-blue-50/80 border border-blue-100/80 flex items-center justify-center text-[#2D3591] shrink-0 group-hover:bg-[#2D3591] group-hover:text-white transition-all duration-200 shadow-2xs">
                     <LayoutDashboard className="w-4 h-4" />
@@ -1170,7 +1160,6 @@ export default function LandingPage() {
                   </div>
                 </div>
 
-                {/* 2. Save Time */}
                 <div className="flex items-start gap-3.5 group">
                   <div className="w-10 h-10 rounded-xl bg-blue-50/80 border border-blue-100/80 flex items-center justify-center text-[#2D3591] shrink-0 group-hover:bg-[#2D3591] group-hover:text-white transition-all duration-200 shadow-2xs">
                     <Clock className="w-4 h-4" />
@@ -1181,7 +1170,6 @@ export default function LandingPage() {
                   </div>
                 </div>
 
-                {/* 3. Increase Productivity */}
                 <div className="flex items-start gap-3.5 group">
                   <div className="w-10 h-10 rounded-xl bg-blue-50/80 border border-blue-100/80 flex items-center justify-center text-[#2D3591] shrink-0 group-hover:bg-[#2D3591] group-hover:text-white transition-all duration-200 shadow-2xs">
                     <TrendingUp className="w-4 h-4" />
@@ -1192,7 +1180,6 @@ export default function LandingPage() {
                   </div>
                 </div>
 
-                {/* 4. Secure & Compliant */}
                 <div className="flex items-start gap-3.5 group">
                   <div className="w-10 h-10 rounded-xl bg-blue-50/80 border border-blue-100/80 flex items-center justify-center text-[#2D3591] shrink-0 group-hover:bg-[#2D3591] group-hover:text-white transition-all duration-200 shadow-2xs">
                     <ShieldCheck className="w-4 h-4" />
@@ -1208,18 +1195,16 @@ export default function LandingPage() {
 
           </div>
         </div>
-      </section>
+      </section> */}
 
 
-      <section id="with-vs-without" className="py-10 sm:py-12 bg-gradient-to-b from-slate-50 via-white to-slate-50 relative overflow-hidden">
+      {/* <section id="with-vs-without" className="py-10 sm:py-12 bg-gradient-to-b from-slate-50 via-white to-slate-50 relative overflow-hidden">
 
-        {/* Ambient background glows */}
         <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-80 h-80 bg-rose-100/30 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute top-1/2 right-1/4 -translate-y-1/2 w-80 h-80 bg-emerald-100/30 rounded-full blur-3xl pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
 
-          {/* Section Header (Matches image size & styling, names preserved) */}
           <div className="text-center max-w-3xl mx-auto space-y-3 mb-8 sm:mb-10">
             <span className="text-xs sm:text-sm font-medium text-[#2D3591] bg-blue-50/80 border border-blue-200/80 px-4 py-1.5 rounded-full inline-block shadow-2xs">
               Why Choose Insuraa
@@ -1234,16 +1219,13 @@ export default function LandingPage() {
             </p>
           </div>
 
-          {/* Comparison Cards Grid with Central Animated VS badge */}
           <div className="relative max-w-5xl mx-auto">
 
-            {/* Desktop Center Floating Animated VS Badge (Zero Yellow, Royal Blue & Mint) */}
             <div className="hidden lg:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 items-center justify-center pointer-events-none">
-              {/* Continuous Pulsing Ambient Rings (Royal Blue & Mint) */}
+       
               <span className="absolute w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-[#2D3591]/20 animate-ping opacity-75" />
               <span className="absolute w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-[#2BBF8C]/20 blur-md animate-pulse" />
 
-              {/* Main VS Circle with Crisp Gradient Border (Zero Yellow) */}
               <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full p-[3px] bg-gradient-to-br from-[#2D3591] via-[#3B49B8] to-[#2BBF8C] shadow-2xl animate-pulse">
                 <div className="w-full h-full rounded-full bg-white flex flex-col items-center justify-center shadow-inner">
                   <span className="text-base sm:text-xl font-black tracking-widest text-[#2D3591] drop-shadow-2xs">
@@ -1255,11 +1237,9 @@ export default function LandingPage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-8 items-stretch">
 
-              {/* WITHOUT INSURAA CARD (The Problem - Compact) */}
               <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-rose-200/80 shadow-xs hover:shadow-md transition-all flex flex-col justify-between group">
                 <div className="space-y-3">
 
-                  {/* Header */}
                   <div className="flex items-center justify-between pb-2.5 border-b border-rose-100">
                     <div className="flex items-center gap-2.5">
                       <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center font-semibold text-sm shadow-2xs border border-rose-100">
@@ -1275,7 +1255,7 @@ export default function LandingPage() {
                     </span>
                   </div>
 
-                  {/* Dedicated Image Box (Fit Full Box with Proper Height & 16:9 Aspect Ratio) */}
+            
                   <div className="w-full aspect-[16/9] rounded-xl overflow-hidden border border-rose-200/80 bg-white flex items-center justify-center shadow-2xs">
                     <img
                       src="/images/landing/without_insuraa.png?v=2"
@@ -1285,7 +1265,6 @@ export default function LandingPage() {
                     />
                   </div>
 
-                  {/* Pain Points (Crisp, 1-line content) */}
                   <div className="space-y-1.5 text-xs sm:text-[13px] text-slate-600 font-normal">
                     <div className="flex items-start gap-2 p-2 rounded-lg bg-rose-50/40 hover:bg-rose-50/70 transition-colors">
                       <XCircle className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />
@@ -1324,15 +1303,13 @@ export default function LandingPage() {
                   </div>
 
                 </div>
-
-                {/* Footnote inside Card */}
                 <div className="mt-3 pt-2.5 border-t border-rose-100 flex items-center justify-center gap-1.5 text-[11px] sm:text-xs font-medium text-rose-600 bg-rose-50/40 py-1.5 px-3 rounded-lg">
                   <span>⚠️ Leads to 30–40% loss in annual agency revenue</span>
                 </div>
 
               </div>
 
-              {/* Mobile Animated VS Badge (Zero Yellow) */}
+         
               <div className="flex lg:hidden justify-center -my-3 z-10 relative">
                 <div className="relative flex items-center justify-center">
                   <span className="absolute w-12 h-12 rounded-full bg-[#2D3591]/20 animate-ping opacity-75" />
@@ -1343,13 +1320,10 @@ export default function LandingPage() {
                   </div>
                 </div>
               </div>
-
-              {/* WITH INSURAA CARD (The Solution - Compact) */}
               <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-5 border-2 border-emerald-400 shadow-md space-y-3 flex flex-col justify-between relative ring-4 ring-emerald-500/10 hover:shadow-xl transition-all group">
 
                 <div className="space-y-3">
 
-                  {/* Header */}
                   <div className="flex items-center justify-between pb-2.5 border-b border-emerald-100">
                     <div className="flex items-center gap-2.5">
                       <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-semibold text-sm shadow-2xs border border-emerald-200/70">
@@ -1365,7 +1339,6 @@ export default function LandingPage() {
                     </span>
                   </div>
 
-                  {/* Dedicated Image Box (Fit Full Box with Proper Height & 16:9 Aspect Ratio) */}
                   <div className="w-full aspect-[16/9] rounded-xl overflow-hidden border border-emerald-200/80 bg-white flex items-center justify-center shadow-2xs">
                     <img
                       src="/images/landing/with_insuraa.png?v=2"
@@ -1375,7 +1348,6 @@ export default function LandingPage() {
                     />
                   </div>
 
-                  {/* Benefits (Crisp, 1-line content) */}
                   <div className="space-y-1.5 text-xs sm:text-[13px] text-slate-700 font-normal">
                     <div className="flex items-start gap-2 p-2 rounded-lg bg-emerald-50/50 hover:bg-emerald-50/80 transition-colors">
                       <CheckCircle2 className="w-3.5 h-3.5 text-[#2BBF8C] shrink-0 mt-0.5" />
@@ -1415,7 +1387,6 @@ export default function LandingPage() {
 
                 </div>
 
-                {/* Action Buttons inside Card */}
                 <div className="mt-3 pt-2.5 border-t border-emerald-100 flex flex-col sm:flex-row gap-2">
                   <button
                     onClick={handleLoginClick}
@@ -1439,7 +1410,7 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
-      </section>
+      </section> */}
 
 
       {/* ========================================================================= */}
