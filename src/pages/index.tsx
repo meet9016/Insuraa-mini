@@ -868,12 +868,7 @@ export default function LandingPage() {
 
           {/* Desktop Navigation Links */}
           <nav className="hidden md:flex items-center gap-5 lg:gap-7 text-sm font-medium text-slate-600">
-            <a href="#about" className="hover:text-[#2D3591] transition-colors">
-              About Insuraa
-            </a>
-            <a href="#with-vs-without" className="hover:text-[#2D3591] transition-colors flex items-center gap-1 font-medium">
-              <span className="text-[#2BBF8C] font-medium">With</span> vs Without
-            </a>
+          
             <a href="#software-features" className="hover:text-[#2D3591] transition-colors">
               Features
             </a>
@@ -1948,7 +1943,7 @@ export default function LandingPage() {
               </Link>
 
               <p className="text-sm sm:text-[14.5px] text-slate-300 leading-relaxed font-normal max-w-sm">
-                DIGITALKS, Located In Surat, Gujarat, Specializes In Top-Tier Insurance Agency Management Software &amp; CRM, Ensuring A Seamless Online Shopping &amp; Agency Experience For Your Customers.
+                Digitalks, Located In Surat, Gujarat, Specializes In Top-Tier Insurance Agency Management Software &amp; CRM, Ensuring A Seamless Online Shopping &amp; Agency Experience For Your Customers.
               </p>
 
               {/* 4 Circular Social Icon Buttons */}
@@ -1998,15 +1993,9 @@ export default function LandingPage() {
                 Quick Links
               </h4>
 
-              <div className="grid grid-cols-2 gap-x-6 gap-y-3.5 text-sm sm:text-[15px]">
-                <a href="#about" className="text-slate-300 hover:text-[#5275e6] transition-colors">
-                  About Insuraa
-                </a>
+              <div className="flex flex-col space-y-3 text-sm sm:text-[15px]">
                 <a href="#solutions" className="text-slate-300 hover:text-[#5275e6] transition-colors">
                   Solutions
-                </a>
-                <a href="#with-vs-without" className="text-slate-300 hover:text-[#5275e6] transition-colors">
-                  With vs Without
                 </a>
                 <a href="#pricing" className="text-slate-300 hover:text-[#5275e6] transition-colors">
                   Pricing
@@ -2087,13 +2076,11 @@ export default function LandingPage() {
           {/* Bottom Copyright & Legal Strip */}
           <div className="mt-12 pt-6 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-4 text-xs sm:text-sm text-slate-300">
             <p className="text-center md:text-left">
-              Copyright © 2026 <span className="font-semibold text-white">SHOPNO ECOMMERCE PVT.LTD.</span> Designed By{' '}
+              Copyright © 2026 <span className="font-semibold text-white">Digitalks</span> Designed By{' '}
               <span className="text-[#5275e6] font-semibold">All Rights Reserved</span>
             </p>
             <div className="flex items-center gap-6 text-slate-300 text-xs sm:text-sm flex-wrap justify-center">
-              <Link href="/help-support" className="hover:text-white transition-colors">
-                Help &amp; Support
-              </Link>
+          
               <Link href="/privacy-policy" className="hover:text-white transition-colors">
                 Privacy Policy
               </Link>

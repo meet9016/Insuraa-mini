@@ -52,16 +52,17 @@ function AppContent({ Component, pageProps }: AppProps) {
   const isLoginPage = router.pathname === "/auth/login" || router.pathname === "/auth/register";
   const is404Page = router.pathname === "/404";
   const isLandingPage = router.pathname === "/";
-  const hideLayout = isLoginPage || is404Page || isLandingPage;
+  const isPublicLegalPage = router.pathname === "/privacy-policy" || router.pathname === "/terms-conditions";
+  const hideLayout = isLoginPage || is404Page || isLandingPage || isPublicLegalPage;
   const leadStatusStatus = useAppSelector((state) => state.leadStatus.status);
   const hasDispatched = useRef(false);
 
   useEffect(() => {
-    if (!isLoginPage && !isLandingPage && !hasDispatched.current) {
+    if (!isLoginPage && !isLandingPage && !isPublicLegalPage && !hasDispatched.current) {
       hasDispatched.current = true;
       if (leadStatusStatus === 'idle') dispatch(fetchLeadStatuses());
     }
-  }, [leadStatusStatus, dispatch, isLoginPage, isLandingPage]);
+  }, [leadStatusStatus, dispatch, isLoginPage, isLandingPage, isPublicLegalPage]);
 
   const [mounted, setMounted] = useState(false);
   const [showInitialLoader, setShowInitialLoader] = useState(true);
