@@ -82,18 +82,18 @@ export const useCustomerActions = () => {
           if (deletedCount > 0) {
             toast.success(
               resData?.message ||
-                `${deletedCount} records deleted, ${skippedCount} skipped`
+              `${deletedCount} records deleted, ${skippedCount} skipped`
             );
           } else {
             toast.warn(
               resData?.message ||
-                `${skippedCount} records could not be deleted`
+              `${skippedCount} records could not be deleted`
             );
           }
         } else {
           toast.success(
             resData?.message ||
-              `${deletedCount} customer records deleted successfully`
+            `${deletedCount} customer records deleted successfully`
           );
         }
 
@@ -141,6 +141,30 @@ export interface PincodeDetailsData {
   locality?: string[];
   [key: string]: any;
 }
+
+/**
+ * Direct fetch for pincode details (auto-populates city, state, country)
+ */
+export const fetchPincodeDetails = async (pincode: string): Promise<PincodeDetailsData | null> => {
+  const cleanPincode = (pincode || '').trim();
+  if (cleanPincode.length !== 6 || !/^\d{6}$/.test(cleanPincode)) {
+    return null;
+  }
+  try {
+    const formData = new FormData();
+    formData.append('pincode', cleanPincode);
+
+    const response = await api.post(endPointApi.CUSTOMER.GET_PINCODE_DETAILS, formData);
+    const resData = response?.data;
+    if (resData?.status === 200 || resData?.status === 1 || resData?.status === '200' || resData?.data) {
+      return resData?.data || null;
+    }
+    return null;
+  } catch (err: any) {
+    console.error('Error in fetchPincodeDetails:', err);
+    return null;
+  }
+};
 
 export const usePincodeDetails = (pincode?: string) => {
   const cleanPincode = (pincode || '').trim();

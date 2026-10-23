@@ -283,14 +283,51 @@ export const fetchGstVerify = async (gstNumber: string): Promise<GstVerifyRespon
     return response?.data || null;
   } catch (err: any) {
     console.error('Error in fetchGstVerify:', err);
-    return err?.response?.data || null;
+    return err?.response?.data || (err?.message ? { status: false, message: err.message, data: { error: true, message: err.message } } : null);
   }
 };
+
+/**
+ * Verify GST number via direct_gst_verify / gst_verify and obtain taxpayer info
+ */
+export const fetchDirectGstVerify = async (gstNumber: string): Promise<GstVerifyResponse | null> => {
+  try {
+    const formData = new FormData();
+    formData.append('gst_number', gstNumber.trim().toUpperCase());
+
+    const response = await api.post(endPointApi.PRICING.GST_VERIFY, formData);
+    return response?.data || null;
+  } catch (err: any) {
+    console.error('Error in fetchDirectGstVerify:', err);
+    return (
+      err?.response?.data || {
+        status: false,
+        message: err?.response?.data?.message || err?.message || 'Error verifying GST number',
+        data: { error: true, message: err?.response?.data?.message || err?.message || 'Verification failed' },
+      }
+    );
+  }
+};
+
+export interface PolicyPlanBillDetails {
+  full_name?: string;
+  company_name?: string;
+  email?: string;
+  number?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  country?: string;
+  nationality?: string;
+  gst_number?: string;
+}
 
 export interface PolicyPlanInfoData {
   min_policies: number;
   max_policies: number;
   gst_percentage: number;
+  bill_details?: PolicyPlanBillDetails;
   tiers: PlanTier[];
   cycles: BillingCycle[];
   is_first_purchase?: boolean;
@@ -298,6 +335,48 @@ export interface PolicyPlanInfoData {
   min_policies_for_renew?: number;
   can_purchase?: number | boolean;
 }
+
+export interface BillDetailsUpdatePayload {
+  full_name: string;
+  company_name: string;
+  email: string;
+  address: string;
+  pincode: string;
+  nationality?: string;
+  state: string;
+  city: string;
+  gst_number?: string;
+  number?: string;
+}
+
+/**
+ * Update billing details profile via bill_details_update_profile API
+ */
+export const fetchBillDetailsUpdateProfile = async (payload: BillDetailsUpdatePayload) => {
+  try {
+    const formData = new FormData();
+    formData.append('full_name', payload.full_name.trim());
+    formData.append('company_name', payload.company_name.trim());
+    formData.append('email', payload.email.trim());
+    formData.append('address', payload.address.trim());
+    formData.append('pincode', payload.pincode.trim());
+    formData.append('nationality', payload.nationality?.trim() || 'India');
+    formData.append('state', payload.state.trim());
+    formData.append('city', payload.city.trim());
+    if (payload.gst_number !== undefined) {
+      formData.append('gst_number', payload.gst_number.trim().toUpperCase());
+    }
+    if (payload.number) {
+      formData.append('number', payload.number.trim());
+    }
+
+    const response = await api.post(endPointApi.PRICING.BILL_DETAILS_UPDATE_PROFILE, formData);
+    return response?.data || null;
+  } catch (err: any) {
+    console.error('Error in fetchBillDetailsUpdateProfile:', err);
+    return err?.response?.data || (err?.message ? { status: false, message: err.message } : null);
+  }
+};
 
 /**
  * Hook to fetch authenticated policy plan info for subscription upgrade/renew
@@ -351,10 +430,16 @@ export interface PolicyPlanPurchaseParams {
   policies: number;
   billing_cycle: string;
   coupon_code?: string;
+  full_name?: string;
+  email?: string;
+  company_name?: string;
+  address?: string;
+  gst_number?: string;
+  number?: string;
 }
 
 /**
- * Fetch authenticated policy plan purchase with FormData (policies, billing_cycle, coupon_code)
+ * Fetch authenticated policy plan purchase with FormData (policies, billing_cycle, coupon_code, optional user details)
  * Returns redirect_url on success
  */
 export const fetchPolicyPlanPurchase = async (payload: PolicyPlanPurchaseParams) => {
@@ -363,6 +448,12 @@ export const fetchPolicyPlanPurchase = async (payload: PolicyPlanPurchaseParams)
     formData.append('policies', String(payload.policies));
     formData.append('billing_cycle', payload.billing_cycle);
     formData.append('coupon_code', payload.coupon_code ? payload.coupon_code.trim() : '');
+    if (payload.full_name) formData.append('full_name', payload.full_name.trim());
+    if (payload.email) formData.append('email', payload.email.trim());
+    if (payload.company_name) formData.append('company_name', payload.company_name.trim());
+    if (payload.address) formData.append('address', payload.address.trim());
+    if (payload.gst_number) formData.append('gst_number', payload.gst_number.trim());
+    if (payload.number) formData.append('number', payload.number.trim());
 
     const response = await api.post(endPointApi.PRICING.POLICY_PLAN_PURCHASE, formData);
     return response?.data || null;
