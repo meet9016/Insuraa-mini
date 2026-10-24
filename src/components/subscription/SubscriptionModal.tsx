@@ -19,8 +19,10 @@ import {
   Mail,
   Phone,
   MapPin,
-  Edit2
+  Edit2,
+  LogOut
 } from 'lucide-react';
+import { clearAuthToken } from '@/config';
 import { toast } from 'react-toastify';
 import {
   usePolicyPlanInfo,
@@ -625,6 +627,19 @@ export default function SubscriptionModal({
     }
   };
 
+  const handleLogout = () => {
+    if (typeof window !== 'undefined') {
+      const closedDate = localStorage.getItem('subscription_popup_closed_date');
+      localStorage.clear();
+      sessionStorage.clear();
+      clearAuthToken();
+      if (closedDate) {
+        localStorage.setItem('subscription_popup_closed_date', closedDate);
+      }
+      window.location.href = '/auth/login';
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -648,32 +663,46 @@ export default function SubscriptionModal({
           </div>
         )}
 
-        {/* Close Button */}
-        {!isExpired && (
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isProcessingPayment}
-            className="absolute top-3 right-3 sm:top-4 sm:right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-all z-20 cursor-pointer disabled:opacity-50"
-            title="Close"
-          >
-            <X size={16} />
-          </button>
-        )}
-
         {/* Header */}
         <div className="py-2.5 px-5 sm:px-6 border-b border-slate-100 shrink-0">
-          <div className="flex items-center gap-2">
-            <span className="w-7 h-7 rounded-lg bg-[#2D3591]/10 text-[#2D3591] flex items-center justify-center shadow-xs">
-              <Crown className="w-4 h-4 fill-[#2D3591]" />
-            </span>
-            <div>
-              <h2 className="text-base sm:text-lg font-bold text-slate-900 leading-tight">
-                Upgrade &amp; Renew Membership Plan
-              </h2>
-              <p className="text-[11px] text-slate-500">
-                Scale your agency with automated renewal reminders, multi-line policy vault, and instant AI OCR credits.
-              </p>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="w-7 h-7 rounded-lg bg-[#2D3591]/10 text-[#2D3591] flex items-center justify-center shadow-xs shrink-0">
+                <Crown className="w-4 h-4 fill-[#2D3591]" />
+              </span>
+              <div className="min-w-0">
+                <h2 className="text-base sm:text-lg font-bold text-slate-900 leading-tight">
+                  Upgrade &amp; Renew Membership Plan
+                </h2>
+                <p className="text-[11px] text-slate-500">
+                  Scale your agency with automated renewal reminders, multi-line policy vault, and instant AI OCR credits.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 hover:border-rose-300 transition-all cursor-pointer shadow-2xs group"
+                title="Log Out"
+              >
+                <LogOut className="w-3.5 h-3.5 text-rose-500 group-hover:text-rose-600 transition-colors" />
+                <span>Log Out</span>
+              </button>
+
+              {/* Close Button */}
+              {!isExpired && (
+                <button
+                  type="button"
+                  onClick={onClose}
+                  disabled={isProcessingPayment}
+                  className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-all cursor-pointer disabled:opacity-50"
+                  title="Close"
+                >
+                  <X size={16} />
+                </button>
+              )}
             </div>
           </div>
         </div>
